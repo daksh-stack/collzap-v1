@@ -4,6 +4,7 @@ import { api } from '../api/api';
 export const useChatStore = create((set, get) => ({
   chatList: [],
   currentRoom: null,
+  rooms: {}, // Map of roomId -> ChatRoomDetailResponse
   messages: {}, // Map of roomId -> ChatMessageResponse[]
   pagination: {}, // Map of roomId -> { page, totalPages, last }
   loading: false,
@@ -14,7 +15,7 @@ export const useChatStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const chatList = await api.get('/chats');
-      set({ chatList, loading: false });
+      set({ chatList: Array.isArray(chatList) ? chatList : [], loading: false });
       return chatList;
     } catch (error) {
       set({ error: error.message, loading: false });
@@ -26,7 +27,14 @@ export const useChatStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const currentRoom = await api.get(`/chats/${roomId}`);
-      set({ currentRoom, loading: false });
+      set((state) => ({
+        currentRoom,
+        rooms: {
+          ...state.rooms,
+          [roomId]: currentRoom
+        },
+        loading: false
+      }));
       return currentRoom;
     } catch (error) {
       set({ error: error.message, loading: false });
@@ -75,13 +83,21 @@ export const useChatStore = create((set, get) => ({
   sendMessage: async (roomId, content, clientMessageId = null) => {
     set({ sending: true, error: null });
     try {
-      const payload = clientMessageId ? { content, clientMessageId } : { content };
+      const cid = clientMessageId || `client-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const payload = { content, clientMessageId: cid };
       const response = await api.post(`/chats/${roomId}/messages`, payload);
       
-      // Update local messages proactively before socket broadcast arrives
       set((state) => {
         const roomMessages = state.messages[roomId] || [];
-        // Optional: filter out any optimistic message with same clientMessageId before pushing
+        const isAlreadyPresent = roomMessages.some(m => 
+          (m.id && response.id && m.id === response.id) ||
+          (m.clientMessageId && cid && m.clientMessageId === cid)
+        );
+
+        if (isAlreadyPresent) {
+          return { sending: false };
+        }
+
         return {
           messages: {
             ...state.messages,
@@ -116,12 +132,21 @@ export const useChatStore = create((set, get) => ({
 
   // Local actions to be called from the WebSocket subscriber
   addIncomingMessage: (roomId, message) => {
+    if (!message) return;
     set((state) => {
       const roomMessages = state.messages[roomId] || [];
-      // Ignore if we already have it (from sending it ourselves)
-      if (roomMessages.some(m => m.id === message.id)) {
+      
+      // Strict deduplication against optimistic or previously received messages
+      const isDuplicate = roomMessages.some(m => 
+        (m.id && message.id && m.id === message.id) ||
+        (m.clientMessageId && message.clientMessageId && m.clientMessageId === message.clientMessageId) ||
+        (m.content === message.content && m.senderId === message.senderId && Math.abs(new Date(m.sentAt) - new Date(message.sentAt)) < 2000)
+      );
+
+      if (isDuplicate) {
         return state;
       }
+
       return {
         messages: {
           ...state.messages,

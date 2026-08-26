@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Check, CheckCheck, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Check, CheckCheck, Loader2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TextArea from '../../components/ui/TextArea';
 import Badge from '../../components/ui/Badge';
@@ -13,13 +13,13 @@ export default function ChatRoomPage() {
   const navigate = useNavigate();
   
   const { user } = useAuthStore();
-  const { rooms, messages, fetchRoom, fetchMessages, sendMessage, markRead, loading } = useChatStore();
+  const { currentRoom, rooms, messages, fetchRoom, fetchMessages, sendMessage, markRead, loading } = useChatStore();
   
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const room = rooms[roomId];
+  const room = (rooms && rooms[roomId]) || currentRoom;
   const roomMessages = messages[roomId] || [];
 
   // Fetch room data and connect WS
@@ -34,6 +34,7 @@ export default function ChatRoomPage() {
         webSocketService.connect();
         webSocketService.subscribe(roomId);
       } catch (error) {
+        console.error(error);
         toast.error("Failed to load chat room");
         navigate('/chat');
       }
@@ -47,7 +48,7 @@ export default function ChatRoomPage() {
 
   // Mark read when new messages arrive and we are at the bottom
   useEffect(() => {
-    const unreadCount = roomMessages.filter(m => m.senderId !== user.id && m.status !== 'READ').length;
+    const unreadCount = roomMessages.filter(m => !m.mine && m.receiptStatus !== 'READ').length;
     if (unreadCount > 0) {
       markRead(roomId).catch(console.error);
     }
@@ -84,17 +85,17 @@ export default function ChatRoomPage() {
   };
 
   const renderMessageStatus = (message) => {
-    if (message.senderId !== user.id) return null;
+    if (!message.mine && message.senderId !== user?.id) return null;
     
-    switch (message.status) {
+    switch (message.receiptStatus) {
       case 'SENT':
         return <Check className="w-3 h-3 text-brand-200 ml-1" />;
       case 'DELIVERED':
         return <CheckCheck className="w-3 h-3 text-brand-200 ml-1" />;
       case 'READ':
-        return <CheckCheck className="w-3 h-3 text-blue-300 ml-1" />; // Or white if you prefer
+        return <CheckCheck className="w-3 h-3 text-blue-300 ml-1" />;
       default:
-        return <Check className="w-3 h-3 text-brand-200 ml-1 opacity-50" />;
+        return <Check className="w-3 h-3 text-brand-200 ml-1 opacity-60" />;
     }
   };
 
@@ -110,10 +111,13 @@ export default function ChatRoomPage() {
     return <div className="text-center py-20 text-gray-500">Room not found.</div>;
   }
 
-  const isGroup = room.memberCount > 2;
+  const roomTitle = room?.title || room?.roomName || room?.interestName || 'Chat Room';
+  const avatarInitials = (roomTitle.trim() || 'CR').substring(0, 2).toUpperCase();
+  const memberCount = room.members?.length || room.memberCount || 2;
+  const isGroup = memberCount > 2;
 
   return (
-    <div className="h-[calc(100vh-[120px])] flex flex-col bg-gray-50 rounded-xl overflow-hidden shadow-sm border border-gray-200">
+    <div className="h-[calc(100vh-120px)] flex flex-col bg-gray-50 rounded-xl overflow-hidden shadow-sm border border-gray-200">
       
       {/* Top Header */}
       <div className="bg-white px-4 py-3 border-b border-gray-200 flex items-center justify-between shadow-sm z-10">
@@ -126,14 +130,16 @@ export default function ChatRoomPage() {
           </button>
           
           <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold mr-3 border border-brand-200">
-              {room.roomName.substring(0, 2).toUpperCase()}
+            <div className="h-10 w-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold mr-3 border border-brand-200 text-sm">
+              {avatarInitials}
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900 leading-none mb-1">{room.roomName}</h2>
+              <h2 className="text-base font-bold text-gray-900 leading-none mb-1">{roomTitle}</h2>
               <div className="flex items-center text-xs text-gray-500 font-medium">
-                <span className="mr-2">{room.memberCount} members</span>
-                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4 leading-4">{room.interestName}</Badge>
+                <span className="mr-2">{memberCount} members</span>
+                {room.interestName && (
+                  <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4 leading-4">{room.interestName}</Badge>
+                )}
               </div>
             </div>
           </div>
@@ -142,49 +148,63 @@ export default function ChatRoomPage() {
 
       {/* Message List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {roomMessages.map((message, index) => {
-          const isMine = message.senderId === user.id;
-          const showName = isGroup && !isMine && (index === roomMessages.length - 1 || roomMessages[index + 1]?.senderId !== message.senderId);
-          
-          return (
-            <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-              <div className={`flex max-w-[75%] ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
-                
-                {/* Avatar for others in group */}
-                {isGroup && !isMine && (
-                  <div className="flex-shrink-0 mr-2 flex flex-col justify-end pb-1">
-                    <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
-                      {message.senderName.charAt(0)}
+        {roomMessages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center p-8 text-gray-400">
+            <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 mb-2">
+              <Users className="w-6 h-6" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700">
+              {room.emptyStateMessage || "You're connected! Say hello to break the ice 👋"}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">Messages are end-to-end coordinated for your peer group.</p>
+          </div>
+        ) : (
+          roomMessages.map((message, index) => {
+            const isMine = message.mine || message.senderId === user?.id;
+            const senderName = message.senderName || 'Peer';
+            const showName = isGroup && !isMine && (index === roomMessages.length - 1 || roomMessages[index + 1]?.senderId !== message.senderId);
+            const messageKey = message.id || message.clientMessageId || `${message.sentAt}-${index}`;
+            
+            return (
+              <div key={messageKey} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex max-w-[75%] ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                  
+                  {/* Avatar for others in group */}
+                  {isGroup && !isMine && (
+                    <div className="flex-shrink-0 mr-2 flex flex-col justify-end pb-1">
+                      <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                        {senderName.charAt(0)}
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                  {showName && (
-                    <span className="text-[10px] font-medium text-gray-500 mb-1 ml-1">{message.senderName}</span>
                   )}
-                  
-                  <div 
-                    className={`relative px-4 py-2.5 rounded-2xl shadow-sm ${
-                      isMine 
-                        ? 'bg-brand-600 text-white rounded-br-sm' 
-                        : 'bg-white border border-gray-100 text-gray-900 rounded-bl-sm'
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                  </div>
-                  
-                  <div className="flex items-center mt-1">
-                    <span className="text-[10px] text-gray-400 font-medium">
-                      {new Date(message.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {renderMessageStatus(message)}
+
+                  <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                    {showName && (
+                      <span className="text-[10px] font-medium text-gray-500 mb-1 ml-1">{senderName}</span>
+                    )}
+                    
+                    <div 
+                      className={`relative px-4 py-2.5 rounded-2xl shadow-sm ${
+                        isMine 
+                          ? 'bg-brand-600 text-white rounded-br-sm' 
+                          : 'bg-white border border-gray-100 text-gray-900 rounded-bl-sm'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                    </div>
+                    
+                    <div className="flex items-center mt-1">
+                      <span className="text-[10px] text-gray-400 font-medium">
+                        {message.sentAt ? new Date(message.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </span>
+                      {renderMessageStatus(message)}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
         <div ref={messagesEndRef} />
       </div>
 

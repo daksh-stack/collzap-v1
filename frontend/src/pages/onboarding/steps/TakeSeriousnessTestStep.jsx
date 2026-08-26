@@ -6,11 +6,16 @@ import { useEffect } from 'react';
 
 export default function TakeSeriousnessTestStep() {
   const navigate = useNavigate();
-  const { eligibility, checkEligibility, loading } = useTestStore();
+  const { eligibility, checkEligibility, resetTestState, loading } = useTestStore();
 
   useEffect(() => {
     checkEligibility().catch(console.error);
   }, []);
+
+  const handleStart = () => {
+    if (resetTestState) resetTestState();
+    navigate('/test');
+  };
 
   return (
     <div className="max-w-xl mx-auto text-center py-8">
@@ -42,10 +47,10 @@ export default function TakeSeriousnessTestStep() {
 
       <div className="max-w-xs mx-auto">
         <Button 
-          onClick={() => navigate('/test')} 
+          onClick={handleStart} 
           className="w-full text-lg h-12"
           loading={loading}
-          disabled={eligibility && !eligibility.eligible}
+          disabled={eligibility && !eligibility.eligible && !eligibility.hasActiveSession}
         >
           {eligibility?.hasActiveSession ? 'Resume Test' : 'Start Assessment'}
         </Button>

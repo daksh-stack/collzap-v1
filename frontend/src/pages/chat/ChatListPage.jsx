@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MessageSquare, Clock } from 'lucide-react';
+import { Search, MessageSquare, Clock, Users } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
@@ -15,14 +15,19 @@ export default function ChatListPage() {
     fetchChatList().catch(console.error);
   }, []);
 
-  const filteredChats = chatList?.filter(chat => 
-    chat.roomName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.interestName.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const safeChatList = Array.isArray(chatList) ? chatList : [];
+
+  const filteredChats = safeChatList.filter(chat => {
+    const title = (chat.title || chat.roomName || '').toLowerCase();
+    const interest = (chat.interestName || '').toLowerCase();
+    const term = searchTerm.toLowerCase();
+    return title.includes(term) || interest.includes(term);
+  });
 
   const formatRelativeTime = (timestamp) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '';
     const now = new Date();
     const diffInSeconds = Math.floor((now - date) / 1000);
     
@@ -51,7 +56,7 @@ export default function ChatListPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-white rounded-xl shadow-sm border border-gray-200">
-        {loading && !chatList ? (
+        {loading && (!chatList || chatList.length === 0) ? (
           <div className="p-8 space-y-4">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="animate-pulse flex p-4 border-b border-gray-100 last:border-0">
@@ -75,56 +80,63 @@ export default function ChatListPage() {
           </div>
         ) : (
           <ul className="divide-y divide-gray-100">
-            {filteredChats.map((chat) => (
-              <li 
-                key={chat.roomId}
-                onClick={() => navigate(`/chat/${chat.roomId}`)}
-                className="group hover:bg-gray-50 cursor-pointer transition-colors"
-              >
-                <div className="flex items-center px-4 py-5 sm:px-6">
-                  {/* Avatars */}
-                  <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-brand-100 text-brand-600 font-bold text-lg border-2 border-white shadow-sm">
-                    {chat.roomName.substring(0, 2).toUpperCase()}
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="min-w-0 flex-1 px-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center">
-                        <p className={`text-sm font-semibold truncate ${chat.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-                          {chat.roomName}
-                        </p>
-                        <Badge variant="secondary" className="ml-2 hidden sm:inline-flex text-xs">
-                          {chat.interestName}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-500 whitespace-nowrap ml-2">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {formatRelativeTime(chat.lastMessage?.sentAt || chat.createdAt)}
-                      </div>
+            {filteredChats.map((chat) => {
+              const roomId = chat.chatRoomId || chat.roomId || chat.id;
+              const chatTitle = chat.title || chat.roomName || chat.interestName || 'Chat Room';
+              const avatarInitials = (chatTitle.trim() || 'CR').substring(0, 2).toUpperCase();
+              const lastMessage = chat.lastMessagePreview || (chat.lastMessage?.content);
+              const lastTime = chat.lastMessageAt || (chat.lastMessage?.sentAt) || chat.createdAt;
+
+              return (
+                <li 
+                  key={roomId}
+                  onClick={() => navigate(`/chat/${roomId}`)}
+                  className="group hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center px-4 py-5 sm:px-6">
+                    {/* Avatars */}
+                    <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-brand-100 text-brand-700 font-bold text-base border-2 border-white shadow-sm">
+                      {avatarInitials}
                     </div>
                     
-                    <div className="flex items-center justify-between mt-1">
-                      <p className={`text-sm truncate ${chat.unreadCount > 0 ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
-                        {chat.lastMessage ? (
-                          <>
-                            <span className="text-gray-400 mr-1">{chat.lastMessage.senderName.split(' ')[0]}:</span>
-                            {chat.lastMessage.content}
-                          </>
-                        ) : (
-                          <span className="italic text-brand-600">New match! Say hello 👋</span>
+                    {/* Content */}
+                    <div className="min-w-0 flex-1 px-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center">
+                          <p className={`text-sm font-semibold truncate ${chat.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                            {chatTitle}
+                          </p>
+                          {chat.interestName && (
+                            <Badge variant="secondary" className="ml-2 hidden sm:inline-flex text-xs">
+                              {chat.interestName}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500 whitespace-nowrap ml-2">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {formatRelativeTime(lastTime)}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-1">
+                        <p className={`text-sm truncate ${chat.unreadCount > 0 ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
+                          {lastMessage ? (
+                            lastMessage
+                          ) : (
+                            <span className="italic text-brand-600">New match! Say hello 👋</span>
+                          )}
+                        </p>
+                        {chat.unreadCount > 0 && (
+                          <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-brand-600 rounded-full flex-shrink-0 ml-2">
+                            {chat.unreadCount}
+                          </span>
                         )}
-                      </p>
-                      {chat.unreadCount > 0 && (
-                        <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-brand-600 rounded-full flex-shrink-0 ml-2">
-                          {chat.unreadCount}
-                        </span>
-                      )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

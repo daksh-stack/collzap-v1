@@ -99,13 +99,23 @@ public class SeriousnessTestService {
         Optional<SeriousnessTestSession> inProgress = sessionRepository
             .findFirstByUserIdAndStatusOrderByCreatedAtDesc(userId, TestAttemptStatus.IN_PROGRESS);
 
+        if (inProgress.isPresent()) {
+            return new TestEligibilityResponse(
+                true,
+                null,
+                null,
+                true,
+                inProgress.get().getId()
+            );
+        }
+
         if (!projectTypeRepository.existsByUserIdAndProjectType(userId, ProjectType.LONG_TERM)) {
             return new TestEligibilityResponse(
                 false,
                 "The seriousness test is only for Long-Term Peer matching.",
                 null,
-                inProgress.isPresent(),
-                inProgress.map(SeriousnessTestSession::getId).orElse(null)
+                false,
+                null
             );
         }
 
@@ -115,20 +125,19 @@ public class SeriousnessTestService {
                 false,
                 "Pick your Long-Term interests first.",
                 null,
-                inProgress.isPresent(),
-                inProgress.map(SeriousnessTestSession::getId).orElse(null)
+                false,
+                null
             );
         }
 
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         LocalDate lockedUntil = null;
         for (UserInterestSelection selection : selections) {
-            LocalDate retake = latestSubmitted(userId, selection.getInterest().getId())
-                .map(SeriousnessTestAttempt::getNextRetakeDate)
-                .orElse(null);
-            if (retake != null && retake.isAfter(today)
-                && (lockedUntil == null || retake.isAfter(lockedUntil))) {
-                lockedUntil = retake;
+            SeriousnessTestAttempt attempt = latestSubmitted(userId, selection.getInterest().getId()).orElse(null);
+            if (attempt != null && attempt.getCorrectCount() > 0 && attempt.getNextRetakeDate() != null && attempt.getNextRetakeDate().isAfter(today)) {
+                if (lockedUntil == null || attempt.getNextRetakeDate().isAfter(lockedUntil)) {
+                    lockedUntil = attempt.getNextRetakeDate();
+                }
             }
         }
         if (lockedUntil != null) {
@@ -136,8 +145,8 @@ public class SeriousnessTestService {
                 false,
                 "You can retake the test on %s.".formatted(lockedUntil),
                 lockedUntil,
-                inProgress.isPresent(),
-                inProgress.map(SeriousnessTestSession::getId).orElse(null)
+                false,
+                null
             );
         }
         return new TestEligibilityResponse(

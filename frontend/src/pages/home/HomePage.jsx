@@ -105,26 +105,37 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {chatList?.slice(0, 3).map((chat) => (
-                <div key={chat.roomId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer" onClick={() => navigate(`/chat/${chat.roomId}`)}>
-                  <div className="flex items-center truncate mr-4">
-                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold mr-3 flex-shrink-0">
-                      {chat.roomName.charAt(0)}
+              {chatList?.slice(0, 3).map((chat) => {
+                const roomId = chat.chatRoomId || chat.roomId || chat.id;
+                const title = chat.title || chat.roomName || chat.interestName || 'Chat Room';
+                const initial = (title.trim() || 'C').charAt(0).toUpperCase();
+                const preview = chat.lastMessagePreview || chat.lastMessage?.content || 'New match!';
+
+                return (
+                  <div 
+                    key={roomId} 
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors" 
+                    onClick={() => navigate(`/chat/${roomId}`)}
+                  >
+                    <div className="flex items-center truncate mr-4">
+                      <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold mr-3 flex-shrink-0">
+                        {initial}
+                      </div>
+                      <div className="truncate">
+                        <p className="text-sm font-medium text-gray-900 truncate">{title}</p>
+                        <p className="text-xs text-gray-500 truncate">{preview}</p>
+                      </div>
                     </div>
-                    <div className="truncate">
-                      <p className="text-sm font-medium text-gray-900 truncate">{chat.roomName}</p>
-                      <p className="text-xs text-gray-500 truncate">{chat.lastMessage?.content || 'New match!'}</p>
-                    </div>
+                    {chat.unreadCount > 0 && (
+                      <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-brand-600 rounded-full flex-shrink-0">
+                        {chat.unreadCount}
+                      </span>
+                    )}
                   </div>
-                  {chat.unreadCount > 0 && (
-                    <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-brand-600 rounded-full flex-shrink-0">
-                      {chat.unreadCount}
-                    </span>
-                  )}
-                </div>
-              ))}
-              {chatList?.length === 0 && circle?.activeGroups?.slice(0, 3).map(group => (
-                <div key={group.id} className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600" onClick={() => navigate(`/matches/${group.id}`)}>
+                );
+              })}
+              {(!chatList || chatList.length === 0) && circle?.activeGroups?.slice(0, 3).map(group => (
+                <div key={group.id} className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => navigate(`/matches/${group.id}`)}>
                   Matched in <span className="font-medium text-gray-900">{group.interestName}</span> group.
                 </div>
               ))}

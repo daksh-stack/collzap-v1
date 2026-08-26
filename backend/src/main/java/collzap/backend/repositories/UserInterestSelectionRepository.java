@@ -33,5 +33,7 @@ public interface UserInterestSelectionRepository extends JpaRepository<UserInter
 
     void deleteByUserIdAndProjectType(UUID userId, ProjectType projectType);
 
+    void deleteByUserId(UUID userId);
+
     long countByUserIdAndProjectType(UUID userId, ProjectType projectType);
 }

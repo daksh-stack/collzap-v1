@@ -107,9 +107,8 @@ public class AdminService {
     @Transactional(readOnly = true)
     public PageResponse<AdminUserRow> users(String search, Status status, Pageable pageable) {
         String needle = search == null || search.isBlank() ? null : search.trim();
-        Status accountStatus = status == null ? Status.ACTIVE : status;
         return PageResponse.from(
-            userRepository.searchActive(accountStatus, needle, pageable),
+            userRepository.searchActive(status, needle, pageable),
             user -> new AdminUserRow(
                 user.getId(),
                 user.getName(),

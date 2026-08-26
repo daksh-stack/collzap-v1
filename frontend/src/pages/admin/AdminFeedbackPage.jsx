@@ -42,7 +42,7 @@ export default function AdminFeedbackPage() {
                   <Badge variant="secondary" className="bg-gray-100">{item.projectType}</Badge>
                 </div>
                 <div className="mt-3 bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{item.suggestionText}</p>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{item.suggestion || item.suggestionText}</p>
                 </div>
               </li>
             ))

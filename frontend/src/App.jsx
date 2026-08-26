@@ -75,6 +75,13 @@ function App() {
             </Route>
           </Route>
 
+          {/* Focused Assessment Route (No Sidebar) */}
+          <Route element={<AuthGuard />}>
+            <Route element={<OnboardingGuard />}>
+              <Route path="/test" element={<SeriousnessTestPage />} />
+            </Route>
+          </Route>
+
           {/* Authenticated App Routes */}
           <Route element={<AuthGuard />}>
             <Route element={<OnboardingGuard />}>
@@ -88,7 +95,6 @@ function App() {
                 <Route path="/profile/:userId" element={<PeerProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/test" element={<SeriousnessTestPage />} />
               </Route>
             </Route>
           </Route>

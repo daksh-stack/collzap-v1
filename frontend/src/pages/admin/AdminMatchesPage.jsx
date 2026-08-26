@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Loader2, Plus, Zap, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Loader2, Plus, Zap, Trash2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -19,7 +19,7 @@ export default function AdminMatchesPage() {
   // Force Match Modal State
   const [forceModalOpen, setForceModalOpen] = useState(false);
   const [matchForm, setMatchForm] = useState({
-    userIds: '', // comma separated for simplicity in this mock UI
+    userIds: '', // comma separated for simplicity in this UI
     interestId: '',
     connectionType: 'ONE_ON_ONE',
     projectType: 'SHORT_TERM'
@@ -51,17 +51,19 @@ export default function AdminMatchesPage() {
       toast.success('Match created successfully');
       setForceModalOpen(false);
       setMatchForm({ userIds: '', interestId: '', connectionType: 'ONE_ON_ONE', projectType: 'SHORT_TERM' });
+      fetchMatches();
     } catch (error) {
       toast.error(error.message || 'Failed to create match');
     }
   };
 
   const handleUnmatch = async (matchGroupId, userId, userName) => {
-    if (!window.confirm(`Are you sure you want to remove ${userName} from this match?`)) return;
+    if (!window.confirm(`Are you sure you want to remove ${userName || 'this user'} from this match?`)) return;
     
     try {
       await unmatch(matchGroupId, userId);
       toast.success('User removed from match');
+      fetchMatches();
     } catch (error) {
       toast.error(error.message || 'Failed to remove user');
     }
@@ -92,7 +94,7 @@ export default function AdminMatchesPage() {
         <div className="px-4 border-b border-gray-200">
           <Tabs 
             tabs={[
-              { key: 'ALL', label: 'All Matches' },
+              { key: 'ALL', label: `All Matches (${matches?.content?.length || 0})` },
               { key: 'ACTIVE', label: 'Active' },
               { key: 'WAITING', label: 'Waiting (Partial)' },
               { key: 'CLOSED', label: 'Closed' },
@@ -106,7 +108,7 @@ export default function AdminMatchesPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interest</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interest & College</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Members</th>
@@ -114,69 +116,69 @@ export default function AdminMatchesPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {loading && !matches ? (
+              {loading && (!matches?.content || matches.content.length === 0) ? (
                 <tr><td colSpan="5" className="px-6 py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" /></td></tr>
               ) : filteredMatches.length === 0 ? (
                 <tr><td colSpan="5" className="px-6 py-10 text-center text-gray-500">No matches found.</td></tr>
               ) : (
-                filteredMatches.map((match) => (
-                  <React.Fragment key={match.id}>
-                    <tr 
-                      className={`hover:bg-gray-50 cursor-pointer ${expandedMatch === match.id ? 'bg-brand-50' : ''}`}
-                      onClick={() => setExpandedMatch(expandedMatch === match.id ? null : match.id)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-bold text-gray-900">{match.interestName}</div>
-                        <div className="text-xs text-gray-500">{match.id}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{match.connectionType}</div>
-                        <div className="text-xs text-gray-500">{match.projectType}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant="secondary">{match.levelBand}</Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {match.memberCount} / {match.maxMembers}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant={match.status === 'ACTIVE' ? 'success' : match.status === 'WAITING' ? 'warning' : 'secondary'}>
-                          {match.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                    
-                    {expandedMatch === match.id && (
-                      <tr>
-                        <td colSpan="5" className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                          <h4 className="text-sm font-bold text-gray-900 mb-3">Group Members</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {match.members?.map(member => (
-                              <div key={member.userId} className="bg-white border border-gray-200 rounded-lg p-3 flex justify-between items-center shadow-sm">
-                                <div className="flex items-center truncate">
-                                  <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-xs mr-3 flex-shrink-0">
-                                    {member.name.charAt(0)}
-                                  </div>
-                                  <div className="truncate">
-                                    <p className="text-sm font-bold text-gray-900 truncate">{member.name}</p>
-                                    <p className="text-xs text-gray-500 truncate">{member.userId}</p>
-                                  </div>
-                                </div>
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleUnmatch(match.id, member.userId, member.name); }}
-                                  className="ml-2 text-red-500 hover:text-red-700 p-1"
-                                  title="Remove from match"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
+                filteredMatches.map((match) => {
+                  const matchId = match.matchGroupId || match.id;
+                  const isExpanded = expandedMatch === matchId;
+                  
+                  return (
+                    <React.Fragment key={matchId}>
+                      <tr 
+                        className={`hover:bg-gray-50 cursor-pointer ${isExpanded ? 'bg-brand-50/50' : ''}`}
+                        onClick={() => setExpandedMatch(isExpanded ? null : matchId)}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="font-bold text-gray-900">{match.interestName}</div>
+                          <div className="text-xs text-gray-500">{match.collegeName || matchId}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{match.connectionType}</div>
+                          <div className="text-xs text-gray-500">{match.projectType}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant="secondary">{match.levelBand || 'UNRANKED'}</Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {match.memberCount || match.memberNames?.length || 0} / {match.maxMembers || 2}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant={match.status === 'ACTIVE' ? 'success' : match.status === 'WAITING' ? 'warning' : 'secondary'}>
+                            {match.status}
+                          </Badge>
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                ))
+                      
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-4 bg-gray-50/80 border-b border-gray-200">
+                            <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center">
+                              <Users className="w-3.5 h-3.5 mr-1" />
+                              Group Members ({match.memberNames?.length || 0})
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {match.memberNames && match.memberNames.length > 0 ? (
+                                match.memberNames.map((name, idx) => (
+                                  <div key={idx} className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 flex items-center space-x-2 shadow-sm text-xs">
+                                    <div className="w-5 h-5 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-[10px]">
+                                      {name.charAt(0)}
+                                    </div>
+                                    <span className="font-medium text-gray-800">{name}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-xs text-gray-500 italic">No members currently in group.</p>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>

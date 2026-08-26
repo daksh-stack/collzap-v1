@@ -7,6 +7,7 @@ class WebSocketService {
   constructor() {
     this.client = null;
     this.subscriptions = new Map();
+    this.pendingRooms = new Set();
   }
 
   connect() {
@@ -40,7 +41,12 @@ class WebSocketService {
     this.client.onConnect = (frame) => {
       console.log('Connected to WebSocket server', frame);
       
-      // We could globally subscribe to error queue here
+      // Subscribe all pending rooms
+      this.pendingRooms.forEach(roomId => {
+        this._doSubscribe(roomId);
+      });
+      this.pendingRooms.clear();
+
       this.client.subscribe('/user/queue/errors', (message) => {
         console.error('WebSocket Error from server:', message.body);
       });
@@ -63,16 +69,19 @@ class WebSocketService {
       this.client.deactivate();
     }
     this.subscriptions.clear();
+    this.pendingRooms.clear();
   }
 
   subscribe(roomId) {
     if (!this.client || !this.client.connected) {
-      console.warn('Cannot subscribe, STOMP client is not connected');
+      this.pendingRooms.add(roomId);
       return;
     }
+    this._doSubscribe(roomId);
+  }
 
+  _doSubscribe(roomId) {
     if (this.subscriptions.has(roomId)) {
-      console.log(`Already subscribed to room ${roomId}`);
       return;
     }
 
@@ -82,15 +91,13 @@ class WebSocketService {
     const subscription = this.client.subscribe(topic, (message) => {
       try {
         const payload = JSON.parse(message.body);
-        
-        // Use ChatStore action to append message based on STOMP payload structure
-        // Differentiate message vs receipt update if backend sends them to same topic
         if (payload.type === 'RECEIPT') {
-             useChatStore.getState().updateReceipt(roomId, payload);
+          useChatStore.getState().updateReceipt(roomId, payload.payload || payload);
+        } else if (payload.type === 'MESSAGE') {
+          useChatStore.getState().addIncomingMessage(roomId, payload.payload || payload);
         } else {
-             useChatStore.getState().addIncomingMessage(roomId, payload);
+          useChatStore.getState().addIncomingMessage(roomId, payload);
         }
-
       } catch (error) {
         console.error("Error processing websocket message", error, message.body);
       }
@@ -100,6 +107,7 @@ class WebSocketService {
   }
 
   unsubscribe(roomId) {
+    this.pendingRooms.delete(roomId);
     const subscription = this.subscriptions.get(roomId);
     if (subscription) {
       subscription.unsubscribe();

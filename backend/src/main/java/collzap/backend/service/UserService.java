@@ -20,14 +20,28 @@ import collzap.backend.enums.SeriousnessLevel;
 import collzap.backend.enums.Status;
 import collzap.backend.exception.ForbiddenException;
 import collzap.backend.exception.NotFoundException;
+import collzap.backend.models.ChatMessage;
 import collzap.backend.models.College;
 import collzap.backend.models.DeviceToken;
 import collzap.backend.models.User;
+import collzap.backend.repositories.BlockReportRepository;
+import collzap.backend.repositories.ChatMessageRepository;
+import collzap.backend.repositories.ConnectionTypeSelectionRepository;
 import collzap.backend.repositories.DeviceTokenRepository;
+import collzap.backend.repositories.InterestFeedbackRepository;
 import collzap.backend.repositories.MatchMemberRepository;
+import collzap.backend.repositories.MessageReceiptRepository;
+import collzap.backend.repositories.NotificationRepository;
+import collzap.backend.repositories.OtpCodeRepository;
 import collzap.backend.repositories.RefreshTokenRepository;
+import collzap.backend.repositories.SeriousnessTestAnswerRepository;
+import collzap.backend.repositories.SeriousnessTestAttemptRepository;
+import collzap.backend.repositories.SeriousnessTestSessionQuestionRepository;
+import collzap.backend.repositories.SeriousnessTestSessionRepository;
 import collzap.backend.repositories.UserInterestSelectionRepository;
+import collzap.backend.repositories.UserProjectTypeSelectionRepository;
 import collzap.backend.repositories.UserRepository;
+import collzap.backend.repositories.VerificationDocumentRepository;
 
 @Service
 public class UserService {
@@ -40,6 +54,21 @@ public class UserService {
     private final MatchMemberRepository matchMemberRepository;
     private final SeriousnessLevelLookup levelLookup;
 
+    // Repositories needed for hard delete
+    private final VerificationDocumentRepository verificationDocumentRepository;
+    private final NotificationRepository notificationRepository;
+    private final MessageReceiptRepository messageReceiptRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final SeriousnessTestAnswerRepository testAnswerRepository;
+    private final SeriousnessTestSessionQuestionRepository sessionQuestionRepository;
+    private final SeriousnessTestAttemptRepository testAttemptRepository;
+    private final SeriousnessTestSessionRepository testSessionRepository;
+    private final InterestFeedbackRepository interestFeedbackRepository;
+    private final ConnectionTypeSelectionRepository connectionTypeSelectionRepository;
+    private final UserProjectTypeSelectionRepository projectTypeSelectionRepository;
+    private final BlockReportRepository blockReportRepository;
+    private final OtpCodeRepository otpCodeRepository;
+
     public UserService(
         UserRepository userRepository,
         CollegeService collegeService,
@@ -47,7 +76,20 @@ public class UserService {
         DeviceTokenRepository deviceTokenRepository,
         RefreshTokenRepository refreshTokenRepository,
         MatchMemberRepository matchMemberRepository,
-        SeriousnessLevelLookup levelLookup
+        SeriousnessLevelLookup levelLookup,
+        VerificationDocumentRepository verificationDocumentRepository,
+        NotificationRepository notificationRepository,
+        MessageReceiptRepository messageReceiptRepository,
+        ChatMessageRepository chatMessageRepository,
+        SeriousnessTestAnswerRepository testAnswerRepository,
+        SeriousnessTestSessionQuestionRepository sessionQuestionRepository,
+        SeriousnessTestAttemptRepository testAttemptRepository,
+        SeriousnessTestSessionRepository testSessionRepository,
+        InterestFeedbackRepository interestFeedbackRepository,
+        ConnectionTypeSelectionRepository connectionTypeSelectionRepository,
+        UserProjectTypeSelectionRepository projectTypeSelectionRepository,
+        BlockReportRepository blockReportRepository,
+        OtpCodeRepository otpCodeRepository
     ) {
         this.userRepository = userRepository;
         this.collegeService = collegeService;
@@ -56,6 +98,19 @@ public class UserService {
         this.refreshTokenRepository = refreshTokenRepository;
         this.matchMemberRepository = matchMemberRepository;
         this.levelLookup = levelLookup;
+        this.verificationDocumentRepository = verificationDocumentRepository;
+        this.notificationRepository = notificationRepository;
+        this.messageReceiptRepository = messageReceiptRepository;
+        this.chatMessageRepository = chatMessageRepository;
+        this.testAnswerRepository = testAnswerRepository;
+        this.sessionQuestionRepository = sessionQuestionRepository;
+        this.testAttemptRepository = testAttemptRepository;
+        this.testSessionRepository = testSessionRepository;
+        this.interestFeedbackRepository = interestFeedbackRepository;
+        this.connectionTypeSelectionRepository = connectionTypeSelectionRepository;
+        this.projectTypeSelectionRepository = projectTypeSelectionRepository;
+        this.blockReportRepository = blockReportRepository;
+        this.otpCodeRepository = otpCodeRepository;
     }
 
     @Transactional(readOnly = true)
@@ -174,24 +229,61 @@ public class UserService {
     }
 
     /**
-     * Soft delete: the row stays so message history and match records keep their
-     * foreign keys, but every credential and device is revoked and the profile is
-     * hidden.
+     * Hard delete: completely erases the user and all associated data from the
+     * database. Group membership is torn down separately by
+     * {@code MatchingService.leaveAllGroups}, which the caller runs first.
      *
-     * <p>Group membership is torn down separately by
-     * {@code MatchingService.leaveAllGroups}, which the caller runs first — that
-     * keeps the requeue-and-notify rules in one place.
+     * <p>Deletion order respects foreign key constraints: deepest children first.
      */
     @Transactional
     public void deleteAccount(UUID userId) {
-        User user = require(userId);
-        user.setAccountStatus(Status.DELETED);
-        user.setProfileVisible(false);
-        user.setNotificationsEnabled(false);
-        userRepository.save(user);
+        User user = userRepository.findWithCollegeById(userId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+        String email = user.getEmail();
 
-        refreshTokenRepository.revokeAllForUser(userId, Instant.now());
+        // 1. Seriousness test data (deepest children first)
+        testAnswerRepository.deleteByUserId(userId);           // answers → attempts
+        sessionQuestionRepository.deleteByUserId(userId);      // session_questions → sessions
+        testAttemptRepository.deleteByUserId(userId);           // attempts → sessions
+        testSessionRepository.deleteByUserId(userId);           // sessions → user
+
+        // 2. Chat data: receipts reference messages, so delete receipts first,
+        //    then delete receipts on user's own messages by other users,
+        //    then delete the messages themselves
+        messageReceiptRepository.deleteByUserId(userId);
+        // Also delete receipts that OTHER users have for messages SENT by this user
+        List<ChatMessage> sentMessages = chatMessageRepository.findBySenderId(userId);
+        for (ChatMessage msg : sentMessages) {
+            messageReceiptRepository.findByMessageIdIn(List.of(msg.getId()))
+                .forEach(messageReceiptRepository::delete);
+        }
+        chatMessageRepository.deleteBySenderId(userId);
+
+        // 3. Match membership (leaveAllGroups already deactivated, but hard-delete the rows)
+        matchMemberRepository.deleteByUserId(userId);
+
+        // 4. Blocks and reports (both directions)
+        blockReportRepository.deleteByReporterIdOrReportedId(userId);
+
+        // 5. Selections and preferences
+        interestSelectionRepository.deleteByUserId(userId);
+        interestFeedbackRepository.deleteByUserId(userId);
+        connectionTypeSelectionRepository.deleteByUserId(userId);
+        projectTypeSelectionRepository.deleteByUserId(userId);
+
+        // 6. Verification documents
+        verificationDocumentRepository.deleteByUserId(userId);
+
+        // 7. Notifications
+        notificationRepository.deleteByUserId(userId);
+
+        // 8. Auth artifacts
+        refreshTokenRepository.deleteByUserId(userId);
         deviceTokenRepository.deleteByUserId(userId);
+        otpCodeRepository.deleteByEmailIgnoreCase(email);
+
+        // 9. Finally, delete the user entity itself
+        userRepository.delete(user);
     }
 
     private boolean sharesGroup(UUID viewerId, UUID targetId) {

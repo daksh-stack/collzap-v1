@@ -6,11 +6,13 @@ import Badge from '../../components/ui/Badge';
 import Tabs from '../../components/ui/Tabs';
 import EmptyState from '../../components/ui/EmptyState';
 import { useMatchStore } from '../../store/useMatchStore';
+import { useUserStore } from '../../store/useUserStore';
 import toast from 'react-hot-toast';
 
 export default function MatchesPage() {
   const navigate = useNavigate();
   const { circle, fetchCircle, findMatches, loading } = useMatchStore();
+  const { profile } = useUserStore();
   const [activeTab, setActiveTab] = useState('ACTIVE');
   const [matchResults, setMatchResults] = useState(null);
 
@@ -18,7 +20,13 @@ export default function MatchesPage() {
     fetchCircle().catch(console.error);
   }, []);
 
+  const isVerified = profile?.verificationStatus === 'APPROVED';
+
   const handleFindMatches = async () => {
+    if (!isVerified) {
+      toast.error("Your student verification is still in review. Matching will unlock once approved!");
+      return;
+    }
     try {
       const response = await findMatches();
       const results = response.results || [];
@@ -51,13 +59,33 @@ export default function MatchesPage() {
         <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-brand-50 rounded-full blur-xl"></div>
         
         <div className="relative z-10">
+          {!isVerified && profile && (
+            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>Student verification is pending review. You will be able to run matchmaking as soon as an admin approves your document.</span>
+              </div>
+              <button 
+                onClick={() => navigate('/onboarding')} 
+                className="font-semibold text-amber-700 hover:text-amber-900 underline ml-2 flex-shrink-0"
+              >
+                View Status
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
             <div>
               <h2 className="text-lg font-bold text-gray-900 mb-1">Looking for a match?</h2>
               <p className="text-sm text-gray-500">Run the matchmaking engine to find peers in your selected interests.</p>
             </div>
             <div className="mt-4 sm:mt-0">
-              <Button onClick={handleFindMatches} loading={loading} icon={<Search className="w-4 h-4" />}>
+              <Button 
+                onClick={handleFindMatches} 
+                loading={loading} 
+                icon={<Search className="w-4 h-4" />}
+                variant={!isVerified ? 'secondary' : 'primary'}
+              >
                 Find Matches Now
               </Button>
             </div>

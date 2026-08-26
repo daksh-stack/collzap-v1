@@ -9,6 +9,10 @@ export const useTestStore = create((set) => ({
   loading: false,
   error: null,
 
+  resetTestState: () => {
+    set({ session: null, result: null, error: null, loading: false });
+  },
+
   checkEligibility: async () => {
     set({ loading: true, error: null });
     try {
@@ -22,10 +26,10 @@ export const useTestStore = create((set) => ({
   },
 
   startSession: async () => {
-    set({ loading: true, error: null });
+    set({ loading: true, error: null, result: null });
     try {
       const session = await api.post('/test/sessions');
-      set({ session, loading: false });
+      set({ session, result: null, loading: false });
       return session;
     } catch (error) {
       set({ error: error.message, loading: false });
