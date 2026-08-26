@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { FileUp } from 'lucide-react';
-import Button from '../../../../components/ui/Button';
-import Input from '../../../../components/ui/Input';
-import { useModerationStore } from '../../../../store/useModerationStore';
+import Button from '../../../components/ui/Button';
+import Input from '../../../components/ui/Input';
+import { useModerationStore } from '../../../store/useModerationStore';
 
 export default function UploadDocumentStep() {
   const [documentType, setDocumentType] = useState('FEE_SLIP');

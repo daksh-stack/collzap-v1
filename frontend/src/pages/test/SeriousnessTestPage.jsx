@@ -18,8 +18,24 @@ export default function SeriousnessTestPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        let activeSession = await fetchCurrentSession();
-        if (!activeSession) {
+        let activeSession;
+        try {
+          activeSession = await fetchCurrentSession();
+          
+          // Emergency check: if the fetched session is already expired based on startedAt, 
+          // just abandon it by forcing a new one!
+          let checkStartedAtMs = new Date().getTime();
+          if (activeSession.startedAt) {
+            const parsed = new Date(activeSession.startedAt).getTime();
+            if (!isNaN(parsed)) {
+               checkStartedAtMs = parsed < 10000000000 ? parsed * 1000 : parsed;
+            }
+          }
+          if (new Date().getTime() > checkStartedAtMs + (20 * 60 * 1000)) {
+            activeSession = await startSession();
+          }
+        } catch (e) {
+          // 404 means no active session, start a new one
           activeSession = await startSession();
         }
         
@@ -32,9 +48,35 @@ export default function SeriousnessTestPage() {
         }
 
         // Setup timer
-        const expiryTime = new Date(activeSession.expiresAt).getTime();
+        let expiryTime = NaN;
+        if (activeSession.expiresAt) {
+           const val = activeSession.expiresAt;
+           if (typeof val === 'number') {
+              expiryTime = val < 10000000000 ? val * 1000 : val;
+           } else {
+              expiryTime = new Date(val).getTime();
+           }
+        }
+        
+        // If expiresAt is missing (backend didn't recompile) or parsing failed, fallback to startedAt + 20 mins
+        if (isNaN(expiryTime)) {
+          let startedAtMs = new Date().getTime();
+          if (activeSession.startedAt) {
+            const parsed = new Date(activeSession.startedAt).getTime();
+            if (!isNaN(parsed)) {
+               // If the parsed timestamp is before year ~2286 in seconds, it's a unix seconds timestamp
+               startedAtMs = parsed < 10000000000 ? parsed * 1000 : parsed;
+            }
+          }
+          expiryTime = startedAtMs + (20 * 60 * 1000);
+        }
+        
         const now = new Date().getTime();
-        setTimeLeft(Math.max(0, Math.floor((expiryTime - now) / 1000)));
+        let remaining = Math.floor((expiryTime - now) / 1000);
+        
+        // If the calculated remaining time is negative (e.g. old session), but this was a fresh load, 
+        // it means the session is already expired. We clamp it to 0.
+        setTimeLeft(Math.max(0, remaining));
 
       } catch (error) {
         toast.error("Failed to load test session");
@@ -64,7 +106,7 @@ export default function SeriousnessTestPage() {
     if (session) {
       toast.error("Time's up! Submitting your test automatically.");
       try {
-        await submitTest(session.id);
+        await submitTest(session.sessionId);
       } catch (e) {
         console.error("Auto submit failed", e);
       }
@@ -82,7 +124,7 @@ export default function SeriousnessTestPage() {
     
     try {
       // Optimistic local update could go here, but we'll wait for API for simplicity
-      await submitAnswer(session.id, currentQ.id, selectedOption);
+      await submitAnswer(session.sessionId, currentQ.questionId, selectedOption);
       
       // Update local session object manually since submitAnswer returns { answeredCount, totalQuestions }
       session.questions[currentQuestionIndex].selectedOptionIndex = selectedOption;
@@ -92,7 +134,7 @@ export default function SeriousnessTestPage() {
         setSelectedOption(session.questions[currentQuestionIndex + 1].selectedOptionIndex); // pre-select if already answered
       } else {
         // Last question
-        await submitTest(session.id);
+        await submitTest(session.sessionId);
       }
     } catch (error) {
       toast.error("Failed to save answer");
@@ -121,7 +163,7 @@ export default function SeriousnessTestPage() {
           <div className="mt-8 border-t border-gray-200 pt-8">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Breakdown by Interest</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              {result.breakdowns.map((b) => (
+              {result.results?.map((b) => (
                 <div key={b.interestId} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <h4 className="font-bold text-gray-900">{b.interestName}</h4>
                   <div className="mt-2 text-sm text-gray-500">

@@ -1,7 +1,7 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { useUserStore } from '../../../../store/useUserStore';
-import { useAuthStore } from '../../../../store/useAuthStore';
-import Button from '../../../../components/ui/Button';
+import { useUserStore } from '../../../store/useUserStore';
+import { useAuthStore } from '../../../store/useAuthStore';
+import Button from '../../../components/ui/Button';
 
 export default function VerificationRejectedStep() {
   const { onboarding } = useUserStore();

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Target, Zap } from 'lucide-react';
-import Button from '../../../../components/ui/Button';
-import { useInterestStore } from '../../../../store/useInterestStore';
+import Button from '../../../components/ui/Button';
+import { useInterestStore } from '../../../store/useInterestStore';
 
 export default function SelectProjectTypeStep() {
   const { projectTypes: storeProjectTypes, selectProjectTypes, loading, fetchProjectTypes } = useInterestStore();

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import Button from '../../../../components/ui/Button';
-import Input from '../../../../components/ui/Input';
-import TextArea from '../../../../components/ui/TextArea';
-import Select from '../../../../components/ui/Select';
-import { useUserStore } from '../../../../store/useUserStore';
-import { useAuthStore } from '../../../../store/useAuthStore';
+import Button from '../../../components/ui/Button';
+import Input from '../../../components/ui/Input';
+import TextArea from '../../../components/ui/TextArea';
+import Select from '../../../components/ui/Select';
+import { useUserStore } from '../../../store/useUserStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 export default function CompleteProfileStep() {
   const { user } = useAuthStore();
@@ -53,6 +53,7 @@ export default function CompleteProfileStep() {
     try {
       await updateProfile({
         ...formData,
+        collegeId: user?.collegeId || profile?.collegeId,
         yearOfStudy: parseInt(formData.yearOfStudy, 10)
       });
       toast.success('Profile saved successfully');
@@ -110,13 +111,14 @@ export default function CompleteProfileStep() {
           />
 
           <Input
-            label="Profile Photo URL (Optional)"
+            label="Profile Photo URL"
             name="profilePhotoUrl"
             type="url"
             value={formData.profilePhotoUrl}
             onChange={handleChange}
             placeholder="https://example.com/photo.jpg"
             disabled={loading}
+            required
           />
         </div>
 
@@ -131,6 +133,7 @@ export default function CompleteProfileStep() {
               placeholder="I'm passionate about building tech that helps people..."
               disabled={loading}
               rows={2}
+              required
             />
             <TextArea
               label="What are you currently working on?"
@@ -140,6 +143,7 @@ export default function CompleteProfileStep() {
               placeholder="A side project using React and Spring Boot..."
               disabled={loading}
               rows={2}
+              required
             />
             <TextArea
               label="Fun fact about you"
@@ -149,6 +153,7 @@ export default function CompleteProfileStep() {
               placeholder="I can solve a Rubik's cube in under a minute..."
               disabled={loading}
               rows={2}
+              required
             />
           </div>
         </div>

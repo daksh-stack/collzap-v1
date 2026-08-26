@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -53,4 +54,8 @@ public interface BlockReportRepository extends JpaRepository<BlockReport, UUID> 
         order by b.createdAt desc
         """)
     Page<BlockReport> findByActionType(@Param("actionType") ModerationAction actionType, Pageable pageable);
+
+    @Modifying
+    @Query("delete from BlockReport b where b.reporter.id = :userId or b.reported.id = :userId")
+    void deleteByReporterIdOrReportedId(@Param("userId") UUID userId);
 }

@@ -39,6 +39,7 @@ export default function ProfilePage() {
     try {
       await updateProfile({
         ...formData,
+        collegeId: user?.collegeId || profile?.collegeId,
         yearOfStudy: parseInt(formData.yearOfStudy, 10)
       });
       toast.success('Profile updated successfully');

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Target, Clock, ShieldAlert } from 'lucide-react';
-import Button from '../../../../components/ui/Button';
-import { useTestStore } from '../../../../store/useTestStore';
+import Button from '../../../components/ui/Button';
+import { useTestStore } from '../../../store/useTestStore';
 import { useEffect } from 'react';
 
 export default function TakeSeriousnessTestStep() {

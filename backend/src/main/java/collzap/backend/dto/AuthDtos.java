@@ -24,7 +24,10 @@ public final class AuthDtos {
 
         /** Optional on signup; ignored when the account already exists. */
         @Size(max = 120, message = "Name must be at most 120 characters")
-        String name
+        String name,
+        
+        /** True if the user is explicitly trying to sign up, false if logging in */
+        Boolean isSignup
     ) {
     }
 

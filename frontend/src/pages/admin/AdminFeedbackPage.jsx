@@ -5,7 +5,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import { useAdminStore } from '../../store/useAdminStore';
 
 export default function AdminFeedbackPage() {
-  const { feedback, fetchInterestFeedback, loading } = useAdminStore();
+  const { interestFeedback, fetchInterestFeedback, loading } = useAdminStore();
 
   useEffect(() => {
     fetchInterestFeedback().catch(console.error);
@@ -20,14 +20,14 @@ export default function AdminFeedbackPage() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <ul className="divide-y divide-gray-200">
-          {loading && !feedback ? (
+          {loading && !interestFeedback?.content ? (
              <li className="px-6 py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" /></li>
-          ) : feedback?.length === 0 ? (
+          ) : interestFeedback?.content?.length === 0 ? (
             <li className="px-6 py-10 text-center">
               <EmptyState icon={MessageSquare} title="No feedback yet" description="Users haven't suggested any new interests recently." />
             </li>
           ) : (
-            feedback?.map((item) => (
+            interestFeedback?.content?.map((item) => (
               <li key={item.id} className="p-6 hover:bg-gray-50">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center mb-2">

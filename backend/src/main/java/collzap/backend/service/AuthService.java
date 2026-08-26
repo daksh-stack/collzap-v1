@@ -24,6 +24,7 @@ import collzap.backend.enums.OtpPurpose;
 import collzap.backend.enums.Status;
 import collzap.backend.exception.ForbiddenException;
 import collzap.backend.exception.UnauthorizedException;
+import collzap.backend.exception.BadRequestException;
 import collzap.backend.models.AdminUser;
 import collzap.backend.models.College;
 import collzap.backend.models.RefreshToken;
@@ -83,6 +84,13 @@ public class AuthService {
         College college = collegeService.requireByEmail(email);
         boolean existing = userRepository.existsByEmailIgnoreCase(email);
 
+        if (Boolean.TRUE.equals(request.isSignup()) && existing) {
+            throw new BadRequestException("An account with this email already exists. Please log in.");
+        }
+        if (Boolean.FALSE.equals(request.isSignup()) && !existing) {
+            throw new BadRequestException("No account found with this email. Please sign up.");
+        }
+
         long expiresIn = otpService.issue(email, existing ? OtpPurpose.LOGIN : OtpPurpose.SIGNUP);
 
         return new OtpSentResponse(
@@ -108,7 +116,9 @@ public class AuthService {
         User user;
         if (existing != null) {
             if (existing.getAccountStatus() == Status.DELETED) {
-                throw new ForbiddenException("This account has been deleted");
+                existing.setAccountStatus(Status.ACTIVE);
+                existing.setProfileVisible(true);
+                existing.setNotificationsEnabled(true);
             }
             user = existing;
         } else {

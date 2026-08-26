@@ -418,6 +418,7 @@ public class SeriousnessTestService {
             session.getTotalQuestions(),
             selectedByQuestion.size(),
             session.getStartedAt(),
+            session.getExpiresAt(),
             questions
         );
     }
@@ -445,5 +446,18 @@ public class SeriousnessTestService {
             return 0;
         }
         return (int) Math.round(100.0 * correct / total);
+    }
+
+    @Transactional
+    public void emergencyReset(UUID userId) {
+        sessionRepository.findByUserIdAndStatus(userId, TestAttemptStatus.IN_PROGRESS)
+            .forEach(open -> {
+                open.setStatus(TestAttemptStatus.ABANDONED);
+                sessionRepository.save(open);
+                attemptRepository.findBySessionId(open.getId()).forEach(attempt -> {
+                    attempt.setStatus(TestAttemptStatus.ABANDONED);
+                    attemptRepository.save(attempt);
+                });
+            });
     }
 }

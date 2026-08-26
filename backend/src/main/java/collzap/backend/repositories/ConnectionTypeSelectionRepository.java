@@ -14,4 +14,6 @@ public interface ConnectionTypeSelectionRepository extends JpaRepository<Connect
     Optional<ConnectionTypeSelection> findByUserIdAndProjectType(UUID userId, ProjectType projectType);
 
     List<ConnectionTypeSelection> findByUserId(UUID userId);
+
+    void deleteByUserId(UUID userId);
 }

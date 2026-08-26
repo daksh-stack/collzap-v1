@@ -5,16 +5,17 @@ export default function OnboardingGuard() {
   const { nextStep } = useAuthStore((state) => state);
   const location = useLocation();
 
-  const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+  const isStrictOnboardingRoute = location.pathname.startsWith('/onboarding');
+  const isTestRoute = location.pathname.startsWith('/test');
   const isReady = nextStep === 'READY' || nextStep === null;
 
-  if (!isReady && !isOnboardingRoute) {
+  if (!isReady && !isStrictOnboardingRoute && !isTestRoute) {
     // Needs onboarding but is trying to access app
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (isReady && isOnboardingRoute) {
-    // Done with onboarding but trying to access onboarding
+  if (isReady && isStrictOnboardingRoute) {
+    // Done with onboarding but trying to access strict onboarding
     return <Navigate to="/" replace />;
   }
 

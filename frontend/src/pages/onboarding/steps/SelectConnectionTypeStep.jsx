@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { User, Users, Globe } from 'lucide-react';
-import Button from '../../../../components/ui/Button';
-import { useInterestStore } from '../../../../store/useInterestStore';
+import Button from '../../../components/ui/Button';
+import { useInterestStore } from '../../../store/useInterestStore';
 
 export default function SelectConnectionTypeStep() {
-  const { projectTypes, connectionTypes, fetchConnectionTypes, selectConnectionType, loading } = useInterestStore();
+  const { projectTypes, fetchProjectTypes, connectionTypes, fetchConnectionTypes, selectConnectionType, loading } = useInterestStore();
   
   // projectTypes is a Set in the store, connectionTypes is an array of responses
   const ptArray = Array.from(projectTypes || []);
@@ -16,6 +16,7 @@ export default function SelectConnectionTypeStep() {
 
   useEffect(() => {
     fetchConnectionTypes().catch(console.error);
+    fetchProjectTypes().catch(console.error);
   }, []);
 
   // Sync with store state

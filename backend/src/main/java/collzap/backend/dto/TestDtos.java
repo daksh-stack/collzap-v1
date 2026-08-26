@@ -26,6 +26,7 @@ public final class TestDtos {
         int totalQuestions,
         int answeredCount,
         Instant startedAt,
+        Instant expiresAt,
         List<TestQuestionResponse> questions
     ) {
     }

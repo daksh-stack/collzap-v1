@@ -95,4 +95,10 @@ public class SeriousnessTestController {
     public TestResultResponse latestResult(@AuthenticationPrincipal AuthPrincipal me) {
         return testService.latestResult(me.userId());
     }
+
+    @PostMapping("/reset")
+    public ResponseEntity<String> reset(@AuthenticationPrincipal AuthPrincipal me) {
+        testService.emergencyReset(me.userId());
+        return ResponseEntity.ok("Reset successful");
+    }
 }

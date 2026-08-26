@@ -26,7 +26,7 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await requestOtp(email, isSignup ? name : null);
+      const response = await requestOtp(email, isSignup ? name : null, isSignup);
       
       toast.success(`Code sent to ${email}`);
       navigate('/verify-otp', {

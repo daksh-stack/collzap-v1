@@ -28,4 +28,6 @@ public interface SeriousnessTestSessionRepository extends JpaRepository<Seriousn
           and s.expiresAt < :now
         """)
     List<SeriousnessTestSession> findExpiredInProgress(@Param("now") Instant now);
+
+    void deleteByUserId(UUID userId);
 }

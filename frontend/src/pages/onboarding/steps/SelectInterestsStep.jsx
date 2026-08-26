@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Check } from 'lucide-react';
-import Button from '../../../../components/ui/Button';
-import Tabs from '../../../../components/ui/Tabs';
-import Input from '../../../../components/ui/Input';
-import Modal from '../../../../components/ui/Modal';
-import TextArea from '../../../../components/ui/TextArea';
-import { useInterestStore } from '../../../../store/useInterestStore';
+import Button from '../../../components/ui/Button';
+import Tabs from '../../../components/ui/Tabs';
+import Input from '../../../components/ui/Input';
+import Modal from '../../../components/ui/Modal';
+import TextArea from '../../../components/ui/TextArea';
+import { useInterestStore } from '../../../store/useInterestStore';
 
 export default function SelectInterestsStep() {
-  const { catalog, fetchCatalog, projectTypes, selectInterests, submitFeedback, loading } = useInterestStore();
+  const { catalog, fetchCatalog, projectTypes, fetchProjectTypes, selectInterests, submitFeedback, loading } = useInterestStore();
   
   const [activeTab, setActiveTab] = useState('');
   const [selections, setSelections] = useState({}); // { LONG_TERM: [{interestId, subTag}], SHORT_TERM: [] }
@@ -19,6 +19,7 @@ export default function SelectInterestsStep() {
 
   useEffect(() => {
     fetchCatalog().catch(console.error);
+    fetchProjectTypes().catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -37,7 +38,8 @@ export default function SelectInterestsStep() {
 
   if (!catalog || !activeTab) return null;
 
-  const currentConfig = activeTab === 'LONG_TERM' ? catalog.longTerm : catalog.shortTerm;
+  const currentInterests = activeTab === 'LONG_TERM' ? catalog.longTerm : catalog.shortTerm;
+  const maxSelections = activeTab === 'LONG_TERM' ? catalog.maxLongTermSelections : catalog.maxShortTermSelections;
   const currentSelections = selections[activeTab] || [];
   
   const tabs = Array.from(projectTypes).map(pt => ({
@@ -52,8 +54,8 @@ export default function SelectInterestsStep() {
     if (isSelected) {
       newSelections = newSelections.filter(s => s.interestId !== interest.id);
     } else {
-      if (newSelections.length >= currentConfig.maxSelections) {
-        toast.error(`You can only select up to ${currentConfig.maxSelections} interests here.`);
+      if (newSelections.length >= maxSelections) {
+        toast.error(`You can only select up to ${maxSelections} interests here.`);
         return;
       }
       newSelections.push({ interestId: interest.id, subTag: null });
@@ -119,12 +121,12 @@ export default function SelectInterestsStep() {
 
       <div className="mb-4 flex justify-between items-center">
         <span className="text-sm font-medium text-gray-700">
-          Selected: {currentSelections.length} / {currentConfig?.maxSelections}
+          Selected: {currentSelections.length} / {maxSelections}
         </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-        {currentConfig?.interests.map(interest => {
+        {currentInterests?.map(interest => {
           const selection = currentSelections.find(s => s.interestId === interest.id);
           const isSelected = !!selection;
 

@@ -34,4 +34,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
     List<ChatMessage> findLatestPerRoom(@Param("roomIds") List<UUID> roomIds);
 
     long countByChatRoomId(UUID chatRoomId);
+
+    List<ChatMessage> findBySenderId(UUID senderId);
+
+    void deleteBySenderId(UUID senderId);
 }

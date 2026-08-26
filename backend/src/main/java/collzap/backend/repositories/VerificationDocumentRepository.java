@@ -35,4 +35,6 @@ public interface VerificationDocumentRepository extends JpaRepository<Verificati
     Optional<VerificationDocument> findWithUserById(@Param("id") UUID id);
 
     long countByStatus(DocumentStatus status);
+
+    void deleteByUserId(UUID userId);
 }

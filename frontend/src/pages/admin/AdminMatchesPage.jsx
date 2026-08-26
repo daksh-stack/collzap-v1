@@ -30,7 +30,7 @@ export default function AdminMatchesPage() {
     fetchCatalog().catch(console.error);
   }, []);
 
-  const filteredMatches = matches?.filter(match => {
+  const filteredMatches = matches?.content?.filter(match => {
     if (activeTab === 'ALL') return true;
     return match.status === activeTab;
   }) || [];

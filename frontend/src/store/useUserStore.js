@@ -33,6 +33,12 @@ export const useUserStore = create((set) => ({
     try {
       const onboarding = await api.get('/me/onboarding');
       set({ onboarding, loading: false });
+      
+      // Keep auth store's nextStep in sync so guards work correctly
+      if (useAuthStore.getState().isAuthenticated) {
+          useAuthStore.setState({ nextStep: onboarding.step });
+      }
+      
       return onboarding;
     } catch (error) {
       set({ error: error.message, loading: false });

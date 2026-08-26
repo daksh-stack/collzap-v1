@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -27,4 +28,8 @@ public interface SeriousnessTestAnswerRepository extends JpaRepository<Seriousne
 
     @Query("select count(a) from SeriousnessTestAnswer a where a.attempt.session.id = :sessionId")
     long countBySessionId(@Param("sessionId") UUID sessionId);
+
+    @Modifying
+    @Query("delete from SeriousnessTestAnswer a where a.attempt.user.id = :userId")
+    void deleteByUserId(@Param("userId") UUID userId);
 }

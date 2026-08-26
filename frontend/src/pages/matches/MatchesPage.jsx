@@ -20,7 +20,8 @@ export default function MatchesPage() {
 
   const handleFindMatches = async () => {
     try {
-      const results = await findMatches();
+      const response = await findMatches();
+      const results = response.results || [];
       setMatchResults(results);
       if (results.length > 0) {
         toast.success(`Processed ${results.length} interests.`);

@@ -1,5 +1,5 @@
 import { Clock } from 'lucide-react';
-import { useUserStore } from '../../../../store/useUserStore';
+import { useUserStore } from '../../../store/useUserStore';
 
 export default function AwaitingVerificationStep() {
   const { onboarding } = useUserStore();

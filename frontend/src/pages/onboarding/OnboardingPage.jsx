@@ -46,7 +46,8 @@ export default function OnboardingPage() {
     case 'SELECT_CONNECTION_TYPE':
       return <SelectConnectionTypeStep />;
     case 'READY':
-      // The OnboardingGuard will catch this and redirect to '/'
+      // Force programmatic redirection if guard misses it
+      setTimeout(() => window.location.href = '/', 100);
       return <div className="text-center py-20">Onboarding complete! Redirecting...</div>;
     default:
       return <div className="text-center py-20">Unknown step: {onboarding.step}</div>;

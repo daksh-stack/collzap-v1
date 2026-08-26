@@ -29,4 +29,6 @@ public interface OtpCodeRepository extends JpaRepository<OtpCode, UUID> {
     @Modifying
     @Query("delete from OtpCode o where o.expiresAt < :cutoff")
     int deleteExpired(@Param("cutoff") Instant cutoff);
+
+    void deleteByEmailIgnoreCase(String email);
 }

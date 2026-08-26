@@ -45,7 +45,8 @@ public interface MatchMemberRepository extends JpaRepository<MatchMember, UUID> 
 
     long countByMatchGroupIdAndActiveTrue(UUID matchGroupId);
 
-    /** Active user ids in a group, used for block screening and receipt fan-out. */
     @Query("select m.user.id from MatchMember m where m.matchGroup.id = :groupId and m.active = true")
     List<UUID> findActiveUserIdsByGroupId(@Param("groupId") UUID groupId);
+
+    void deleteByUserId(UUID userId);
 }

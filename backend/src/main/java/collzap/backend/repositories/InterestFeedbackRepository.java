@@ -11,4 +11,6 @@ import collzap.backend.models.InterestFeedback;
 public interface InterestFeedbackRepository extends JpaRepository<InterestFeedback, UUID> {
 
     Page<InterestFeedback> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    void deleteByUserId(UUID userId);
 }

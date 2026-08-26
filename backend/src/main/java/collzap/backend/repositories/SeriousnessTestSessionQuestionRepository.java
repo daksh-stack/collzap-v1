@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -33,4 +34,8 @@ public interface SeriousnessTestSessionQuestionRepository
         @Param("sessionId") UUID sessionId,
         @Param("questionId") UUID questionId
     );
+
+    @Modifying
+    @Query("delete from SeriousnessTestSessionQuestion sq where sq.session.user.id = :userId")
+    void deleteByUserId(@Param("userId") UUID userId);
 }

@@ -14,10 +14,12 @@ export const useAuthStore = create(
       loading: false,
       error: null,
 
-      requestOtp: async (email, name = null) => {
+      requestOtp: async (email, name = null, isSignup = null) => {
         set({ loading: true, error: null });
         try {
-          const payload = name ? { email, name } : { email };
+          const payload = { email };
+          if (name) payload.name = name;
+          if (isSignup !== null) payload.isSignup = isSignup;
           // For OTP request, we don't need auth, so we can use standard api call
           const response = await api.post('/auth/otp', payload);
           set({ loading: false });

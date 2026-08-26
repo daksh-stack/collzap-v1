@@ -20,7 +20,7 @@ export default function AdminUsersPage() {
     fetchUsers().catch(console.error);
   }, []);
 
-  const filteredUsers = users?.filter(user => {
+  const filteredUsers = users?.content?.filter(user => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     

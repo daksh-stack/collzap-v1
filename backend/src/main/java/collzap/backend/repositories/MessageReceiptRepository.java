@@ -73,4 +73,6 @@ public interface MessageReceiptRepository extends JpaRepository<MessageReceipt, 
 
     @Query("select r.message.id, r.status from MessageReceipt r where r.message.id in :messageIds")
     List<Object[]> findStatusesForMessages(@Param("messageIds") List<UUID> messageIds);
+
+    void deleteByUserId(UUID userId);
 }

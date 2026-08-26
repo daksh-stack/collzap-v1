@@ -40,4 +40,6 @@ public interface SeriousnessTestAttemptRepository extends JpaRepository<Seriousn
         UUID interestId,
         TestAttemptStatus status
     );
+
+    void deleteByUserId(UUID userId);
 }

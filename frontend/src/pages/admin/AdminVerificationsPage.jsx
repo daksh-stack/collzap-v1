@@ -9,7 +9,7 @@ import TextArea from '../../components/ui/TextArea';
 import Modal from '../../components/ui/Modal';
 
 export default function AdminVerificationsPage() {
-  const { pendingVerifications, fetchPendingVerifications, reviewDocument, loading } = useAdminStore();
+  const { verifications, fetchPendingVerifications, reviewDocument, loading } = useAdminStore();
   
   const [reviewModal, setReviewModal] = useState({ open: false, doc: null, approve: true });
   const [note, setNote] = useState('');
@@ -30,7 +30,7 @@ export default function AdminVerificationsPage() {
     }
 
     try {
-      await reviewDocument(reviewModal.doc.id, reviewModal.approve, note);
+      await reviewDocument(reviewModal.doc.documentId, reviewModal.approve, note);
       toast.success(`Document ${reviewModal.approve ? 'approved' : 'rejected'}`);
       setReviewModal({ open: false, doc: null, approve: true });
     } catch (error) {
@@ -45,9 +45,9 @@ export default function AdminVerificationsPage() {
         <p className="mt-1 text-sm text-gray-500">Review student ID cards and fee slips.</p>
       </div>
 
-      {loading && !pendingVerifications ? (
+      {loading && !verifications?.content ? (
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
-      ) : pendingVerifications?.length === 0 ? (
+      ) : verifications?.content?.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
           <EmptyState
             icon={CheckCircle}
@@ -57,8 +57,8 @@ export default function AdminVerificationsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {pendingVerifications?.map((doc) => (
-            <div key={doc.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+          {verifications?.content?.map((doc) => (
+            <div key={doc.documentId} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
               <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
                 <div className="flex items-center">
                   <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm mr-2">

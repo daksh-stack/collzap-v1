@@ -45,16 +45,16 @@ export default function AdminReportsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {loading && !reports ? (
-                <tr><td colSpan="4" className="px-6 py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" /></td></tr>
-              ) : reports?.length === 0 ? (
+              {loading && !reports?.content ? (
+                <tr><td colSpan="6" className="px-6 py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" /></td></tr>
+              ) : reports?.content?.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="px-6 py-10 text-center">
                     <EmptyState icon={Flag} title="No reports" description="Hooray! The community is behaving well." />
                   </td>
                 </tr>
               ) : (
-                reports?.map((report) => (
+                reports?.content?.map((report) => (
                   <tr 
                     key={report.id} 
                     className="hover:bg-gray-50 cursor-pointer"
