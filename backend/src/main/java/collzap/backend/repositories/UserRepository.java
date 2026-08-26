@@ -1,0 +1,48 @@
+package collzap.backend.repositories;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import collzap.backend.enums.Status;
+import collzap.backend.enums.VerificationStatus;
+import collzap.backend.models.User;
+
+public interface UserRepository extends JpaRepository<User, UUID> {
+
+    Optional<User> findByEmailIgnoreCase(String email);
+
+    boolean existsByEmailIgnoreCase(String email);
+
+    Page<User> findByVerificationStatus(VerificationStatus status, Pageable pageable);
+
+    Page<User> findByAccountStatus(Status accountStatus, Pageable pageable);
+
+    @Query("""
+        select u from User u
+        join fetch u.college
+        where u.accountStatus = :accountStatus
+          and (:search is null
+               or lower(u.name) like lower(concat('%', :search, '%'))
+               or lower(u.email) like lower(concat('%', :search, '%')))
+        """)
+    Page<User> searchActive(
+        @Param("accountStatus") Status accountStatus,
+        @Param("search") String search,
+        Pageable pageable
+    );
+
+    @Query("select u from User u join fetch u.college where u.id in :ids")
+    List<User> findAllWithCollegeByIdIn(@Param("ids") List<UUID> ids);
+
+    @Query("select u from User u join fetch u.college where u.id = :id")
+    Optional<User> findWithCollegeById(@Param("id") UUID id);
+
+    long countByVerificationStatus(VerificationStatus status);
+}

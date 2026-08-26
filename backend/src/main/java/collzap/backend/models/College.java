@@ -1,33 +1,39 @@
 package collzap.backend.models;
 
-import java.time.LocalDateTime;
-
-import org.hibernate.annotations.CreationTimestamp;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import jakarta.persistence.Table;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+/**
+ * A college, keyed for matching purposes by its email domain. A signup email's
+ * domain decides which college the user is placed in.
+ */
 @Entity
+@Table(name = "colleges")
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Data
-public class College {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String college_id;
+public class College extends BaseEntity {
 
-    @Column(unique = true,nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
-    @Column(unique = true,nullable = false)
-    private String email_domain;
-    private String city;
-    @CreationTimestamp
-    private LocalDateTime  created_at;
 
+    /** Bare domain, lowercased, e.g. {@code iitb.ac.in}. */
+    @Column(name = "email_domain", nullable = false, unique = true)
+    private String emailDomain;
+
+    @Column(name = "city")
+    private String city;
+
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
+    public College(String name, String emailDomain, String city) {
+        this.name = name;
+        this.emailDomain = emailDomain;
+        this.city = city;
+    }
 }
