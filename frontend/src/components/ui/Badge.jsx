@@ -2,18 +2,22 @@ import { cn } from '../../lib/utils';
 
 export default function Badge({ variant = 'default', className, children, ...props }) {
   const variants = {
-    default: 'bg-gray-100 text-gray-800',
-    primary: 'bg-brand-100 text-brand-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    danger: 'bg-red-100 text-red-800',
-    info: 'bg-blue-100 text-blue-800',
+    default: 'bg-ink/[0.05] text-mute border-line',
+    primary: 'bg-accent-50 text-accent-700 border-accent-200',
+    success: 'bg-good/10 text-good border-good/25',
+    warning: 'bg-wait/10 text-wait border-wait/30',
+    danger: 'bg-bad/10 text-bad border-bad/25',
+    info: 'bg-ink/[0.05] text-ink/70 border-line',
   };
+  // Prompt 1 aliases.
+  variants.secondary = variants.default;
+  variants.destructive = variants.danger;
 
   return (
     <span
       className={cn(
-        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+        'inline-flex items-center border rounded-sm px-2 py-0.5',
+        'text-[11px] font-medium uppercase tracking-wide leading-4',
         variants[variant],
         className
       )}

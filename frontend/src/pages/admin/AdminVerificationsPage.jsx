@@ -1,138 +1,137 @@
 import { useState, useEffect } from 'react';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
-import { useAdminStore } from '../../store/useAdminStore';
+import Spinner from '../../components/ui/Spinner';
 import TextArea from '../../components/ui/TextArea';
 import Modal from '../../components/ui/Modal';
+import Pagination from '../../components/ui/Pagination';
+import { useAdminStore } from '../../store/useAdminStore';
+import AdminPageHeader from './AdminPageHeader';
 
 export default function AdminVerificationsPage() {
   const { verifications, fetchPendingVerifications, reviewDocument, loading } = useAdminStore();
-  
+  const [page, setPage] = useState(0);
   const [reviewModal, setReviewModal] = useState({ open: false, doc: null, approve: true });
   const [note, setNote] = useState('');
 
   useEffect(() => {
-    fetchPendingVerifications().catch(console.error);
-  }, []);
+    fetchPendingVerifications(page).catch(console.error);
+  }, [page]);
 
-  const handleOpenReview = (doc, approve) => {
+  const openReview = (doc, approve) => {
     setReviewModal({ open: true, doc, approve });
     setNote('');
   };
 
+  const closeReview = () => setReviewModal({ open: false, doc: null, approve: true });
+
   const handleSubmitReview = async () => {
     if (!reviewModal.approve && !note.trim()) {
-      toast.error('Rejection reason is required');
+      toast.error('A rejection needs a reason');
       return;
     }
-
     try {
-      await reviewDocument(reviewModal.doc.documentId, reviewModal.approve, note);
-      toast.success(`Document ${reviewModal.approve ? 'approved' : 'rejected'}`);
-      setReviewModal({ open: false, doc: null, approve: true });
+      await reviewDocument(reviewModal.doc.documentId, reviewModal.approve, note || null);
+      toast.success(reviewModal.approve ? 'Approved' : 'Rejected');
+      closeReview();
+      fetchPendingVerifications(page);
     } catch (error) {
-      toast.error(error.message || 'Failed to submit review');
+      toast.error(error.message || 'Could not submit that');
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Pending Verifications</h1>
-        <p className="mt-1 text-sm text-gray-500">Review student ID cards and fee slips.</p>
-      </div>
+  const rows = verifications?.content || [];
 
-      {loading && !verifications?.content ? (
-        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
-      ) : verifications?.content?.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
-          <EmptyState
-            icon={CheckCircle}
-            title="All caught up!"
-            description="There are no pending documents to review right now."
-          />
-        </div>
+  return (
+    <div>
+      <AdminPageHeader title="Verifications" count={verifications?.totalElements} />
+
+      {loading && rows.length === 0 ? (
+        <div className="flex justify-center py-20 text-accent-500"><Spinner size="lg" /></div>
+      ) : rows.length === 0 ? (
+        <EmptyState title="Nothing waiting" description="Every submitted document has been reviewed." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {verifications?.content?.map((doc) => (
-            <div key={doc.documentId} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm mr-2">
-                    {doc.userName?.charAt(0) || 'U'}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{doc.userName}</p>
-                    <p className="text-xs text-gray-500">{new Date(doc.submittedAt).toLocaleDateString()}</p>
-                  </div>
+        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-[#FBF8F2]">
+          {rows.map((doc) => (
+            <li key={doc.documentId} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-3">
+                  <p className="truncate text-sm font-medium text-ink">{doc.userName}</p>
+                  <Badge variant="secondary">{doc.documentType}</Badge>
                 </div>
-                <Badge>{doc.documentType}</Badge>
+                <p className="mt-1 truncate text-xs text-mute">
+                  {doc.email}{doc.collegeName ? ` · ${doc.collegeName}` : ''}
+                </p>
+                <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-mute tnum">
+                  {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString() : '—'}
+                </p>
               </div>
-              
-              <div className="p-4 flex-1 flex flex-col">
-                <div className="w-full h-48 bg-gray-100 rounded-lg mb-4 overflow-hidden relative group border border-gray-200">
-                  <img 
-                    src={doc.documentUrl} 
-                    alt="Document preview" 
-                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                    onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=Image+Load+Error'; }}
-                  />
-                  {/* Click to view full size overlay could go here */}
-                </div>
-                
-                <div className="mt-auto grid grid-cols-2 gap-3">
-                  <Button 
-                    variant="outline" 
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                    onClick={() => handleOpenReview(doc, false)}
+
+              <div className="flex shrink-0 items-center gap-2">
+                {doc.documentUrl && (
+                  <a
+                    href={doc.documentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs text-accent-700 underline decoration-accent-300 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                   >
-                    <XCircle className="w-4 h-4 mr-2" /> Reject
-                  </Button>
-                  <Button 
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => handleOpenReview(doc, true)}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" /> Approve
-                  </Button>
-                </div>
+                    Open document
+                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                  </a>
+                )}
+                <Button variant="ghost" size="sm" className="text-bad hover:bg-bad/[0.07]" onClick={() => openReview(doc, false)}>
+                  Reject
+                </Button>
+                <Button size="sm" onClick={() => openReview(doc, true)}>Approve</Button>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
-      {/* Review Modal */}
-      <Modal open={reviewModal.open} onClose={() => setReviewModal({ open: false, doc: null, approve: true })} title={reviewModal.approve ? "Approve Document" : "Reject Document"}>
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            {reviewModal.approve 
-              ? `You are about to approve the verification for ${reviewModal.doc?.userName}. They will be granted full access.` 
-              : `You are about to reject the verification for ${reviewModal.doc?.userName}. They will be asked to re-upload.`}
-          </p>
-          
+      {verifications?.totalPages > 1 && (
+        <Pagination
+          page={verifications.page ?? page}
+          totalPages={verifications.totalPages}
+          onPageChange={setPage}
+          className="mt-2 rounded-b-lg border-x border-b border-line bg-[#FBF8F2]"
+        />
+      )}
+
+      <Modal
+        open={reviewModal.open}
+        onClose={closeReview}
+        title={reviewModal.approve ? 'Approve document' : 'Reject document'}
+      >
+        <p className="text-sm leading-relaxed text-mute">
+          {reviewModal.approve
+            ? `${reviewModal.doc?.userName} gets full access, matching included.`
+            : `${reviewModal.doc?.userName} is asked to send another one. They see this note.`}
+        </p>
+
+        <div className="mt-5">
           <TextArea
-            label={reviewModal.approve ? "Approval Note (Optional)" : "Rejection Reason (Required)"}
+            label={reviewModal.approve ? 'Note (optional)' : 'Reason (required)'}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder={reviewModal.approve ? "Looks good." : "Document is blurry..."}
-            required={!reviewModal.approve}
+            placeholder={reviewModal.approve ? 'Looks fine.' : 'The photo is too blurry to read the name.'}
             rows={3}
           />
-          
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="ghost" onClick={() => setReviewModal({ open: false, doc: null, approve: true })}>Cancel</Button>
-            <Button 
-              onClick={handleSubmitReview} 
-              loading={loading}
-              className={reviewModal.approve ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
-              disabled={!reviewModal.approve && !note.trim()}
-            >
-              Confirm {reviewModal.approve ? "Approval" : "Rejection"}
-            </Button>
-          </div>
+        </div>
+
+        <div className="mt-8 flex justify-end gap-3">
+          <Button variant="ghost" onClick={closeReview}>Cancel</Button>
+          <Button
+            onClick={handleSubmitReview}
+            loading={loading}
+            variant={reviewModal.approve ? 'primary' : 'danger'}
+            disabled={!reviewModal.approve && !note.trim()}
+          >
+            {reviewModal.approve ? 'Approve' : 'Reject'}
+          </Button>
         </div>
       </Modal>
     </div>

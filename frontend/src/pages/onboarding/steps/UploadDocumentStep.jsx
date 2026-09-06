@@ -1,85 +1,98 @@
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
-import { FileUp } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import StepHeader from './StepHeader';
 import { useModerationStore } from '../../../store/useModerationStore';
+import { cn } from '../../../lib/utils';
+import { snappy, useReducedMotion, transition } from '../../../lib/motion';
+
+const TYPES = [
+  { id: 'FEE_SLIP', label: 'Fee slip', hint: 'This term or last' },
+  { id: 'ID_CARD', label: 'ID card', hint: 'Name and year visible' },
+];
 
 export default function UploadDocumentStep() {
   const [documentType, setDocumentType] = useState('FEE_SLIP');
   const [documentUrl, setDocumentUrl] = useState('');
-  
+  const [error, setError] = useState('');
+  const reduced = useReducedMotion();
+
   const { uploadDocument, loading } = useModerationStore();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!documentUrl) {
-      toast.error('Please provide a document URL');
+    if (!documentUrl.trim()) {
+      setError('Paste a link first');
       return;
     }
+    setError('');
 
     try {
-      await uploadDocument(documentType, documentUrl);
-      toast.success('Document submitted successfully');
-      // Onboarding state will be automatically refetched and step will advance
-    } catch (error) {
-      toast.error(error.message || 'Failed to submit document');
+      await uploadDocument(documentType, documentUrl.trim());
+      toast.success('Sent for review');
+    } catch (err) {
+      toast.error(err.message || 'Could not submit that');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="text-center mb-8">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 mb-4">
-          <FileUp className="h-6 w-6 text-brand-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900">Verify your student status</h2>
-        <p className="mt-2 text-sm text-gray-500">
-          Upload your fee slip or student ID card for verification. 
-          Verification usually takes 24-48 hours.
-        </p>
-      </div>
+    <div>
+      <StepHeader eyebrow="Step one" title="Prove you actually go there.">
+        Paste the Drive or campus-portal link to your fee slip or ID card. Make sure
+        the link opens for anyone — a locked file gets rejected.
+      </StepHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Document Type</label>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => setDocumentType('FEE_SLIP')}
-              className={`flex items-center justify-center px-4 py-3 border rounded-md text-sm font-medium ${
-                documentType === 'FEE_SLIP'
-                  ? 'border-brand-500 ring-2 ring-brand-500 bg-brand-50 text-brand-700'
-                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Fee Slip
-            </button>
-            <button
-              type="button"
-              onClick={() => setDocumentType('ID_CARD')}
-              className={`flex items-center justify-center px-4 py-3 border rounded-md text-sm font-medium ${
-                documentType === 'ID_CARD'
-                  ? 'border-brand-500 ring-2 ring-brand-500 bg-brand-50 text-brand-700'
-                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              ID Card
-            </button>
+      <form onSubmit={handleSubmit} className="max-w-lg space-y-8">
+        <fieldset>
+          <legend className="mb-3 font-mono text-[10px] uppercase tracking-widest text-mute">
+            What are you sending
+          </legend>
+          <div className="grid grid-cols-2 gap-3">
+            {TYPES.map((t) => {
+              const selected = documentType === t.id;
+              return (
+                <motion.button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setDocumentType(t.id)}
+                  whileTap={reduced ? undefined : { scale: 0.985 }}
+                  transition={transition(snappy, reduced)}
+                  aria-pressed={selected}
+                  className={cn(
+                    'rounded-lg border p-4 text-left transition-colors duration-150',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
+                    selected
+                      ? 'border-accent-500 bg-accent-50'
+                      : 'border-line bg-[#FBF8F2] hover:border-ink/25'
+                  )}
+                >
+                  <span className={cn(
+                    'block font-display text-lg font-semibold tracking-tight',
+                    selected ? 'text-accent-800' : 'text-ink'
+                  )}>
+                    {t.label}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-mute">{t.hint}</span>
+                </motion.button>
+              );
+            })}
           </div>
-        </div>
+        </fieldset>
 
         <Input
-          label="Document URL"
-          placeholder="https://example.com/my-id.jpg"
-          value={documentUrl}
-          onChange={(e) => setDocumentUrl(e.target.value)}
-          disabled={loading}
+          label="Link to the document"
           type="url"
+          placeholder="https://drive.google.com/…"
+          value={documentUrl}
+          onChange={(e) => { setDocumentUrl(e.target.value); if (error) setError(''); }}
+          disabled={loading}
+          error={error}
         />
 
-        <Button type="submit" className="w-full" loading={loading}>
-          Submit for Review
+        <Button type="submit" size="lg" loading={loading}>
+          Send for review
         </Button>
       </form>
     </div>

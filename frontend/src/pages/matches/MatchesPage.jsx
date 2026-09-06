@@ -1,30 +1,82 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Users, Clock, ArrowRight, MessageSquare } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Tabs from '../../components/ui/Tabs';
-import EmptyState from '../../components/ui/EmptyState';
+import EmptyChair from '../../components/EmptyChair';
 import { useMatchStore } from '../../store/useMatchStore';
 import { useUserStore } from '../../store/useUserStore';
-import toast from 'react-hot-toast';
+import { snappy, page, useReducedMotion, transition } from '../../lib/motion';
+
+const formatWaiting = (seconds) => {
+  if (seconds == null) return null;
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  return `${Math.floor(seconds / 86400)}d`;
+};
+
+const OUTCOME_COPY = {
+  MATCHED: { variant: 'success', label: 'Matched' },
+  QUEUED: { variant: 'warning', label: 'In queue' },
+  ALREADY_MATCHED: { variant: 'secondary', label: 'Already in' },
+};
+
+function GroupCard({ group, onClick }) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.button
+      onClick={onClick}
+      whileTap={reduced ? undefined : { scale: 0.995 }}
+      transition={transition(snappy, reduced)}
+      className="group w-full rounded-lg border border-line bg-[#FBF8F2] p-5 text-left transition-colors hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-mute">
+          {group.connectionType}
+        </span>
+        <Badge variant="secondary">{group.levelBand}</Badge>
+      </div>
+
+      <h3 className="mt-4 truncate font-display text-xl font-semibold tracking-tight text-ink" title={group.interestName}>
+        {group.interestName}
+      </h3>
+
+      <div className="mt-4 flex items-baseline justify-between border-t border-line pt-3">
+        <span className="text-xs text-mute tnum">
+          {group.memberCount} of {group.maxMembers} seats
+        </span>
+        <span className="text-xs text-accent-700 opacity-0 transition-opacity group-hover:opacity-100">
+          Open →
+        </span>
+      </div>
+    </motion.button>
+  );
+}
 
 export default function MatchesPage() {
   const navigate = useNavigate();
   const { circle, fetchCircle, findMatches, loading } = useMatchStore();
-  const { profile } = useUserStore();
-  const [activeTab, setActiveTab] = useState('ACTIVE');
+  const { profile, fetchMe } = useUserStore();
+  const [activeTab, setActiveTab] = useState('CONNECTIONS');
   const [matchResults, setMatchResults] = useState(null);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     fetchCircle().catch(console.error);
+    if (!profile) fetchMe().catch(console.error);
   }, []);
 
   const isVerified = profile?.verificationStatus === 'APPROVED';
+  const connections = circle?.connections || [];
+  const waiting = circle?.waiting || [];
 
   const handleFindMatches = async () => {
     if (!isVerified) {
-      toast.error("Your student verification is still in review. Matching will unlock once approved!");
+      toast.error('Matching unlocks once someone checks your ID.');
       return;
     }
     try {
@@ -32,181 +84,153 @@ export default function MatchesPage() {
       const results = response.results || [];
       setMatchResults(results);
       if (results.length > 0) {
-        toast.success(`Processed ${results.length} interests.`);
-        fetchCircle(); // Refresh circle data
+        fetchCircle().catch(console.error);
       } else {
-        toast.error("No active interests to match. Please select interests in your profile.");
+        toast.error('No active interests to match on.');
       }
     } catch (error) {
-      toast.error(error.message || "Failed to find matches");
+      toast.error(error.message || 'The matcher did not run');
     }
   };
 
   const tabs = [
-    { key: 'ACTIVE', label: `Active (${circle?.activeGroups?.length || 0})` },
-    { key: 'WAITING', label: `Waiting (${circle?.waitingGroups?.length || 0})` },
+    { key: 'CONNECTIONS', label: `Connections (${connections.length})` },
+    { key: 'WAITING', label: `Waiting (${waiting.length})` },
   ];
 
+  const shown = activeTab === 'CONNECTIONS' ? connections : waiting;
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Matches & Circle</h1>
-        <p className="mt-1 text-sm text-gray-500">Find new peers and manage your active connections.</p>
-      </div>
+    <div className="space-y-12">
+      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
+            Matches
+          </h1>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-mute">
+            The matcher looks at your interests, your level band and your campus.
+            Run it whenever — it will not double-match you.
+          </p>
+        </div>
+        <Button
+          onClick={handleFindMatches}
+          loading={loading}
+          icon={<Search className="h-4 w-4" />}
+          size="lg"
+          className="shrink-0"
+        >
+          Find peers
+        </Button>
+      </header>
 
-      {/* Match Engine Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-brand-200 p-6 overflow-hidden relative">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-brand-50 rounded-full blur-xl"></div>
-        
-        <div className="relative z-10">
-          {!isVerified && profile && (
-            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                <span>Student verification is pending review. You will be able to run matchmaking as soon as an admin approves your document.</span>
-              </div>
-              <button 
-                onClick={() => navigate('/onboarding')} 
-                className="font-semibold text-amber-700 hover:text-amber-900 underline ml-2 flex-shrink-0"
-              >
-                View Status
-              </button>
-            </div>
-          )}
+      {!isVerified && profile && (
+        <p className="border-l-2 border-wait pl-4 text-sm text-mute">
+          Your ID is still with a reviewer. Matching stays locked until then.{' '}
+          <button
+            onClick={() => navigate('/onboarding')}
+            className="text-accent-700 underline decoration-accent-300 underline-offset-4 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+          >
+            Status
+          </button>
+        </p>
+      )}
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 mb-1">Looking for a match?</h2>
-              <p className="text-sm text-gray-500">Run the matchmaking engine to find peers in your selected interests.</p>
-            </div>
-            <div className="mt-4 sm:mt-0">
-              <Button 
-                onClick={handleFindMatches} 
-                loading={loading} 
-                icon={<Search className="w-4 h-4" />}
-                variant={!isVerified ? 'secondary' : 'primary'}
-              >
-                Find Matches Now
-              </Button>
-            </div>
-          </div>
-
-          {matchResults && (
-            <div className="mt-6 border-t border-gray-100 pt-6">
-              <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Match Results</h3>
-              <div className="space-y-3">
-                {matchResults.map((result, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-bold text-gray-900">{result.interestName}</span>
-                        <Badge variant={
-                          result.outcome === 'MATCHED' ? 'success' : 
-                          result.outcome === 'QUEUED' ? 'warning' : 'secondary'
-                        }>
-                          {result.outcome}
-                        </Badge>
+      {/* Run output */}
+      <AnimatePresence>
+        {matchResults && matchResults.length > 0 && (
+          <motion.section
+            initial={reduced ? { opacity: 0 } : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={transition(page, reduced)}
+          >
+            <h2 className="mb-4 font-mono text-[10px] uppercase tracking-widest text-mute">
+              Last run
+            </h2>
+            <ul className="divide-y divide-line border-y border-line">
+              {matchResults.map((result, idx) => {
+                const meta = OUTCOME_COPY[result.outcome] || OUTCOME_COPY.QUEUED;
+                return (
+                  <li key={`${result.interestId}-${idx}`} className="flex items-center justify-between gap-4 py-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-3">
+                        <span className="truncate text-sm font-medium text-ink">
+                          {result.interestName}
+                        </span>
+                        <Badge variant={meta.variant}>{meta.label}</Badge>
                       </div>
-                      <p className="text-sm text-gray-600">{result.message}</p>
+                      {result.message && (
+                        <p className="mt-1 truncate text-xs text-mute">{result.message}</p>
+                      )}
                     </div>
-                    {result.outcome === 'MATCHED' && result.chatRoomId && (
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/chat/${result.chatRoomId}`)}>
-                        Chat
+                    {result.outcome === 'MATCHED' && result.group?.chatRoomId && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => navigate(`/chat/${result.group.chatRoomId}`)}
+                      >
+                        Open chat
                       </Button>
                     )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Circle Section */}
-      <div>
-        <Tabs tabs={tabs} active={activeTab} onChange={setActiveTab} className="mb-6" />
-
-        {activeTab === 'ACTIVE' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {circle?.activeGroups?.length === 0 ? (
-              <div className="col-span-full">
-                <EmptyState
-                  icon={Users}
-                  title="No active groups"
-                  description="You haven't matched with anyone yet. Click 'Find Matches' above to start!"
-                />
-              </div>
-            ) : (
-              circle?.activeGroups?.map(group => (
-                <div 
-                  key={group.id} 
-                  onClick={() => navigate(`/matches/${group.id}`)}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:border-brand-300 hover:shadow-md transition-all group-card"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <Badge variant="secondary" className="bg-brand-50 text-brand-700 border-brand-200">
-                      {group.projectType}
-                    </Badge>
-                    <Badge>{group.connectionType}</Badge>
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 truncate" title={group.interestName}>
-                    {group.interestName}
-                  </h3>
-                  
-                  <div className="flex items-center text-sm text-gray-500 mb-4">
-                    <Users className="w-4 h-4 mr-1.5" />
-                    {group.memberCount} / {group.maxMembers} members
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-brand-600 font-medium text-sm group-hover:text-brand-700">
-                    <span>View Group</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </motion.section>
         )}
+      </AnimatePresence>
 
-        {activeTab === 'WAITING' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {circle?.waitingGroups?.length === 0 ? (
-              <div className="col-span-full">
-                <EmptyState
-                  icon={Clock}
-                  title="No pending queues"
-                  description="You are not waiting for any matches right now."
-                />
-              </div>
-            ) : (
-              circle?.waitingGroups?.map(group => (
-                <div key={group.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                  <div className="flex justify-between items-start mb-4">
-                    <Badge variant="warning">In Queue</Badge>
-                  </div>
-                  
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 truncate">
-                    {group.interestName}
-                  </h3>
-                  
-                  <div className="space-y-2 mt-4">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Clock className="w-4 h-4 mr-2" />
-                      Waiting for {group.connectionType}
-                    </div>
-                    {group.position && (
-                      <div className="text-sm font-medium text-gray-700 bg-gray-50 p-2 rounded-md border border-gray-100">
-                        Position in queue: <span className="text-brand-600">{group.position}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+      <section>
+        <Tabs tabs={tabs} active={activeTab} onChange={setActiveTab} className="mb-8" />
+
+        {shown.length === 0 ? (
+          <div className="flex flex-col items-center py-12 text-center">
+            <EmptyChair className="h-32 w-32 text-mute" />
+            <p className="mt-6 font-display text-xl font-semibold tracking-tight text-ink">
+              {activeTab === 'CONNECTIONS' ? 'Nobody across from you yet.' : 'Not waiting on anything.'}
+            </p>
+            <p className="mt-2 max-w-xs text-sm text-mute">
+              {activeTab === 'CONNECTIONS'
+                ? 'Run the matcher and the seat gets filled when someone fits.'
+                : 'When a match needs one more person, it parks here.'}
+            </p>
           </div>
+        ) : activeTab === 'CONNECTIONS' ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {connections.map((group) => (
+              <GroupCard
+                key={group.id}
+                group={group}
+                onClick={() => navigate(`/matches/${group.id}`)}
+              />
+            ))}
+          </div>
+        ) : (
+          <ul className="divide-y divide-line border-y border-line">
+            {waiting.map((group) => (
+              <li key={group.id} className="flex items-center justify-between gap-4 py-4">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-ink">{group.interestName}</p>
+                  <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-mute">
+                    {group.connectionType} · {group.levelBand}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-4">
+                  <span className="text-xs text-mute tnum">
+                    {group.memberCount}/{group.maxMembers}
+                  </span>
+                  {formatWaiting(group.waitingSeconds) && (
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-wait tnum">
+                      {formatWaiting(group.waitingSeconds)}
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }

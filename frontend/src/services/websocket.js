@@ -2,12 +2,19 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
+import { useNotificationStore } from '../store/useNotificationStore';
+
+export const WS_BASE = import.meta.env.VITE_WS_URL || 'http://localhost:8081/ws';
+
+const DEV = import.meta.env.DEV;
 
 class WebSocketService {
   constructor() {
     this.client = null;
     this.subscriptions = new Map();
     this.pendingRooms = new Set();
+    this.notificationsSub = null;
+    this.wantNotifications = false;
   }
 
   connect() {
@@ -17,12 +24,12 @@ class WebSocketService {
 
     const token = useAuthStore.getState().accessToken;
     if (!token) {
-      console.warn('Cannot connect to WebSocket without token');
+      if (DEV) console.warn('Cannot connect to WebSocket without token');
       return;
     }
 
     // SockJS fallback URL
-    const socketUrl = 'http://localhost:8081/ws';
+    const socketUrl = WS_BASE;
 
     this.client = new Client({
       // Create a custom WebSocket factory to use SockJS
@@ -30,35 +37,37 @@ class WebSocketService {
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },
-      debug: function (str) {
-        console.log('STOMP: ' + str);
-      },
+      // Chatty frame logging is useful locally and noise in production.
+      debug: DEV ? (str) => console.log('STOMP: ' + str) : () => {},
       reconnectDelay: 5000, // Reconnect automatically after 5 seconds
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
     });
 
-    this.client.onConnect = (frame) => {
-      console.log('Connected to WebSocket server', frame);
-      
+    this.client.onConnect = () => {
+      if (DEV) console.log('Connected to WebSocket server');
+
       // Subscribe all pending rooms
       this.pendingRooms.forEach(roomId => {
         this._doSubscribe(roomId);
       });
       this.pendingRooms.clear();
 
+      if (this.wantNotifications) this._doSubscribeNotifications();
+
       this.client.subscribe('/user/queue/errors', (message) => {
-        console.error('WebSocket Error from server:', message.body);
+        if (DEV) console.warn('WebSocket error frame from server:', message.body);
       });
     };
 
     this.client.onStompError = (frame) => {
-      console.error('Broker reported error: ' + frame.headers['message']);
-      console.error('Additional details: ' + frame.body);
+      if (DEV) {
+        console.warn('Broker reported error:', frame.headers['message'], frame.body);
+      }
     };
 
     this.client.onWebSocketClose = () => {
-      console.log('WebSocket connection closed');
+      if (DEV) console.log('WebSocket connection closed');
     };
 
     this.client.activate();
@@ -70,6 +79,40 @@ class WebSocketService {
     }
     this.subscriptions.clear();
     this.pendingRooms.clear();
+    this.notificationsSub = null;
+    this.wantNotifications = false;
+  }
+
+  /**
+   * Personal notification queue. Payload is a NotificationResponse, not a
+   * chat event — it goes to the notification store, never to the chat store.
+   */
+  subscribeNotifications() {
+    this.wantNotifications = true;
+    if (!this.client || !this.client.connected) return; // picked up in onConnect
+    this._doSubscribeNotifications();
+  }
+
+  _doSubscribeNotifications() {
+    if (this.notificationsSub) return;
+    this.notificationsSub = this.client.subscribe('/user/queue/notifications', (message) => {
+      try {
+        const notification = JSON.parse(message.body);
+        if (notification) {
+          useNotificationStore.getState().addIncomingNotification(notification);
+        }
+      } catch (error) {
+        if (DEV) console.warn('Bad notification frame', error);
+      }
+    });
+  }
+
+  unsubscribeNotifications() {
+    this.wantNotifications = false;
+    if (this.notificationsSub) {
+      this.notificationsSub.unsubscribe();
+      this.notificationsSub = null;
+    }
   }
 
   subscribe(roomId) {
@@ -86,20 +129,31 @@ class WebSocketService {
     }
 
     const topic = `/topic/rooms/${roomId}`;
-    console.log(`Subscribing to ${topic}`);
+    if (DEV) console.log(`Subscribing to ${topic}`);
 
     const subscription = this.client.subscribe(topic, (message) => {
       try {
-        const payload = JSON.parse(message.body);
-        if (payload.type === 'RECEIPT') {
-          useChatStore.getState().updateReceipt(roomId, payload.payload || payload);
-        } else if (payload.type === 'MESSAGE') {
-          useChatStore.getState().addIncomingMessage(roomId, payload.payload || payload);
-        } else {
-          useChatStore.getState().addIncomingMessage(roomId, payload);
+        // ChatSocketEvent: { type, chatRoomId, payload, at }
+        const event = JSON.parse(message.body);
+        switch (event.type) {
+          case 'MESSAGE':
+            // payload is a ChatMessageResponse
+            useChatStore.getState().addIncomingMessage(roomId, event.payload);
+            break;
+          case 'RECEIPT':
+            // payload is { userId, status, upTo }
+            useChatStore.getState().updateReceipt(roomId, event.payload);
+            break;
+          case 'MEMBER_JOINED':
+            // payload is a MemberSummary. Never a text bubble — the store
+            // records it separately so the room can show a system line.
+            useChatStore.getState().addSystemEvent(roomId, event.payload, event.at);
+            break;
+          default:
+            if (DEV) console.warn('Unhandled chat socket event type', event.type);
         }
       } catch (error) {
-        console.error("Error processing websocket message", error, message.body);
+        if (DEV) console.warn('Error processing websocket message', error, message.body);
       }
     });
 
@@ -112,13 +166,13 @@ class WebSocketService {
     if (subscription) {
       subscription.unsubscribe();
       this.subscriptions.delete(roomId);
-      console.log(`Unsubscribed from room ${roomId}`);
+      if (DEV) console.log(`Unsubscribed from room ${roomId}`);
     }
   }
 
   send(roomId, destination, body) {
     if (!this.client || !this.client.connected) {
-        console.error("Cannot send message, WebSocket not connected");
+        if (DEV) console.warn("Cannot send message, WebSocket not connected");
         return;
     }
     this.client.publish({

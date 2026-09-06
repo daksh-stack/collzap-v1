@@ -1,246 +1,206 @@
 import { useState, useEffect } from 'react';
-import { Search, Loader2, MoreVertical, ShieldAlert, CheckCircle, Clock, XCircle, ExternalLink } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Search, ExternalLink } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import Tabs from '../../components/ui/Tabs';
+import Spinner from '../../components/ui/Spinner';
+import Pagination from '../../components/ui/Pagination';
 import { useAdminStore } from '../../store/useAdminStore';
+import AdminPageHeader from './AdminPageHeader';
+
+const verificationBadge = (status) => {
+  switch (status) {
+    case 'APPROVED': return <Badge variant="success">Verified</Badge>;
+    case 'DOCUMENT_SUBMITTED': return <Badge variant="warning">In review</Badge>;
+    case 'REJECTED': return <Badge variant="destructive">Rejected</Badge>;
+    default: return <Badge variant="secondary">Unverified</Badge>;
+  }
+};
 
 export default function AdminUsersPage() {
   const { users, fetchUsers, fetchUser, loading } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('ALL');
+  const [page, setPage] = useState(0);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [loadingUserDetail, setLoadingUserDetail] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Search/status/page all go to the server — the store already supports it.
+  // Filter changes reset the page inline so this stays a single fetch.
   useEffect(() => {
-    fetchUsers().catch(console.error);
-  }, []);
+    const status = activeTab === 'ALL' ? null : activeTab;
+    const handle = setTimeout(() => {
+      fetchUsers(searchTerm || null, status, page).catch(console.error);
+    }, searchTerm ? 300 : 0); // debounce typing only
+    return () => clearTimeout(handle);
+  }, [searchTerm, activeTab, page]);
+
+  const changeFilter = (fn) => { setPage(0); fn(); };
 
   const handleOpenUser = async (user) => {
     setSelectedUser(user);
-    setLoadingUserDetail(true);
+    setLoadingDetail(true);
     try {
-      const fullDetails = await fetchUser(user.id);
-      if (fullDetails) {
-        setSelectedUser(fullDetails);
-      }
+      const full = await fetchUser(user.id);
+      if (full) setSelectedUser(full);
     } catch (error) {
-      console.error('Failed to fetch full user details', error);
+      console.error('Failed to fetch user detail', error);
     } finally {
-      setLoadingUserDetail(false);
+      setLoadingDetail(false);
     }
   };
 
-  const filteredUsers = users?.content?.filter(user => {
-    const nameMatch = user.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const emailMatch = user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const collegeMatch = user.collegeName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSearch = !searchTerm || nameMatch || emailMatch || collegeMatch;
-    
-    const accountStatus = user.accountStatus || 'ACTIVE';
-    let matchesTab = true;
-    if (activeTab === 'ACTIVE') matchesTab = accountStatus === 'ACTIVE';
-    if (activeTab === 'DELETED') matchesTab = accountStatus === 'DELETED';
-    
-    return matchesSearch && matchesTab;
-  }) || [];
-
-  const getVerificationBadge = (status) => {
-    switch (status) {
-      case 'APPROVED':
-        return <Badge variant="success" className="mr-1">Verified</Badge>;
-      case 'DOCUMENT_SUBMITTED':
-        return <Badge variant="warning" className="mr-1">In Review</Badge>;
-      case 'REJECTED':
-        return <Badge variant="destructive" className="mr-1">Rejected</Badge>;
-      default:
-        return <Badge variant="secondary" className="mr-1">Unverified</Badge>;
-    }
-  };
+  const rows = users?.content || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage all registered users on the platform.</p>
-        </div>
-        <div className="w-full sm:w-72">
+    <div>
+      <AdminPageHeader title="Users" count={users?.totalElements}>
+        <div className="w-full sm:w-64">
           <Input
-            placeholder="Search name, email, college..."
-            icon={<Search className="w-4 h-4" />}
+            placeholder="Name, email, college"
+            icon={<Search className="h-4 w-4" aria-hidden="true" />}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => changeFilter(() => setSearchTerm(e.target.value))}
+            aria-label="Search users"
           />
         </div>
+      </AdminPageHeader>
+
+      <Tabs
+        tabs={[
+          { key: 'ALL', label: 'All' },
+          { key: 'ACTIVE', label: 'Active' },
+          { key: 'DELETED', label: 'Deleted' },
+        ]}
+        active={activeTab}
+        onChange={(key) => changeFilter(() => setActiveTab(key))}
+        className="mb-6"
+      />
+
+      <div className="overflow-x-auto rounded-lg border border-line">
+        <table className="min-w-full divide-y divide-line text-sm">
+          <thead className="bg-ink/[0.02]">
+            <tr>
+              {['User', 'College', 'Verification', 'Account', 'Joined', ''].map((h, i) => (
+                <th
+                  key={i}
+                  scope="col"
+                  className="px-4 py-2.5 text-left font-mono text-[10px] font-medium uppercase tracking-widest text-mute"
+                >
+                  {h || <span className="sr-only">Actions</span>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line bg-[#FBF8F2]">
+            {loading && rows.length === 0 ? (
+              <tr><td colSpan="6" className="px-4 py-12 text-center text-accent-500"><Spinner /></td></tr>
+            ) : rows.length === 0 ? (
+              <tr><td colSpan="6" className="px-4 py-12 text-center text-sm text-mute">Nobody matches that.</td></tr>
+            ) : (
+              rows.map((user) => (
+                <tr
+                  key={user.id}
+                  onClick={() => handleOpenUser(user)}
+                  className="cursor-pointer transition-colors hover:bg-ink/[0.02]"
+                >
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-ink">{user.name}</div>
+                    <div className="text-xs text-mute">{user.email}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-ink">{user.collegeName || '—'}</div>
+                    {user.yearOfStudy && <div className="text-xs text-mute">Year {user.yearOfStudy}</div>}
+                  </td>
+                  <td className="px-4 py-3">{verificationBadge(user.verificationStatus)}</td>
+                  <td className="px-4 py-3">
+                    <Badge variant={user.accountStatus === 'DELETED' ? 'destructive' : 'secondary'}>
+                      {user.accountStatus || 'ACTIVE'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-mute tnum">
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleOpenUser(user); }}
+                    >
+                      Open
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-4 border-b border-gray-200">
-          <Tabs 
-            tabs={[
-              { key: 'ALL', label: `All Users (${users?.content?.length || 0})` },
-              { key: 'ACTIVE', label: 'Active' },
-              { key: 'DELETED', label: 'Deleted' },
-            ]}
-            active={activeTab}
-            onChange={setActiveTab}
-          />
-        </div>
+      {users?.totalPages > 1 && (
+        <Pagination
+          page={users.page ?? page}
+          totalPages={users.totalPages}
+          onPageChange={setPage}
+          className="mt-2 rounded-b-lg border-x border-b border-line bg-[#FBF8F2]"
+        />
+      )}
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">College</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verification</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading && (!users?.content || users.content.length === 0) ? (
-                <tr><td colSpan="6" className="px-6 py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" /></td></tr>
-              ) : filteredUsers.length === 0 ? (
-                <tr><td colSpan="6" className="px-6 py-10 text-center text-gray-500">No users found.</td></tr>
-              ) : (
-                filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleOpenUser(user)}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0">
-                          <img 
-                            className="h-10 w-10 rounded-full object-cover bg-gray-100 border border-gray-200" 
-                            src={user.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=6366f1&color=fff`} 
-                            alt="" 
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="font-medium text-gray-900">{user.collegeName || 'N/A'}</div>
-                      {user.yearOfStudy && <span className="text-xs text-gray-400">Year {user.yearOfStudy}</span>}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getVerificationBadge(user.verificationStatus)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={user.accountStatus === 'ACTIVE' ? 'secondary' : 'destructive'}>
-                        {user.accountStatus || 'ACTIVE'}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleOpenUser(user); }}>
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* User Detail Modal */}
-      <Modal open={!!selectedUser} onClose={() => setSelectedUser(null)} title="User Details" size="lg">
+      <Modal open={!!selectedUser} onClose={() => setSelectedUser(null)} title="User" size="lg">
         {selectedUser && (
           <div className="space-y-6">
-            <div className="flex items-start space-x-4">
-              <img 
-                className="h-16 w-16 rounded-full object-cover bg-gray-100 border border-gray-200" 
-                src={selectedUser.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUser.name || 'User')}&background=6366f1&color=fff`} 
-                alt="" 
-              />
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">{selectedUser.name}</h2>
-                <p className="text-gray-500">{selectedUser.email}</p>
-                <div className="mt-2 flex gap-2">
-                  {getVerificationBadge(selectedUser.verificationStatus)}
-                  <Badge variant={selectedUser.accountStatus === 'ACTIVE' ? 'secondary' : 'destructive'}>
-                    {selectedUser.accountStatus || 'ACTIVE'}
-                  </Badge>
-                  {selectedUser.profileCompleted && (
-                    <Badge variant="success">Profile 100%</Badge>
-                  )}
+            <div>
+              <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
+                {selectedUser.name}
+              </h2>
+              <p className="mt-1 text-sm text-mute">{selectedUser.email}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {verificationBadge(selectedUser.verificationStatus)}
+                <Badge variant={selectedUser.accountStatus === 'DELETED' ? 'destructive' : 'secondary'}>
+                  {selectedUser.accountStatus || 'ACTIVE'}
+                </Badge>
+                {selectedUser.profileCompleted && <Badge variant="success">Profile done</Badge>}
+              </div>
+            </div>
+
+            {loadingDetail && <div className="text-accent-500"><Spinner size="sm" /></div>}
+
+            <dl className="grid grid-cols-2 gap-px overflow-hidden rounded border border-line bg-line text-sm">
+              {[
+                ['College', selectedUser.collegeName],
+                ['City', selectedUser.city],
+                ['Year', selectedUser.yearOfStudy ? `Year ${selectedUser.yearOfStudy}` : null],
+                ['Joined', selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : null],
+              ].map(([label, value]) => (
+                <div key={label} className="bg-[#FBF8F2] px-4 py-3">
+                  <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">{label}</dt>
+                  <dd className="mt-1 text-ink">{value || '—'}</dd>
                 </div>
-              </div>
-            </div>
+              ))}
+            </dl>
 
-            {loadingUserDetail && (
-              <div className="flex justify-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-brand-600" />
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg text-sm">
-              <div>
-                <p className="text-xs text-gray-500 font-medium uppercase">College</p>
-                <p className="font-semibold text-gray-900">{selectedUser.collegeName || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 font-medium uppercase">City</p>
-                <p className="font-semibold text-gray-900">{selectedUser.city || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 font-medium uppercase">Year of Study</p>
-                <p className="font-semibold text-gray-900">{selectedUser.yearOfStudy ? `Year ${selectedUser.yearOfStudy}` : 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 font-medium uppercase">Joined Platform</p>
-                <p className="font-semibold text-gray-900">{selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : 'N/A'}</p>
-              </div>
-            </div>
-
-            {/* Story prompts / Bio if available */}
             {(selectedUser.storyPrompt1 || selectedUser.storyPrompt2 || selectedUser.storyPrompt3) && (
-              <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Profile Prompts</p>
-                {selectedUser.storyPrompt1 && (
-                  <div>
-                    <p className="text-xs text-gray-500 italic">One thing I want to achieve in college:</p>
-                    <p className="text-sm font-medium text-gray-800">{selectedUser.storyPrompt1}</p>
-                  </div>
-                )}
-                {selectedUser.storyPrompt2 && (
-                  <div>
-                    <p className="text-xs text-gray-500 italic">I am most serious about:</p>
-                    <p className="text-sm font-medium text-gray-800">{selectedUser.storyPrompt2}</p>
-                  </div>
-                )}
-                {selectedUser.storyPrompt3 && (
-                  <div>
-                    <p className="text-xs text-gray-500 italic">The kind of peer I am looking for:</p>
-                    <p className="text-sm font-medium text-gray-800">{selectedUser.storyPrompt3}</p>
-                  </div>
-                )}
+              <div className="divide-y divide-line border-y border-line">
+                {[selectedUser.storyPrompt1, selectedUser.storyPrompt2, selectedUser.storyPrompt3]
+                  .filter(Boolean)
+                  .map((prompt, i) => (
+                    <p key={i} className="py-3 text-sm leading-relaxed text-ink">{prompt}</p>
+                  ))}
               </div>
             )}
 
             {selectedUser.proofOfWorkUrl && (
-              <div className="bg-brand-50 p-3 rounded-lg flex items-center justify-between">
-                <span className="text-xs font-medium text-brand-900">Proof of Work / Portfolio:</span>
-                <a 
-                  href={selectedUser.proofOfWorkUrl} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="text-xs font-bold text-brand-600 hover:underline flex items-center"
-                >
-                  View Link <ExternalLink className="w-3.5 h-3.5 ml-1" />
-                </a>
-              </div>
+              <a
+                href={selectedUser.proofOfWorkUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-accent-700 underline decoration-accent-300 underline-offset-4"
+              >
+                Proof of work
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              </a>
             )}
           </div>
         )}

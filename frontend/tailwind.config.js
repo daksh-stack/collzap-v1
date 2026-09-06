@@ -1,4 +1,20 @@
 /** @type {import('tailwindcss').Config} */
+
+// Warm paper palette. One ink, one accent, one danger.
+const accent = {
+  50:  '#FBF1EA',
+  100: '#F5DECD',
+  200: '#EBBE9F',
+  300: '#DE9A6E',
+  400: '#D17B47',
+  500: '#C45C26', // hostel-bulb orange
+  600: '#AC4C1C',
+  700: '#8A3510', // accent-ink
+  800: '#6E2B0F',
+  900: '#57240F',
+  950: '#301006',
+};
+
 export default {
   content: [
     "./index.html",
@@ -7,37 +23,51 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#f0f4ff',
-          100: '#e0e9ff',
-          200: '#c5d5ff',
-          300: '#9cb5ff',
-          400: '#6d8bf8',
-          500: '#4668f1',
-          600: '#2b46e3',
-          700: '#2133ce',
-          800: '#202ba7',
-          900: '#1e2884',
-          950: '#141a50',
-        },
+        paper: '#F4EFE6',
+        ink: '#1A1714',
+        mute: '#6B645C',
+        line: '#DDD4C8',
+        accent,
+        'accent-ink': '#8A3510',
+        good: '#2F6B4F',
+        wait: '#B5812F',
+        bad: '#A33B2B',
+        // `brand` is kept as an alias of accent so existing brand-* classes
+        // keep working instead of falling back to the old blue.
+        brand: accent,
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        // Typography does the branding: display face for headlines,
+        // a different face for UI.
+        display: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
-        'sm': '0.125rem',
-        DEFAULT: '0.25rem',
-        'md': '0.375rem',
-        'lg': '0.5rem',
-        'xl': '0.75rem',
-        '2xl': '1rem',
+        'none': '0',
+        'sm': '3px',
+        DEFAULT: '6px',
+        'md': '6px',
+        'lg': '10px',
+        // No 24px blobs — anything asking for bigger is capped at 10px.
+        'xl': '10px',
+        '2xl': '10px',
+        '3xl': '10px',
       },
       boxShadow: {
-        'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-        DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-        'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-      }
+        // One hairline, one soft. No stacked colored shadows.
+        'hairline': '0 0 0 1px rgb(26 23 20 / 0.08)',
+        'sm': '0 0 0 1px rgb(26 23 20 / 0.06)',
+        DEFAULT: '0 1px 2px rgb(26 23 20 / 0.06), 0 0 0 1px rgb(26 23 20 / 0.05)',
+        'soft': '0 2px 8px rgb(26 23 20 / 0.07), 0 0 0 1px rgb(26 23 20 / 0.05)',
+        'md': '0 2px 8px rgb(26 23 20 / 0.07), 0 0 0 1px rgb(26 23 20 / 0.05)',
+        'lg': '0 6px 20px rgb(26 23 20 / 0.09), 0 0 0 1px rgb(26 23 20 / 0.05)',
+        'xl': '0 6px 20px rgb(26 23 20 / 0.09), 0 0 0 1px rgb(26 23 20 / 0.05)',
+        'none': 'none',
+      },
+      letterSpacing: {
+        tightest: '-0.04em',
+      },
     },
   },
   plugins: [],

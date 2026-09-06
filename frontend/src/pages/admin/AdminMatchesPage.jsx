@@ -1,236 +1,306 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Plus, Zap, Trash2, Users } from 'lucide-react';
+import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Tabs from '../../components/ui/Tabs';
 import Modal from '../../components/ui/Modal';
 import Select from '../../components/ui/Select';
+import Spinner from '../../components/ui/Spinner';
+import Pagination from '../../components/ui/Pagination';
 import { useAdminStore } from '../../store/useAdminStore';
 import { useInterestStore } from '../../store/useInterestStore';
+import AdminPageHeader from './AdminPageHeader';
 
 export default function AdminMatchesPage() {
   const { matches, fetchMatches, createMatch, unmatch, loading } = useAdminStore();
   const { catalog, fetchCatalog } = useInterestStore();
-  
+
   const [activeTab, setActiveTab] = useState('ALL');
-  const [expandedMatch, setExpandedMatch] = useState(null);
-  
-  // Force Match Modal State
+  const [page, setPage] = useState(0);
+  const [expanded, setExpanded] = useState(null);
+
   const [forceModalOpen, setForceModalOpen] = useState(false);
+  const [userIds, setUserIds] = useState([]);       // chips
+  const [userIdDraft, setUserIdDraft] = useState('');
   const [matchForm, setMatchForm] = useState({
-    userIds: '', // comma separated for simplicity in this UI
     interestId: '',
     connectionType: 'ONE_ON_ONE',
-    projectType: 'SHORT_TERM'
+    projectType: 'SHORT_TERM',
   });
 
   useEffect(() => {
-    fetchMatches().catch(console.error);
+    const status = activeTab === 'ALL' ? null : activeTab;
+    fetchMatches(status, page).catch(console.error);
     fetchCatalog().catch(console.error);
-  }, []);
+  }, [activeTab, page]);
 
-  const filteredMatches = matches?.content?.filter(match => {
-    if (activeTab === 'ALL') return true;
-    return match.status === activeTab;
-  }) || [];
+  const commitDraft = () => {
+    const value = userIdDraft.trim().replace(/,$/, '');
+    if (!value) return;
+    if (!userIds.includes(value)) setUserIds([...userIds, value]);
+    setUserIdDraft('');
+  };
 
   const handleCreateMatch = async () => {
-    const ids = matchForm.userIds.split(',').map(id => id.trim()).filter(id => id);
+    // Fold any half-typed id in before validating.
+    const pending = userIdDraft.trim().replace(/,$/, '');
+    const ids = pending && !userIds.includes(pending) ? [...userIds, pending] : userIds;
+
     if (ids.length < 2) {
-      toast.error('Please enter at least 2 user IDs');
+      toast.error('At least two user ids');
       return;
     }
     if (!matchForm.interestId) {
-      toast.error('Please select an interest');
+      toast.error('Pick an interest');
       return;
     }
 
     try {
+      // Body shape is unchanged: { userIds, interestId, connectionType, projectType }
       await createMatch(ids, matchForm.interestId, matchForm.connectionType, matchForm.projectType);
-      toast.success('Match created successfully');
+      toast.success('Match created');
       setForceModalOpen(false);
-      setMatchForm({ userIds: '', interestId: '', connectionType: 'ONE_ON_ONE', projectType: 'SHORT_TERM' });
-      fetchMatches();
+      setUserIds([]);
+      setUserIdDraft('');
+      setMatchForm({ interestId: '', connectionType: 'ONE_ON_ONE', projectType: 'SHORT_TERM' });
+      fetchMatches(activeTab === 'ALL' ? null : activeTab, page);
     } catch (error) {
-      toast.error(error.message || 'Failed to create match');
+      toast.error(error.message || 'Could not create that');
     }
   };
 
   const handleUnmatch = async (matchGroupId, userId, userName) => {
-    if (!window.confirm(`Are you sure you want to remove ${userName || 'this user'} from this match?`)) return;
-    
+    const who = userName ? `Remove ${userName} from this group?` : 'Dissolve this whole group?';
+    if (!window.confirm(who)) return;
     try {
       await unmatch(matchGroupId, userId);
-      toast.success('User removed from match');
-      fetchMatches();
+      toast.success(userId ? 'Removed' : 'Group dissolved');
+      fetchMatches(activeTab === 'ALL' ? null : activeTab, page);
     } catch (error) {
-      toast.error(error.message || 'Failed to remove user');
+      toast.error(error.message || 'Could not unmatch');
     }
   };
 
-  // Compile interests for select
-  const interestOptions = [];
-  if (catalog) {
-    catalog.longTerm?.interests?.forEach(i => interestOptions.push({ value: i.id, label: `(Long) ${i.name}` }));
-    catalog.shortTerm?.interests?.forEach(i => interestOptions.push({ value: i.id, label: `(Short) ${i.name}` }));
-  }
+  // InterestCatalogResponse.longTerm / .shortTerm are already the arrays.
+  const interestOptions = [
+    { value: '', label: 'Select an interest' },
+    ...(catalog?.longTerm || []).map((i) => ({ value: i.id, label: `Long · ${i.name}` })),
+    ...(catalog?.shortTerm || []).map((i) => ({ value: i.id, label: `Short · ${i.name}` })),
+  ];
+
+  const rows = matches?.content || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Matches</h1>
-          <p className="mt-1 text-sm text-gray-500">Monitor and manage match groups.</p>
-        </div>
-        <div>
-          <Button onClick={() => setForceModalOpen(true)} icon={<Plus className="w-4 h-4" />}>
-            Force Match
-          </Button>
-        </div>
-      </div>
+    <div>
+      <AdminPageHeader title="Matches" count={matches?.totalElements}>
+        <Button size="sm" onClick={() => setForceModalOpen(true)}>Force match</Button>
+      </AdminPageHeader>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-4 border-b border-gray-200">
-          <Tabs 
-            tabs={[
-              { key: 'ALL', label: `All Matches (${matches?.content?.length || 0})` },
-              { key: 'ACTIVE', label: 'Active' },
-              { key: 'WAITING', label: 'Waiting (Partial)' },
-              { key: 'CLOSED', label: 'Closed' },
-            ]}
-            active={activeTab}
-            onChange={setActiveTab}
-          />
-        </div>
+      <Tabs
+        tabs={[
+          { key: 'ALL', label: 'All' },
+          { key: 'ACTIVE', label: 'Active' },
+          { key: 'WAITING', label: 'Waiting' },
+          { key: 'CLOSED', label: 'Closed' },
+        ]}
+        active={activeTab}
+        onChange={(key) => { setPage(0); setActiveTab(key); }}
+        className="mb-6"
+      />
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interest & College</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Members</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading && (!matches?.content || matches.content.length === 0) ? (
-                <tr><td colSpan="5" className="px-6 py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" /></td></tr>
-              ) : filteredMatches.length === 0 ? (
-                <tr><td colSpan="5" className="px-6 py-10 text-center text-gray-500">No matches found.</td></tr>
-              ) : (
-                filteredMatches.map((match) => {
-                  const matchId = match.matchGroupId || match.id;
-                  const isExpanded = expandedMatch === matchId;
-                  
-                  return (
-                    <React.Fragment key={matchId}>
-                      <tr 
-                        className={`hover:bg-gray-50 cursor-pointer ${isExpanded ? 'bg-brand-50/50' : ''}`}
-                        onClick={() => setExpandedMatch(isExpanded ? null : matchId)}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-bold text-gray-900">{match.interestName}</div>
-                          <div className="text-xs text-gray-500">{match.collegeName || matchId}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{match.connectionType}</div>
-                          <div className="text-xs text-gray-500">{match.projectType}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge variant="secondary">{match.levelBand || 'UNRANKED'}</Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {match.memberCount || match.memberNames?.length || 0} / {match.maxMembers || 2}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge variant={match.status === 'ACTIVE' ? 'success' : match.status === 'WAITING' ? 'warning' : 'secondary'}>
-                            {match.status}
-                          </Badge>
+      <div className="overflow-x-auto rounded-lg border border-line">
+        <table className="min-w-full divide-y divide-line text-sm">
+          <thead className="bg-ink/[0.02]">
+            <tr>
+              {['Interest', 'Type', 'Level', 'Members', 'Status', ''].map((h, i) => (
+                <th
+                  key={i}
+                  scope="col"
+                  className="px-4 py-2.5 text-left font-mono text-[10px] font-medium uppercase tracking-widest text-mute"
+                >
+                  {h || <span className="sr-only">Actions</span>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line bg-[#FBF8F2]">
+            {loading && rows.length === 0 ? (
+              <tr><td colSpan="6" className="px-4 py-12 text-center text-accent-500"><Spinner /></td></tr>
+            ) : rows.length === 0 ? (
+              <tr><td colSpan="6" className="px-4 py-12 text-center text-sm text-mute">No groups here.</td></tr>
+            ) : (
+              rows.map((match) => {
+                const matchId = match.matchGroupId || match.id;
+                const isOpen = expanded === matchId;
+
+                return (
+                  <React.Fragment key={matchId}>
+                    <tr
+                      className={`cursor-pointer transition-colors hover:bg-ink/[0.02] ${isOpen ? 'bg-ink/[0.03]' : ''}`}
+                      onClick={() => setExpanded(isOpen ? null : matchId)}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-ink">{match.interestName}</div>
+                        <div className="font-mono text-[10px] text-mute">{match.collegeName || matchId}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-ink">{match.connectionType}</div>
+                        <div className="text-xs text-mute">{match.projectType}</div>
+                      </td>
+                      <td className="px-4 py-3"><Badge variant="secondary">{match.levelBand || 'UNRANKED'}</Badge></td>
+                      <td className="px-4 py-3 text-ink tnum">
+                        {match.memberCount ?? match.memberNames?.length ?? 0} / {match.maxMembers || 2}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={
+                          match.status === 'ACTIVE' ? 'success'
+                          : match.status === 'WAITING' ? 'warning' : 'secondary'
+                        }>
+                          {match.status}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-bad hover:bg-bad/[0.07]"
+                          onClick={(e) => { e.stopPropagation(); handleUnmatch(matchId, null, null); }}
+                        >
+                          Unmatch
+                        </Button>
+                      </td>
+                    </tr>
+
+                    {isOpen && (
+                      <tr>
+                        <td colSpan="6" className="border-b border-line bg-ink/[0.015] px-4 py-4">
+                          <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-mute">
+                            Members ({match.memberNames?.length || 0})
+                          </p>
+                          {match.memberNames?.length > 0 ? (
+                            <ul className="flex flex-wrap gap-2">
+                              {match.memberNames.map((name, idx) => (
+                                <li
+                                  key={idx}
+                                  className="inline-flex items-center gap-2 rounded border border-line bg-[#FBF8F2] px-2.5 py-1 text-xs text-ink"
+                                >
+                                  {name}
+                                  {match.memberIds?.[idx] && (
+                                    <button
+                                      aria-label={`Remove ${name}`}
+                                      onClick={() => handleUnmatch(matchId, match.memberIds[idx], name)}
+                                      className="rounded-sm text-mute transition-colors hover:text-bad focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                                    >
+                                      <X className="h-3 w-3" aria-hidden="true" />
+                                    </button>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-xs italic text-mute">Nobody in this group.</p>
+                          )}
                         </td>
                       </tr>
-                      
-                      {isExpanded && (
-                        <tr>
-                          <td colSpan="5" className="px-6 py-4 bg-gray-50/80 border-b border-gray-200">
-                            <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center">
-                              <Users className="w-3.5 h-3.5 mr-1" />
-                              Group Members ({match.memberNames?.length || 0})
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                              {match.memberNames && match.memberNames.length > 0 ? (
-                                match.memberNames.map((name, idx) => (
-                                  <div key={idx} className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 flex items-center space-x-2 shadow-sm text-xs">
-                                    <div className="w-5 h-5 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-[10px]">
-                                      {name.charAt(0)}
-                                    </div>
-                                    <span className="font-medium text-gray-800">{name}</span>
-                                  </div>
-                                ))
-                              ) : (
-                                <p className="text-xs text-gray-500 italic">No members currently in group.</p>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                    )}
+                  </React.Fragment>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
-      <Modal open={forceModalOpen} onClose={() => setForceModalOpen(false)} title="Force Create Match">
-        <div className="space-y-4">
+      {matches?.totalPages > 1 && (
+        <Pagination
+          page={matches.page ?? page}
+          totalPages={matches.totalPages}
+          onPageChange={setPage}
+          className="mt-2 rounded-b-lg border-x border-b border-line bg-[#FBF8F2]"
+        />
+      )}
+
+      <Modal open={forceModalOpen} onClose={() => setForceModalOpen(false)} title="Force a match">
+        <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">User IDs (comma separated)</label>
-            <textarea
-              className="w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 border"
-              rows={3}
-              value={matchForm.userIds}
-              onChange={(e) => setMatchForm({...matchForm, userIds: e.target.value})}
-              placeholder="user_id_1, user_id_2"
+            <label htmlFor="uid-draft" className="mb-1.5 block text-sm font-medium text-ink">
+              User ids
+            </label>
+            {userIds.length > 0 && (
+              <ul className="mb-2 flex flex-wrap gap-2">
+                {userIds.map((id) => (
+                  <li
+                    key={id}
+                    className="inline-flex items-center gap-2 rounded border border-line bg-ink/[0.03] px-2 py-1 font-mono text-[11px] text-ink"
+                  >
+                    <span className="max-w-[16rem] truncate">{id}</span>
+                    <button
+                      aria-label={`Remove ${id}`}
+                      onClick={() => setUserIds(userIds.filter((u) => u !== id))}
+                      className="rounded-sm text-mute transition-colors hover:text-bad focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                    >
+                      <X className="h-3 w-3" aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <input
+              id="uid-draft"
+              value={userIdDraft}
+              onChange={(e) => setUserIdDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); commitDraft(); }
+                if (e.key === 'Backspace' && !userIdDraft && userIds.length) {
+                  setUserIds(userIds.slice(0, -1));
+                }
+              }}
+              onBlur={commitDraft}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData('text');
+                if (!/[,\s]/.test(text)) return;
+                e.preventDefault();
+                const parts = text.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean);
+                setUserIds([...new Set([...userIds, ...parts])]);
+              }}
+              placeholder="Paste a UUID, press Enter"
+              className="block h-11 w-full rounded border border-line bg-[#FBF8F2] px-3 font-mono text-xs text-ink placeholder:text-mute/55 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25"
             />
+            <p className="mt-1.5 text-xs text-mute">Two or more. Enter, comma or paste a list.</p>
           </div>
-          
+
           <Select
             label="Interest"
             options={interestOptions}
             value={matchForm.interestId}
-            onChange={(e) => setMatchForm({...matchForm, interestId: e.target.value})}
-          />
-          
-          <Select
-            label="Connection Type"
-            options={[
-              { value: 'ONE_ON_ONE', label: '1-on-1' },
-              { value: 'SHORT_GROUP', label: 'Short Group' },
-              { value: 'SOCIETY', label: 'Society' }
-            ]}
-            value={matchForm.connectionType}
-            onChange={(e) => setMatchForm({...matchForm, connectionType: e.target.value})}
-          />
-          
-          <Select
-            label="Project Type"
-            options={[
-              { value: 'SHORT_TERM', label: 'Short-Term' },
-              { value: 'LONG_TERM', label: 'Long-Term' }
-            ]}
-            value={matchForm.projectType}
-            onChange={(e) => setMatchForm({...matchForm, projectType: e.target.value})}
+            onChange={(e) => setMatchForm({ ...matchForm, interestId: e.target.value })}
           />
 
-          <div className="flex justify-end gap-3 pt-4">
+          <Select
+            label="Connection type"
+            options={[
+              { value: 'ONE_ON_ONE', label: 'One on one' },
+              { value: 'SHORT_GROUP', label: 'Small group' },
+              { value: 'SOCIETY', label: 'Society' },
+            ]}
+            value={matchForm.connectionType}
+            onChange={(e) => setMatchForm({ ...matchForm, connectionType: e.target.value })}
+          />
+
+          <Select
+            label="Project type"
+            options={[
+              { value: 'SHORT_TERM', label: 'Short term' },
+              { value: 'LONG_TERM', label: 'Long term' },
+            ]}
+            value={matchForm.projectType}
+            onChange={(e) => setMatchForm({ ...matchForm, projectType: e.target.value })}
+          />
+
+          <div className="flex justify-end gap-3 pt-2">
             <Button variant="ghost" onClick={() => setForceModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateMatch} loading={loading} icon={<Zap className="w-4 h-4" />}>
-              Create Match
-            </Button>
+            <Button onClick={handleCreateMatch} loading={loading}>Create</Button>
           </div>
         </div>
       </Modal>

@@ -3,7 +3,66 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Paper grain, drawn once as a tiled SVG rather than an image request. */
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply text-gray-900 bg-gray-50 antialiased;
+    @apply bg-paper text-ink antialiased font-sans;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+
+  /* Display face wants optical sizing and tighter tracking at headline sizes. */
+  .font-display {
+    font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 0, "WONK" 0;
+  }
+
+  ::selection {
+    @apply bg-accent-200 text-ink;
+  }
+
+  /* One focus treatment everywhere, in the accent. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent-500 ring-offset-2 ring-offset-paper;
+  }
+}
+
+@layer components {
+  /* Paper surface: the default card ground. Warm, hairline-bordered, no blob radius. */
+  .surface {
+    @apply bg-[#FBF8F2] border border-line rounded-lg;
+  }
+
+  .grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--grain);
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+
+  /* Tabular figures for anything that ticks (timers, counters, scores). */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+/* Reduced motion is respected globally, not just per-component. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

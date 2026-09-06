@@ -1,14 +1,33 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
-import { Target, Zap } from 'lucide-react';
+import { Check } from 'lucide-react';
 import Button from '../../../components/ui/Button';
+import StepHeader from './StepHeader';
 import { useInterestStore } from '../../../store/useInterestStore';
+import { cn } from '../../../lib/utils';
+import { snappy, useReducedMotion, transition } from '../../../lib/motion';
+
+const TILES = [
+  {
+    id: 'LONG_TERM',
+    title: 'Long haul',
+    body: 'Something you are still working on next semester. Slower to match, harder to leave.',
+    meta: 'Months',
+  },
+  {
+    id: 'SHORT_TERM',
+    title: 'Short burst',
+    body: 'Hackathon, one paper, one deadline. Match fast, ship, move on.',
+    meta: 'Weeks',
+  },
+];
 
 export default function SelectProjectTypeStep() {
   const { projectTypes: storeProjectTypes, selectProjectTypes, loading, fetchProjectTypes } = useInterestStore();
   const [selectedTypes, setSelectedTypes] = useState(new Set());
+  const reduced = useReducedMotion();
 
-  // Initially load available options and pre-select if any exist in store
   useEffect(() => {
     fetchProjectTypes().catch(console.error);
     if (storeProjectTypes && storeProjectTypes.size > 0) {
@@ -17,104 +36,90 @@ export default function SelectProjectTypeStep() {
   }, []);
 
   const toggleType = (type) => {
-    const newTypes = new Set(selectedTypes);
-    if (newTypes.has(type)) {
-      newTypes.delete(type);
-    } else {
-      newTypes.add(type);
-    }
-    setSelectedTypes(newTypes);
+    const next = new Set(selectedTypes);
+    if (next.has(type)) next.delete(type);
+    else next.add(type);
+    setSelectedTypes(next);
   };
 
   const handleSubmit = async () => {
     if (selectedTypes.size === 0) {
-      toast.error('Please select at least one project type');
+      toast.error('Pick at least one');
       return;
     }
-
     try {
       await selectProjectTypes(selectedTypes);
-      // useInterestStore already calls fetchOnboarding internally on success
     } catch (error) {
-      toast.error(error.message || 'Failed to save project types');
+      toast.error(error.message || 'Could not save that');
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">What kind of projects interest you?</h2>
-        <p className="mt-2 text-sm text-gray-500">
-          Select one or both. This helps us tailor your match recommendations.
-        </p>
+    <div>
+      <StepHeader eyebrow="Step three" title="How long are you in for?">
+        Pick one or both. This decides who you get put in front of — nothing else
+        about your profile matters as much.
+      </StepHeader>
+
+      <div className="grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
+        {TILES.map((tile) => {
+          const selected = selectedTypes.has(tile.id);
+          return (
+            <motion.button
+              key={tile.id}
+              type="button"
+              onClick={() => toggleType(tile.id)}
+              aria-pressed={selected}
+              whileTap={reduced ? undefined : { scale: 0.99 }}
+              transition={transition(snappy, reduced)}
+              className={cn(
+                'group relative flex min-h-[13rem] flex-col justify-between rounded-lg border p-6 text-left',
+                'transition-colors duration-150',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
+                selected
+                  ? 'border-accent-500 bg-accent-50'
+                  : 'border-line bg-[#FBF8F2] hover:border-ink/25'
+              )}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-mute">
+                  {tile.meta}
+                </span>
+                <span
+                  className={cn(
+                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border transition-colors',
+                    selected ? 'border-accent-600 bg-accent-600' : 'border-line'
+                  )}
+                >
+                  {selected && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+                </span>
+              </div>
+
+              <div>
+                <h2
+                  className={cn(
+                    'font-display text-3xl font-semibold tracking-tight',
+                    selected ? 'text-accent-800' : 'text-ink'
+                  )}
+                >
+                  {tile.title}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-mute">{tile.body}</p>
+              </div>
+            </motion.button>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Long Term Card */}
-        <div 
-          onClick={() => toggleType('LONG_TERM')}
-          className={`relative rounded-xl border-2 p-6 cursor-pointer transition-all ${
-            selectedTypes.has('LONG_TERM') 
-              ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500' 
-              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className={`p-3 rounded-lg ${selectedTypes.has('LONG_TERM') ? 'bg-brand-100' : 'bg-gray-100'}`}>
-              <Target className={`w-6 h-6 ${selectedTypes.has('LONG_TERM') ? 'text-brand-600' : 'text-gray-500'}`} />
-            </div>
-            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-              selectedTypes.has('LONG_TERM') ? 'border-brand-500 bg-brand-500' : 'border-gray-300'
-            }`}>
-              {selectedTypes.has('LONG_TERM') && <div className="w-2 h-2 rounded-full bg-white" />}
-            </div>
-          </div>
-          <h3 className={`text-lg font-bold mb-2 ${selectedTypes.has('LONG_TERM') ? 'text-brand-900' : 'text-gray-900'}`}>
-            Long-Term
-          </h3>
-          <p className={`text-sm ${selectedTypes.has('LONG_TERM') ? 'text-brand-700' : 'text-gray-500'}`}>
-            Ongoing projects, deep collaboration, and building lasting connections over months or years.
-          </p>
-        </div>
-
-        {/* Short Term Card */}
-        <div 
-          onClick={() => toggleType('SHORT_TERM')}
-          className={`relative rounded-xl border-2 p-6 cursor-pointer transition-all ${
-            selectedTypes.has('SHORT_TERM') 
-              ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500' 
-              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className={`p-3 rounded-lg ${selectedTypes.has('SHORT_TERM') ? 'bg-brand-100' : 'bg-gray-100'}`}>
-              <Zap className={`w-6 h-6 ${selectedTypes.has('SHORT_TERM') ? 'text-brand-600' : 'text-gray-500'}`} />
-            </div>
-            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-              selectedTypes.has('SHORT_TERM') ? 'border-brand-500 bg-brand-500' : 'border-gray-300'
-            }`}>
-              {selectedTypes.has('SHORT_TERM') && <div className="w-2 h-2 rounded-full bg-white" />}
-            </div>
-          </div>
-          <h3 className={`text-lg font-bold mb-2 ${selectedTypes.has('SHORT_TERM') ? 'text-brand-900' : 'text-gray-900'}`}>
-            Short-Term
-          </h3>
-          <p className={`text-sm ${selectedTypes.has('SHORT_TERM') ? 'text-brand-700' : 'text-gray-500'}`}>
-            Quick projects, weekend hackathons, and fast-paced one-time collaborations.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex justify-center">
-        <Button 
-          onClick={handleSubmit} 
-          loading={loading}
-          disabled={selectedTypes.size === 0}
-          className="w-full md:w-auto md:min-w-[200px]"
-        >
-          Continue
-        </Button>
-      </div>
+      <Button
+        onClick={handleSubmit}
+        size="lg"
+        loading={loading}
+        disabled={selectedTypes.size === 0}
+        className="mt-10"
+      >
+        Continue
+      </Button>
     </div>
   );
 }

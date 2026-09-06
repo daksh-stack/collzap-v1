@@ -1,14 +1,19 @@
+import { useId } from 'react';
+import { motion } from 'motion/react';
 import { cn } from '../../lib/utils';
+import { snappy, useReducedMotion, transition } from '../../lib/motion';
 
 export default function Tabs({ tabs, active, onChange, className }) {
+  const reduced = useReducedMotion();
+  const groupId = useId();
+
   return (
     <div className={className}>
       <div className="sm:hidden">
-        <label htmlFor="tabs" className="sr-only">Select a tab</label>
+        <label htmlFor={`${groupId}-select`} className="sr-only">Select a tab</label>
         <select
-          id="tabs"
-          name="tabs"
-          className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-brand-500 focus:outline-none focus:ring-brand-500 sm:text-sm"
+          id={`${groupId}-select`}
+          className="block w-full rounded border border-line bg-[#FBF8F2] py-2 pl-3 pr-10 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25"
           value={active}
           onChange={(e) => onChange(e.target.value)}
         >
@@ -17,24 +22,35 @@ export default function Tabs({ tabs, active, onChange, className }) {
           ))}
         </select>
       </div>
+
       <div className="hidden sm:block">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => onChange(tab.key)}
-                className={cn(
-                  active === tab.key
-                    ? 'border-brand-500 text-brand-600'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-                  'whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors'
-                )}
-                aria-current={active === tab.key ? 'page' : undefined}
-              >
-                {tab.label}
-              </button>
-            ))}
+        <div className="border-b border-line">
+          <nav className="-mb-px flex gap-8" aria-label="Tabs">
+            {tabs.map((tab) => {
+              const isActive = active === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => onChange(tab.key)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cn(
+                    'relative whitespace-nowrap py-3 text-sm transition-colors duration-150',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded-sm',
+                    isActive ? 'text-ink font-semibold' : 'text-mute hover:text-ink font-medium'
+                  )}
+                >
+                  {tab.label}
+                  {isActive && (
+                    // Shared layout: the rule slides between tabs instead of blinking.
+                    <motion.span
+                      layoutId={`${groupId}-underline`}
+                      transition={transition(snappy, reduced)}
+                      className="absolute left-0 right-0 -bottom-px h-0.5 bg-accent-500"
+                    />
+                  )}
+                </button>
+              );
+            })}
           </nav>
         </div>
       </div>

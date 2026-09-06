@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { api } from '../api/api';
+import { api, API_BASE } from '../api/api';
 import axios from 'axios';
+import { webSocketService } from '../services/websocket';
 
 export const useAuthStore = create(
   persist(
@@ -57,15 +58,15 @@ export const useAuthStore = create(
 
         // Use raw axios here to avoid interceptor loops if refresh fails
         try {
-          const response = await axios.post('http://localhost:8081/api/auth/refresh', {
+          const response = await axios.post(`${API_BASE}/auth/refresh`, {
             refreshToken
           });
-          
+
+          // AccessTokenResponse: { accessToken, tokenType, expiresInSeconds }.
+          // The backend does not rotate refresh tokens, so we keep the existing one.
           const data = response.data;
           set({
             accessToken: data.accessToken,
-            // Assuming refresh might return a new refresh token, otherwise keep old
-            refreshToken: data.refreshToken || refreshToken,
             isAuthenticated: true,
           });
           return data;
@@ -86,6 +87,9 @@ export const useAuthStore = create(
                 console.warn('Logout request failed', error);
             }
         }
+
+        webSocketService.disconnect();
+
         set({
           user: null,
           accessToken: null,
@@ -101,19 +105,23 @@ export const useAuthStore = create(
         try {
           const response = await api.post('/admin/auth/login', { username, password });
           
-          // Construct a mock user object for admin since it doesn't return a UserResponse
+          // AdminAuthResponse is not a UserResponse, so build a minimal user object.
           const adminUser = {
               name: response.username,
               role: response.role,
               isAdmin: true
           };
 
-          set({ 
+          // AdminAuthResponse carries no refresh token — the session lasts until
+          // the JWT expires. Store null rather than undefined so the 401
+          // interceptor can tell "admin, cannot refresh" from "student".
+          set({
             user: adminUser,
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken, // Might not exist for admin
+            refreshToken: null,
             isAuthenticated: true,
-            loading: false 
+            nextStep: null,
+            loading: false
           });
           return response;
         } catch (error) {
