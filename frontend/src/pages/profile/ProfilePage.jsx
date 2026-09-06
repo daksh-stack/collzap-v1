@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, ShieldAlert, Edit2, MapPin, GraduationCap, Building2 } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -7,17 +7,25 @@ import TextArea from '../../components/ui/TextArea';
 import Select from '../../components/ui/Select';
 import Avatar from '../../components/ui/Avatar';
 import Badge from '../../components/ui/Badge';
+import Spinner from '../../components/ui/Spinner';
 import { useUserStore } from '../../store/useUserStore';
-import { useAuthStore } from '../../store/useAuthStore';
+import { useInterestStore } from '../../store/useInterestStore';
+
+const PROMPTS = [
+  { key: 'storyPrompt1', q: 'What are you actually into?' },
+  { key: 'storyPrompt2', q: "What's open on your laptop right now?" },
+  { key: 'storyPrompt3', q: 'One thing people find out about you late' },
+];
 
 export default function ProfilePage() {
-  const { user } = useAuthStore();
   const { profile, fetchMe, updateProfile, loading } = useUserStore();
+  const { myInterests, fetchMyInterests } = useInterestStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
     fetchMe().catch(console.error);
+    fetchMyInterests().catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -29,162 +37,177 @@ export default function ProfilePage() {
         city: profile.city || '',
         storyPrompt1: profile.storyPrompt1 || '',
         storyPrompt2: profile.storyPrompt2 || '',
-        storyPrompt3: profile.storyPrompt3 || ''
+        storyPrompt3: profile.storyPrompt3 || '',
       });
     }
-  }, [profile, isEditing]); // reset on edit toggle
+  }, [profile, isEditing]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await updateProfile({
         ...formData,
-        collegeId: user?.collegeId || profile?.collegeId,
-        yearOfStudy: parseInt(formData.yearOfStudy, 10)
+        collegeId: profile?.collegeId,
+        yearOfStudy: parseInt(formData.yearOfStudy, 10),
       });
-      toast.success('Profile updated successfully');
+      toast.success('Saved');
       setIsEditing(false);
     } catch (error) {
-      toast.error(error.message || 'Failed to update profile');
+      toast.error(error.message || 'Could not save that');
     }
   };
 
   if (loading && !profile) {
-    return <div className="text-center py-20 text-gray-500">Loading profile...</div>;
+    return (
+      <div className="flex justify-center py-24 text-accent-500">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   if (!profile) {
-    return <div className="text-center py-20 text-red-500">Failed to load profile.</div>;
+    return <p className="py-24 text-center text-sm text-bad">Could not load your profile.</p>;
   }
 
+  const isVerified = profile.verificationStatus === 'APPROVED';
+  const interests = Array.isArray(myInterests) ? myInterests : [];
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header Banner */}
-      <div className="relative rounded-2xl bg-white shadow-sm border border-gray-200 overflow-hidden">
-        <div className="h-32 bg-gradient-to-r from-brand-600 to-brand-800"></div>
-        
-        <div className="px-6 sm:px-10 pb-8 relative">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between -mt-12 sm:-mt-16 mb-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-end sm:space-x-5">
-              <div className="relative">
-                <Avatar src={profile.profilePhotoUrl} name={profile.name} size="xl" className="border-4 border-white shadow-md bg-white" />
-                {profile.verified && (
-                  <div className="absolute bottom-0 right-0 bg-white rounded-full p-0.5 shadow-sm">
-                    <ShieldCheck className="w-6 h-6 text-brand-500" />
-                  </div>
-                )}
-              </div>
-              <div className="mt-4 sm:mt-0 text-center sm:text-left">
-                <h1 className="text-3xl font-extrabold text-gray-900 truncate">{profile.name}</h1>
-                <p className="text-gray-500">{user?.email}</p>
-              </div>
-            </div>
-            
-            <div className="mt-6 sm:mt-0 flex justify-center sm:justify-end">
-              {!isEditing ? (
-                <Button onClick={() => setIsEditing(true)} icon={<Edit2 className="w-4 h-4" />}>
-                  Edit Profile
-                </Button>
-              ) : (
-                <div className="space-x-3 flex">
-                  <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
-                  <Button onClick={handleSubmit} loading={loading}>Save</Button>
-                </div>
-              )}
-            </div>
+    <div className="space-y-12">
+      <header className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-center gap-5">
+          <Avatar src={profile.profilePhotoUrl} name={profile.name} size="2xl" />
+          <div className="min-w-0">
+            <h1 className="font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
+              {profile.name}
+            </h1>
+            <p className="mt-2 text-sm text-mute">{profile.email}</p>
+            {isVerified && (
+              <span className="mt-3 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-good">
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                Verified student
+              </span>
+            )}
           </div>
+        </div>
 
+        <div className="shrink-0">
           {!isEditing ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Left Column - Details */}
-              <div className="space-y-6">
-                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Details</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center text-sm text-gray-700">
-                      <Building2 className="w-5 h-5 mr-3 text-gray-400" />
-                      {profile.collegeName}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-700">
-                      <GraduationCap className="w-5 h-5 mr-3 text-gray-400" />
-                      Year {profile.yearOfStudy} Student
-                    </div>
-                    <div className="flex items-center text-sm text-gray-700">
-                      <MapPin className="w-5 h-5 mr-3 text-gray-400" />
-                      {profile.city}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Verification</h3>
-                  {profile.verified ? (
-                    <div className="flex items-start text-sm text-brand-800 bg-brand-50 p-3 rounded-lg border border-brand-100">
-                      <ShieldCheck className="w-5 h-5 mr-2 text-brand-600 flex-shrink-0" />
-                      <p>Your student status is verified by CollZap.</p>
-                    </div>
-                  ) : (
-                    <div className="flex items-start text-sm text-yellow-800 bg-yellow-50 p-3 rounded-lg border border-yellow-100">
-                      <ShieldAlert className="w-5 h-5 mr-2 text-yellow-600 flex-shrink-0" />
-                      <p>Your profile is pending verification or was rejected.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Right Column - Stories */}
-              <div className="md:col-span-2 space-y-6">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Icebreakers</h3>
-                  <div className="space-y-4">
-                    {[
-                      { q: "What drives you?", a: profile.storyPrompt1 },
-                      { q: "What are you currently working on?", a: profile.storyPrompt2 },
-                      { q: "Fun fact about you", a: profile.storyPrompt3 }
-                    ].map((item, idx) => (
-                      <div key={idx} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                        <p className="text-xs font-bold text-brand-600 mb-2">{item.q}</p>
-                        <p className="text-gray-900 text-sm leading-relaxed">{item.a || <span className="text-gray-400 italic">No answer provided.</span>}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {profile.interests && profile.interests.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider mt-8">Interests</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {profile.interests.map(i => (
-                        <Badge key={i.interestId} variant="secondary" className="px-3 py-1 text-sm bg-brand-50 text-brand-700 border-brand-200">
-                          {i.interestName}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <Button variant="secondary" onClick={() => setIsEditing(true)}>Edit</Button>
           ) : (
-            /* Edit Mode Form */
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <div className="space-y-4">
-                <Input label="Full Name" name="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-                <Input label="City" name="city" value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} required />
-                <Select label="Year of Study" name="yearOfStudy" value={formData.yearOfStudy} onChange={(e) => setFormData({...formData, yearOfStudy: e.target.value})} options={[
-                  { value: '1', label: '1st Year' }, { value: '2', label: '2nd Year' }, { value: '3', label: '3rd Year' },
-                  { value: '4', label: '4th Year' }, { value: '5', label: '5th Year' }, { value: '6', label: '6th+ Year' },
-                ]} />
-                <Input label="Profile Photo URL" name="profilePhotoUrl" type="url" value={formData.profilePhotoUrl} onChange={(e) => setFormData({...formData, profilePhotoUrl: e.target.value})} />
-              </div>
-              <div className="space-y-4">
-                <TextArea label="What drives you?" name="storyPrompt1" value={formData.storyPrompt1} onChange={(e) => setFormData({...formData, storyPrompt1: e.target.value})} rows={2} />
-                <TextArea label="What are you currently working on?" name="storyPrompt2" value={formData.storyPrompt2} onChange={(e) => setFormData({...formData, storyPrompt2: e.target.value})} rows={2} />
-                <TextArea label="Fun fact about you" name="storyPrompt3" value={formData.storyPrompt3} onChange={(e) => setFormData({...formData, storyPrompt3: e.target.value})} rows={2} />
-              </div>
-            </form>
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
+              <Button onClick={handleSubmit} loading={loading}>Save</Button>
+            </div>
           )}
         </div>
-      </div>
+      </header>
+
+      {!isEditing ? (
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+          <div className="space-y-10">
+            <section>
+              <h2 className="mb-4 font-mono text-[10px] uppercase tracking-widest text-mute">Where</h2>
+              <dl className="divide-y divide-line border-y border-line text-sm">
+                <div className="flex justify-between gap-4 py-3">
+                  <dt className="text-mute">College</dt>
+                  <dd className="text-right text-ink">{profile.collegeName || '—'}</dd>
+                </div>
+                <div className="flex justify-between gap-4 py-3">
+                  <dt className="text-mute">Year</dt>
+                  <dd className="text-right text-ink tnum">{profile.yearOfStudy || '—'}</dd>
+                </div>
+                <div className="flex justify-between gap-4 py-3">
+                  <dt className="text-mute">City</dt>
+                  <dd className="text-right text-ink">{profile.city || '—'}</dd>
+                </div>
+              </dl>
+            </section>
+
+            {interests.length > 0 && (
+              <section>
+                <h2 className="mb-4 font-mono text-[10px] uppercase tracking-widest text-mute">
+                  Matching on
+                </h2>
+                <ul className="divide-y divide-line border-y border-line">
+                  {interests.map((i) => (
+                    <li key={`${i.id}-${i.projectType}`} className="flex items-baseline justify-between gap-3 py-3">
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm text-ink">{i.name}</span>
+                        {i.subTag && (
+                          <span className="mt-0.5 block truncate text-xs text-mute">{i.subTag}</span>
+                        )}
+                      </span>
+                      <Badge variant="secondary">{i.level}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+
+          <section>
+            <h2 className="mb-4 font-mono text-[10px] uppercase tracking-widest text-mute">
+              What people read first
+            </h2>
+            <div className="divide-y divide-line border-y border-line">
+              {PROMPTS.map(({ key, q }) => (
+                <div key={key} className="py-5">
+                  <p className="text-xs text-mute">{q}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-ink">
+                    {profile[key] || <span className="italic text-mute/60">Left blank.</span>}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="max-w-lg space-y-10">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              label="Full name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+            <Input
+              label="City"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              required
+            />
+            <Select
+              label="Year"
+              value={formData.yearOfStudy}
+              onChange={(e) => setFormData({ ...formData, yearOfStudy: e.target.value })}
+              options={[
+                { value: '1', label: '1st year' }, { value: '2', label: '2nd year' },
+                { value: '3', label: '3rd year' }, { value: '4', label: '4th year' },
+                { value: '5', label: '5th year' }, { value: '6', label: '6th+ year' },
+              ]}
+            />
+            <Input
+              label="Photo URL"
+              type="url"
+              value={formData.profilePhotoUrl}
+              onChange={(e) => setFormData({ ...formData, profilePhotoUrl: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-5 border-t border-line pt-8">
+            {PROMPTS.map(({ key, q }) => (
+              <TextArea
+                key={key}
+                label={q}
+                value={formData[key]}
+                onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                rows={2}
+              />
+            ))}
+          </div>
+        </form>
+      )}
     </div>
   );
 }

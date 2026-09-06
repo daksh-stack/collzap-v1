@@ -1,16 +1,31 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, MessageSquare, ShieldCheck, Link2 } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
 import EmptyState from '../../components/ui/EmptyState';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import { cn } from '../../lib/utils';
+
+function relativeTime(timestamp) {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return '';
+  const secs = Math.floor((Date.now() - date) / 1000);
+  if (secs < 60) return 'now';
+  if (secs < 3600) return `${Math.floor(secs / 60)}m`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h`;
+  if (secs < 172800) return 'yesterday';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
-  const { notifications, fetchNotifications, markRead, markAllRead, loading } = useNotificationStore();
-  const page = 0; // Keeping simple without actual pagination state for now
+  const {
+    notifications, pagination, fetchNotifications, markRead, markAllRead, loading,
+  } = useNotificationStore();
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     fetchNotifications(page).catch(console.error);
@@ -19,161 +34,110 @@ export default function NotificationsPage() {
   const handleMarkAllRead = async () => {
     try {
       await markAllRead();
-      toast.success("All notifications marked as read");
-    } catch (error) {
-      toast.error("Failed to mark all as read");
+    } catch {
+      toast.error('Could not mark those read');
     }
   };
 
-  const handleNotificationClick = async (notification) => {
+  const handleClick = async (notification) => {
     if (!notification.read) {
-      try {
-        await markRead(notification.id);
-      } catch (error) {
-        console.error("Failed to mark read", error);
-      }
+      markRead(notification.id).catch(() => {});
     }
 
-    // Navigate based on type
-    switch (notification.type) {
-      case 'MATCH_FOUND':
-        navigate('/matches');
-        break;
-      case 'NEW_MESSAGE':
-        if (notification.payload?.roomId) navigate(`/chat/${notification.payload.roomId}`);
-        else navigate('/chat');
-        break;
-      case 'GROUP_MEMBER_JOINED':
-        if (notification.payload?.groupId) navigate(`/matches/${notification.payload.groupId}`);
-        else navigate('/matches');
-        break;
-      case 'VERIFICATION_APPROVED':
-        navigate('/profile');
-        break;
-      case 'VERIFICATION_REJECTED':
-        navigate('/onboarding');
-        break;
-      default:
-        break;
+    // Route off the payload the backend actually sends.
+    const payload = notification.payload || {};
+    if (payload.chatRoomId) {
+      navigate(`/chat/${payload.chatRoomId}`);
+    } else if (payload.matchGroupId) {
+      navigate(`/matches/${payload.matchGroupId}`);
+    } else if (notification.type === 'VERIFICATION_APPROVED') {
+      navigate('/profile');
+    } else if (notification.type === 'VERIFICATION_REJECTED') {
+      navigate('/onboarding');
     }
   };
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'MATCH_FOUND': return <Link2 className="w-5 h-5 text-green-600" />;
-      case 'NEW_MESSAGE': return <MessageSquare className="w-5 h-5 text-blue-600" />;
-      case 'VERIFICATION_APPROVED': return <ShieldCheck className="w-5 h-5 text-brand-600" />;
-      case 'GROUP_MEMBER_JOINED': return <Bell className="w-5 h-5 text-purple-600" />;
-      default: return <Bell className="w-5 h-5 text-gray-500" />;
-    }
-  };
-
-  const getIconBg = (type) => {
-    switch (type) {
-      case 'MATCH_FOUND': return 'bg-green-100';
-      case 'NEW_MESSAGE': return 'bg-blue-100';
-      case 'VERIFICATION_APPROVED': return 'bg-brand-100';
-      case 'GROUP_MEMBER_JOINED': return 'bg-purple-100';
-      default: return 'bg-gray-100';
-    }
-  };
-
-  const formatRelativeTime = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-    
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 172800) return 'Yesterday';
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  };
-
-  const hasUnread = notifications?.some(n => !n.read);
+  const list = notifications || [];
+  const hasUnread = list.some((n) => !n.read);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-10">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-          <p className="mt-1 text-sm text-gray-500">Stay updated on your matches and messages.</p>
+          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
+            Notices
+          </h1>
+          <p className="mt-3 text-sm text-mute">Matches, messages and verification news.</p>
         </div>
-        <div>
-          <Button 
-            variant="outline" 
-            onClick={handleMarkAllRead} 
-            disabled={!hasUnread || loading}
-            icon={<Check className="w-4 h-4" />}
-          >
-            Mark All Read
-          </Button>
-        </div>
-      </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleMarkAllRead}
+          disabled={!hasUnread || loading}
+          className="shrink-0"
+        >
+          Mark all read
+        </Button>
+      </header>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading && !notifications ? (
-          <div className="p-8 space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="animate-pulse flex items-start">
-                <div className="rounded-full bg-gray-200 h-10 w-10 mr-4" />
-                <div className="flex-1 space-y-2 py-1">
-                  <div className="h-4 bg-gray-200 rounded w-1/3" />
-                  <div className="h-3 bg-gray-200 rounded w-2/3" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : notifications?.length === 0 ? (
-          <div className="p-12">
-            <EmptyState
-              icon={Bell}
-              title="No notifications yet"
-              description="When you get matches or messages, they will appear here."
-            />
-          </div>
-        ) : (
-          <ul className="divide-y divide-gray-100">
-            {notifications?.map((notification) => (
-              <li 
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`p-4 sm:px-6 hover:bg-gray-50 cursor-pointer transition-colors flex ${!notification.read ? 'bg-brand-50/30' : ''}`}
-              >
-                <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center mr-4 mt-1 ${getIconBg(notification.type)}`}>
-                  {getIcon(notification.type)}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${!notification.read ? 'font-bold text-gray-900' : 'font-medium text-gray-800'}`}>
-                    {notification.title}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-600 line-clamp-2">
-                    {notification.body}
-                  </p>
-                  <p className="mt-2 text-xs text-gray-400">
-                    {formatRelativeTime(notification.createdAt)}
-                  </p>
-                </div>
-
-                {!notification.read && (
-                  <div className="flex-shrink-0 ml-4 flex items-center">
-                    <div className="h-2.5 w-2.5 rounded-full bg-brand-600"></div>
-                  </div>
-                )}
+      {loading && list.length === 0 ? (
+        <ul className="divide-y divide-line border-y border-line">
+          {[1, 2, 3].map((i) => (
+            <li key={i} className="animate-pulse py-5">
+              <div className="h-3 w-1/3 rounded-sm bg-line" />
+              <div className="mt-2 h-3 w-2/3 rounded-sm bg-line/60" />
+            </li>
+          ))}
+        </ul>
+      ) : list.length === 0 ? (
+        <EmptyState
+          icon={Bell}
+          title="Nothing on the board"
+          description="Matches and messages show up here."
+        />
+      ) : (
+        <>
+          <ul className="divide-y divide-line border-y border-line">
+            {list.map((notification) => (
+              <li key={notification.id}>
+                <button
+                  onClick={() => handleClick(notification)}
+                  className="flex w-full items-start gap-4 py-5 text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                >
+                  <span
+                    className={cn(
+                      'mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full',
+                      notification.read ? 'bg-transparent' : 'bg-accent-500'
+                    )}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block text-sm', notification.read ? 'text-ink/80' : 'font-semibold text-ink')}>
+                      {notification.title}
+                    </span>
+                    {notification.body && (
+                      <span className="mt-1 block text-sm leading-relaxed text-mute">
+                        {notification.body}
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-[10px] text-mute tnum">
+                    {relativeTime(notification.createdAt)}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
-        )}
-        
-        {/* Simple pagination mock since backend handles offset/limit, would implement proper page state in a real scenario */}
-        {notifications?.length >= 20 && (
-          <div className="p-4 border-t border-gray-200">
-            <Pagination currentPage={1} totalPages={2} onPageChange={() => {}} />
-          </div>
-        )}
-      </div>
+
+          {pagination?.totalPages > 1 && (
+            <Pagination
+              page={pagination.page ?? page}
+              totalPages={pagination.totalPages}
+              onPageChange={(next) => setPage(next)}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }

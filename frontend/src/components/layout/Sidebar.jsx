@@ -1,88 +1,127 @@
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { Home, MessageSquare, Users, User, Bell, Settings, X } from 'lucide-react';
+import { snappy, useReducedMotion, transition } from '../../lib/motion';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
+// A notice list, not an icon rail. Each line reads as a pinned slip.
 const navigation = [
-  { name: 'Home', href: '/', icon: Home },
-  { name: 'Chat', href: '/chat', icon: MessageSquare },
-  { name: 'Matches', href: '/matches', icon: Users },
-  { name: 'Profile', href: '/profile', icon: User },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Desk', href: '/', note: 'where you left off' },
+  { name: 'Matches', href: '/matches', note: 'people, queued and found' },
+  { name: 'Chat', href: '/chat', note: 'open threads' },
+  { name: 'Profile', href: '/profile', note: 'what others see' },
+  { name: 'Notifications', href: '/notifications', note: null },
+  { name: 'Settings', href: '/settings', note: null },
 ];
 
-export default function Sidebar({ mobileOpen, setMobileOpen }) {
+function NavList({ onNavigate }) {
   const location = useLocation();
-
-  const NavLinks = () => (
-    <nav className="flex-1 space-y-1 px-2 py-4">
-      {navigation.map((item) => {
-        const isActive = location.pathname === item.href;
-        return (
-          <Link
-            key={item.name}
-            to={item.href}
-            onClick={() => setMobileOpen(false)}
-            className={cn(
-              isActive
-                ? 'bg-brand-50 text-brand-700'
-                : 'text-gray-700 hover:bg-gray-50 hover:text-brand-600',
-              'group flex items-center px-2 py-2 text-sm font-medium rounded-md'
-            )}
-          >
-            <item.icon
-              className={cn(
-                isActive ? 'text-brand-500' : 'text-gray-400 group-hover:text-brand-500',
-                'mr-3 flex-shrink-0 h-6 w-6'
-              )}
-              aria-hidden="true"
-            />
-            {item.name}
-          </Link>
-        );
-      })}
-    </nav>
-  );
+  const reduced = useReducedMotion();
+  const { unreadCount } = useNotificationStore();
 
   return (
+    <nav className="flex-1 px-3 py-2" aria-label="Main">
+      <ul className="space-y-0.5">
+        {navigation.map((item) => {
+          const isActive = item.href === '/'
+            ? location.pathname === '/'
+            : location.pathname.startsWith(item.href);
+
+          return (
+            <li key={item.name}>
+              <Link
+                to={item.href}
+                onClick={onNavigate}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  'group relative block rounded py-2.5 pl-4 pr-3 transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500',
+                  isActive ? 'bg-ink/[0.035]' : 'hover:bg-ink/[0.025]'
+                )}
+              >
+                {isActive && (
+                  // 2px accent rule, sliding between items — not a filled pill.
+                  <motion.span
+                    layoutId="sidebar-active"
+                    transition={transition(snappy, reduced)}
+                    className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-sm bg-accent-500"
+                  />
+                )}
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className={cn(
+                    'text-sm',
+                    isActive ? 'font-semibold text-ink' : 'text-mute group-hover:text-ink'
+                  )}>
+                    {item.name}
+                  </span>
+                  {item.href === '/notifications' && unreadCount > 0 && (
+                    <span className="font-mono text-[10px] text-accent-700 tnum">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </span>
+                {item.note && (
+                  <span className="mt-0.5 block text-[11px] leading-tight text-mute/70">
+                    {item.note}
+                  </span>
+                )}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+export default function Sidebar({ mobileOpen, setMobileOpen }) {
+  return (
     <>
-      {/* Mobile sidebar */}
+      {/* Mobile */}
       {mobileOpen && (
         <div className="relative z-40 md:hidden" role="dialog" aria-modal="true">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setMobileOpen(false)} />
+          <div className="fixed inset-0 bg-ink/35 backdrop-blur-[6px]" onClick={() => setMobileOpen(false)} />
           <div className="fixed inset-0 z-40 flex">
-            <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4">
-              <div className="absolute top-0 right-0 -mr-12 pt-2">
+            <div className="relative flex w-full max-w-[17rem] flex-1 flex-col border-r border-line bg-paper pt-5 pb-4">
+              <div className="flex items-center justify-between px-5">
+                <span className="font-display text-lg font-semibold tracking-tightest text-ink">
+                  CollZap
+                </span>
                 <button
                   type="button"
-                  className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                  aria-label="Close menu"
+                  className="rounded p-1 text-mute hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                   onClick={() => setMobileOpen(false)}
                 >
-                  <span className="sr-only">Close sidebar</span>
-                  <X className="h-6 w-6 text-white" aria-hidden="true" />
+                  <X className="h-5 w-5" aria-hidden="true" />
                 </button>
               </div>
-              <div className="flex flex-shrink-0 items-center px-4">
-                <span className="text-2xl font-bold text-brand-600">CollZap</span>
-              </div>
-              <div className="mt-5 h-0 flex-1 overflow-y-auto">
-                <NavLinks />
+              <div className="mt-6 h-0 flex-1 overflow-y-auto">
+                <NavList onNavigate={() => setMobileOpen(false)} />
               </div>
             </div>
-            <div className="w-14 flex-shrink-0" aria-hidden="true">{/* Dummy element to force sidebar to shrink to fit close icon */}</div>
           </div>
         </div>
       )}
 
-      {/* Desktop sidebar */}
-      <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col border-r border-gray-200 bg-white">
-        <div className="flex flex-grow flex-col overflow-y-auto pt-5 pb-4">
-          <div className="flex flex-shrink-0 items-center px-4">
-            <span className="text-2xl font-bold text-brand-600">CollZap</span>
+      {/* Desktop */}
+      <div className="hidden md:fixed md:inset-y-0 md:flex md:w-56 md:flex-col border-r border-line bg-paper">
+        <div className="flex flex-grow flex-col overflow-y-auto pb-4 pt-6">
+          <div className="px-6">
+            <Link
+              to="/"
+              className="font-display text-lg font-semibold tracking-tightest text-ink rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+            >
+              CollZap
+            </Link>
           </div>
-          <div className="mt-5 flex flex-1 flex-col">
-            <NavLinks />
+          <div className="mt-8 flex flex-1 flex-col">
+            <NavList />
           </div>
+          <p className="px-6 font-mono text-[10px] uppercase tracking-widest text-mute/60">
+            Your college only
+          </p>
         </div>
       </div>
     </>

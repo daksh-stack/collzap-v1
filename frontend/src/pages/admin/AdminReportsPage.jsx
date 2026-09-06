@@ -1,119 +1,114 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Flag, ShieldAlert, CheckCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
+import Spinner from '../../components/ui/Spinner';
+import Pagination from '../../components/ui/Pagination';
 import { useAdminStore } from '../../store/useAdminStore';
+import AdminPageHeader from './AdminPageHeader';
 
 export default function AdminReportsPage() {
-  const { reports, fetchReports, resolveReport, loading } = useAdminStore();
-  const [selectedReport, setSelectedReport] = useState(null);
+  const { reports, fetchReports, loading } = useAdminStore();
+  const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    fetchReports().catch(console.error);
-  }, []);
+    fetchReports(page).catch(console.error);
+  }, [page]);
 
-  const handleResolve = async (action) => {
-    if (!selectedReport) return;
-    
-    try {
-      await resolveReport(selectedReport.id, action);
-      toast.success(`Report resolved (Action: ${action})`);
-      setSelectedReport(null);
-    } catch (error) {
-      toast.error(error.message || 'Failed to resolve report');
-    }
-  };
+  const rows = reports?.content || [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">User Reports</h1>
-        <p className="mt-1 text-sm text-gray-500">Review and moderate user behavior.</p>
-      </div>
+    <div>
+      <AdminPageHeader title="Reports" count={reports?.totalElements} />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+      <p className="mb-6 border-l-2 border-line pl-4 text-xs leading-relaxed text-mute">
+        Read only. There is no resolve or ban endpoint — act on these out of band.
+      </p>
+
+      <div className="overflow-x-auto rounded-lg border border-line">
+        <table className="min-w-full divide-y divide-line text-sm">
+          <thead className="bg-ink/[0.02]">
+            <tr>
+              {['Reported', 'Reporter', 'Reason', 'When'].map((h) => (
+                <th
+                  key={h}
+                  scope="col"
+                  className="px-4 py-2.5 text-left font-mono text-[10px] font-medium uppercase tracking-widest text-mute"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line bg-[#FBF8F2]">
+            {loading && rows.length === 0 ? (
+              <tr><td colSpan="4" className="px-4 py-12 text-center text-accent-500"><Spinner /></td></tr>
+            ) : rows.length === 0 ? (
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reported User</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reporter</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason Preview</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <td colSpan="4" className="px-4 py-10">
+                  <EmptyState title="No reports" description="Nobody has reported anybody." />
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading && !reports?.content ? (
-                <tr><td colSpan="6" className="px-6 py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" /></td></tr>
-              ) : reports?.content?.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-10 text-center">
-                    <EmptyState icon={Flag} title="No reports" description="Hooray! The community is behaving well." />
+            ) : (
+              rows.map((report) => (
+                <tr
+                  key={report.id}
+                  onClick={() => setSelected(report)}
+                  className="cursor-pointer transition-colors hover:bg-ink/[0.02]"
+                >
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-ink">{report.reportedName}</div>
+                    <div className="font-mono text-[10px] text-mute">{report.reportedId}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-ink">{report.reporterName}</div>
+                    <div className="font-mono text-[10px] text-mute">{report.reporterId}</div>
+                  </td>
+                  <td className="max-w-md px-4 py-3">
+                    <div className="line-clamp-2 text-ink">{report.reason}</div>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-mute tnum">
+                    {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : '—'}
                   </td>
                 </tr>
-              ) : (
-                reports?.content?.map((report) => (
-                  <tr 
-                    key={report.id} 
-                    className="hover:bg-gray-50 cursor-pointer"
-                    onClick={() => setSelectedReport(report)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-gray-900">{report.reportedUserName}</div>
-                      <div className="text-xs text-gray-500">{report.reportedUserId}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{report.reporterName}</div>
-                      <div className="text-xs text-gray-500">{report.reporterId}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 line-clamp-2 max-w-md">{report.reason}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(report.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
-      <Modal open={!!selectedReport} onClose={() => setSelectedReport(null)} title="Review Report" size="lg">
-        {selectedReport && (
-          <div className="space-y-6">
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">Report Reason</h3>
-              <p className="text-sm text-gray-800 whitespace-pre-wrap">{selectedReport.reason}</p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="border border-red-100 bg-red-50 p-4 rounded-lg">
-                <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider mb-1">Reported User (Target)</h4>
-                <p className="font-bold text-gray-900">{selectedReport.reportedUserName}</p>
-                <p className="text-xs text-gray-500 font-mono">{selectedReport.reportedUserId}</p>
-              </div>
-              <div className="border border-gray-100 bg-white p-4 rounded-lg">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Reporter (Author)</h4>
-                <p className="font-bold text-gray-900">{selectedReport.reporterName}</p>
-                <p className="text-xs text-gray-500 font-mono">{selectedReport.reporterId}</p>
-              </div>
-            </div>
+      {reports?.totalPages > 1 && (
+        <Pagination
+          page={reports.page ?? page}
+          totalPages={reports.totalPages}
+          onPageChange={setPage}
+          className="mt-2 rounded-b-lg border-x border-b border-line bg-[#FBF8F2]"
+        />
+      )}
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-              <Button variant="outline" onClick={() => handleResolve('DISMISS')} icon={<CheckCircle className="w-4 h-4" />}>
-                Dismiss Report
-              </Button>
-              <Button 
-                onClick={() => handleResolve('BAN_USER')} 
-                className="bg-red-600 hover:bg-red-700" 
-                icon={<ShieldAlert className="w-4 h-4" />}
-              >
-                Ban Reported User
-              </Button>
+      <Modal open={!!selected} onClose={() => setSelected(null)} title="Report" size="lg">
+        {selected && (
+          <div className="space-y-6">
+            <p className="whitespace-pre-wrap border-l-2 border-bad pl-4 text-sm leading-relaxed text-ink">
+              {selected.reason}
+            </p>
+
+            <dl className="grid grid-cols-2 gap-px overflow-hidden rounded border border-line bg-line text-sm">
+              <div className="bg-[#FBF8F2] px-4 py-3">
+                <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Reported</dt>
+                <dd className="mt-1 text-ink">{selected.reportedName}</dd>
+                <dd className="mt-0.5 break-all font-mono text-[10px] text-mute">{selected.reportedId}</dd>
+              </div>
+              <div className="bg-[#FBF8F2] px-4 py-3">
+                <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Reporter</dt>
+                <dd className="mt-1 text-ink">{selected.reporterName}</dd>
+                <dd className="mt-0.5 break-all font-mono text-[10px] text-mute">{selected.reporterId}</dd>
+              </div>
+            </dl>
+
+            <div className="flex justify-end">
+              <Button variant="ghost" onClick={() => setSelected(null)}>Close</Button>
             </div>
           </div>
         )}

@@ -1,41 +1,44 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Check, CheckCheck, Loader2, Users } from 'lucide-react';
+import { motion } from 'motion/react';
+import { ArrowLeft, Send, Check, CheckCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
-import TextArea from '../../components/ui/TextArea';
-import Badge from '../../components/ui/Badge';
+import Spinner from '../../components/ui/Spinner';
 import { useChatStore } from '../../store/useChatStore';
-import { useAuthStore } from '../../store/useAuthStore';
 import { webSocketService } from '../../services/websocket';
+import { snappy, useReducedMotion, transition } from '../../lib/motion';
+import { cn } from '../../lib/utils';
 
 export default function ChatRoomPage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  
-  const { user } = useAuthStore();
-  const { currentRoom, rooms, messages, fetchRoom, fetchMessages, sendMessage, markRead, loading } = useChatStore();
-  
+  const reduced = useReducedMotion();
+
+  const {
+    currentRoom, rooms, messages, systemEvents,
+    fetchRoom, fetchMessages, sendMessage, markRead, loading,
+  } = useChatStore();
+
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const initialRenderRef = useRef(true);
 
   const room = (rooms && rooms[roomId]) || currentRoom;
   const roomMessages = messages[roomId] || [];
+  const joins = systemEvents?.[roomId] || [];
 
-  // Fetch room data and connect WS
   useEffect(() => {
     const init = async () => {
       try {
         await fetchRoom(roomId);
         await fetchMessages(roomId, 0);
         await markRead(roomId);
-        
-        // Connect WebSocket and subscribe to this room
+
         webSocketService.connect();
         webSocketService.subscribe(roomId);
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load chat room");
+      } catch {
+        toast.error('Could not open that room');
         navigate('/chat');
       }
     };
@@ -46,32 +49,29 @@ export default function ChatRoomPage() {
     };
   }, [roomId]);
 
-  // Mark read when new messages arrive and we are at the bottom
+  // Mark read when someone else's message lands while we are looking.
   useEffect(() => {
-    const unreadCount = roomMessages.filter(m => !m.mine && m.receiptStatus !== 'READ').length;
-    if (unreadCount > 0) {
-      markRead(roomId).catch(console.error);
-    }
+    const unread = roomMessages.filter((m) => !m.mine && m.receiptStatus !== 'READ').length;
+    if (unread > 0) markRead(roomId).catch(() => {});
   }, [roomMessages.length]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
-  }, [roomMessages]);
+    // Jump on first paint, glide afterwards.
+    messagesEndRef.current?.scrollIntoView({
+      behavior: initialRenderRef.current || reduced ? 'auto' : 'smooth',
+    });
+    initialRenderRef.current = false;
+  }, [roomMessages.length, joins.length]);
 
   const handleSend = async () => {
     if (!content.trim() || sending) return;
-
     try {
       setSending(true);
+      // REST send. The socket echo is deduped by the store.
       await sendMessage(roomId, content.trim());
       setContent('');
-      scrollToBottom();
     } catch (error) {
-      toast.error(error.message || 'Failed to send message');
+      toast.error(error.message || 'That did not send');
     } finally {
       setSending(false);
     }
@@ -84,154 +84,156 @@ export default function ChatRoomPage() {
     }
   };
 
-  const renderMessageStatus = (message) => {
-    if (!message.mine && message.senderId !== user?.id) return null;
-    
+  // Ticks belong to your own messages only.
+  const renderReceipt = (message) => {
+    if (!message.mine) return null;
+    const base = 'ml-1 h-3 w-3 shrink-0';
     switch (message.receiptStatus) {
-      case 'SENT':
-        return <Check className="w-3 h-3 text-brand-200 ml-1" />;
-      case 'DELIVERED':
-        return <CheckCheck className="w-3 h-3 text-brand-200 ml-1" />;
       case 'READ':
-        return <CheckCheck className="w-3 h-3 text-blue-300 ml-1" />;
+        return <CheckCheck className={cn(base, 'text-accent-600')} aria-label="Read" />;
+      case 'DELIVERED':
+        return <CheckCheck className={cn(base, 'text-mute')} aria-label="Delivered" />;
+      case 'SENT':
       default:
-        return <Check className="w-3 h-3 text-brand-200 ml-1 opacity-60" />;
+        return <Check className={cn(base, 'text-mute/60')} aria-label="Sent" />;
     }
   };
 
   if (loading && !room) {
     return (
-      <div className="h-[calc(100vh-8rem)] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+      <div className="flex h-[60vh] items-center justify-center text-accent-500">
+        <Spinner size="lg" />
       </div>
     );
   }
 
   if (!room) {
-    return <div className="text-center py-20 text-gray-500">Room not found.</div>;
+    return <p className="py-24 text-center text-sm text-mute">That room is not here.</p>;
   }
 
-  const roomTitle = room?.title || room?.roomName || room?.interestName || 'Chat Room';
-  const avatarInitials = (roomTitle.trim() || 'CR').substring(0, 2).toUpperCase();
-  const memberCount = room.members?.length || room.memberCount || 2;
+  const roomTitle = room.title || room.interestName || 'Chat';
+  const memberCount = room.members?.length || 0;
   const isGroup = memberCount > 2;
 
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col bg-gray-50 rounded-xl overflow-hidden shadow-sm border border-gray-200">
-      
-      {/* Top Header */}
-      <div className="bg-white px-4 py-3 border-b border-gray-200 flex items-center justify-between shadow-sm z-10">
-        <div className="flex items-center">
-          <button 
-            onClick={() => navigate('/chat')}
-            className="p-2 -ml-2 mr-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          
-          <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold mr-3 border border-brand-200 text-sm">
-              {avatarInitials}
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-gray-900 leading-none mb-1">{roomTitle}</h2>
-              <div className="flex items-center text-xs text-gray-500 font-medium">
-                <span className="mr-2">{memberCount} members</span>
-                {room.interestName && (
-                  <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4 leading-4">{room.interestName}</Badge>
-                )}
-              </div>
-            </div>
-          </div>
+    <div className="flex h-[calc(100vh-9rem)] flex-col overflow-hidden rounded-lg border border-line bg-[#FBF8F2]">
+      {/* Header */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-3">
+        <button
+          onClick={() => navigate('/chat')}
+          aria-label="Back to threads"
+          className="-ml-1 rounded p-1.5 text-mute transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        </button>
+        <div className="min-w-0">
+          <h1 className="truncate font-display text-base font-semibold leading-tight tracking-tight text-ink">
+            {roomTitle}
+          </h1>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">
+            {memberCount} {memberCount === 1 ? 'person' : 'people'}
+            {room.interestName ? ` · ${room.interestName}` : ''}
+          </p>
         </div>
       </div>
 
-      {/* Message List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages */}
+      <div
+        role="log"
+        aria-label="Messages"
+        aria-live="polite"
+        className="flex-1 space-y-3 overflow-y-auto px-4 py-5"
+      >
         {roomMessages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8 text-gray-400">
-            <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 mb-2">
-              <Users className="w-6 h-6" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700">
-              {room.emptyStateMessage || "You're connected! Say hello to break the ice 👋"}
+          <div className="flex h-full flex-col items-center justify-center px-8 text-center">
+            <p className="font-display text-lg font-semibold tracking-tight text-ink">
+              {room.emptyStateMessage || 'Nobody has said anything yet.'}
             </p>
-            <p className="text-xs text-gray-400 mt-1">Messages are end-to-end coordinated for your peer group.</p>
+            <p className="mt-2 text-sm text-mute">
+              Someone has to go first. It might as well be you.
+            </p>
           </div>
         ) : (
           roomMessages.map((message, index) => {
-            const isMine = message.mine || message.senderId === user?.id;
-            const senderName = message.senderName || 'Peer';
-            const showName = isGroup && !isMine && (index === roomMessages.length - 1 || roomMessages[index + 1]?.senderId !== message.senderId);
-            const messageKey = message.id || message.clientMessageId || `${message.sentAt}-${index}`;
-            
-            return (
-              <div key={messageKey} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`flex max-w-[75%] ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
-                  
-                  {/* Avatar for others in group */}
-                  {isGroup && !isMine && (
-                    <div className="flex-shrink-0 mr-2 flex flex-col justify-end pb-1">
-                      <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
-                        {senderName.charAt(0)}
-                      </div>
-                    </div>
-                  )}
+            const isMine = message.mine;
+            const prev = roomMessages[index - 1];
+            const showName = isGroup && !isMine && prev?.senderId !== message.senderId;
+            const key = message.id || message.clientMessageId || `${message.sentAt}-${index}`;
 
-                  <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                    {showName && (
-                      <span className="text-[10px] font-medium text-gray-500 mb-1 ml-1">{senderName}</span>
+            return (
+              <motion.div
+                key={key}
+                // New bubbles rise from the bottom; history does not animate.
+                initial={reduced ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={transition(snappy, reduced)}
+                className={cn('flex', isMine ? 'justify-end' : 'justify-start')}
+              >
+                <div className={cn('max-w-[78%]', isMine ? 'items-end' : 'items-start')}>
+                  {showName && (
+                    <p className="mb-1 ml-0.5 font-mono text-[10px] uppercase tracking-widest text-mute">
+                      {message.senderName}
+                    </p>
+                  )}
+                  <div
+                    className={cn(
+                      'rounded-lg px-3.5 py-2.5',
+                      isMine
+                        ? 'bg-accent-500 text-white'
+                        : 'border border-line bg-paper text-ink'
                     )}
-                    
-                    <div 
-                      className={`relative px-4 py-2.5 rounded-2xl shadow-sm ${
-                        isMine 
-                          ? 'bg-brand-600 text-white rounded-br-sm' 
-                          : 'bg-white border border-gray-100 text-gray-900 rounded-bl-sm'
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                    </div>
-                    
-                    <div className="flex items-center mt-1">
-                      <span className="text-[10px] text-gray-400 font-medium">
-                        {message.sentAt ? new Date(message.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                      </span>
-                      {renderMessageStatus(message)}
-                    </div>
+                  >
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                      {message.content}
+                    </p>
+                  </div>
+                  <div className={cn('mt-1 flex items-center', isMine ? 'justify-end' : 'justify-start')}>
+                    <span className="text-[10px] text-mute tnum">
+                      {message.sentAt
+                        ? new Date(message.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : ''}
+                    </span>
+                    {renderReceipt(message)}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })
         )}
+
+        {/* MEMBER_JOINED, as a quiet system line — never a bubble. */}
+        {joins.map((join) => (
+          <p key={join.id} className="py-1 text-center font-mono text-[10px] uppercase tracking-widest text-mute">
+            {join.name} joined
+          </p>
+        ))}
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="bg-white p-3 sm:p-4 border-t border-gray-200">
-        <div className="flex items-end space-x-2">
-          <div className="flex-1">
-            <TextArea
-              placeholder="Type a message..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="resize-none block w-full bg-gray-50 border-gray-200 rounded-xl focus:ring-brand-500 focus:border-brand-500 sm:text-sm py-3 px-4 max-h-32"
-              rows={1}
-            />
-          </div>
+      {/* Composer */}
+      <div className="shrink-0 border-t border-line px-4 py-3">
+        <div className="flex items-end gap-2">
+          <label htmlFor="chat-input" className="sr-only">Message</label>
+          <textarea
+            id="chat-input"
+            rows={1}
+            placeholder="Say something"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="max-h-32 flex-1 resize-none rounded border border-line bg-paper px-3 py-2.5 text-sm text-ink placeholder:text-mute/55 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25"
+          />
           <button
             onClick={handleSend}
             disabled={!content.trim() || sending}
-            className="inline-flex items-center justify-center p-3 border border-transparent rounded-full shadow-sm text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0 mb-1"
+            aria-label="Send message"
+            className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded bg-accent-500 text-white transition-colors hover:bg-accent-600 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
           >
-            {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            {sending ? <Spinner size="sm" className="text-current" /> : <Send className="h-4 w-4" aria-hidden="true" />}
           </button>
         </div>
-        <div className="text-[10px] text-gray-400 mt-1 text-center sm:text-left ml-2">
-          Press Enter to send, Shift + Enter for new line
-        </div>
+        <p className="mt-1.5 text-[10px] text-mute/70">Enter sends · Shift+Enter for a new line</p>
       </div>
     </div>
   );

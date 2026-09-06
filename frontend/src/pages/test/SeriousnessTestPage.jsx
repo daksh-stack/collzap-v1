@@ -1,189 +1,154 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import toast from 'react-hot-toast';
-import { Timer, AlertCircle, X, Shield } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
 import { useTestStore } from '../../store/useTestStore';
+import { cn } from '../../lib/utils';
+import { snappy, page, useReducedMotion, transition } from '../../lib/motion';
+
+const DIVIDER_MS = 800;
+
+/** Parse the ISO instant the backend sends. Returns NaN if unusable. */
+function parseExpiry(value) {
+  if (!value) return NaN;
+  if (typeof value === 'number') return value < 1e11 ? value * 1000 : value;
+  return new Date(value).getTime();
+}
 
 export default function SeriousnessTestPage() {
   const navigate = useNavigate();
-  const { session, eligibility, result, startSession, fetchCurrentSession, submitAnswer, submitTest, resetTestState, loading } = useTestStore();
+  const { session, result, startSession, fetchCurrentSession, submitAnswer, submitTest, resetTestState, loading } = useTestStore();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [expiresAtMs, setExpiresAtMs] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
+  const [divider, setDivider] = useState(null); // interest name being announced
   const submittingRef = useRef(false);
 
-  // Load active session or start a new one
+  // --- session bootstrap -------------------------------------------------
   useEffect(() => {
     submittingRef.current = false;
     useTestStore.setState({ result: null });
 
     const init = async () => {
       try {
-        let activeSession = null;
+        let active = null;
         try {
-          activeSession = await fetchCurrentSession();
-        } catch (e) {
-          // No in-progress session found, start a new one
+          active = await fetchCurrentSession();
+        } catch {
+          active = null;
+        }
+
+        if (!active || !active.questions || active.questions.length === 0) {
           try {
-            activeSession = await startSession();
+            active = await startSession();
           } catch (startErr) {
-            console.error("Start session failed", startErr);
-            toast.error(startErr.message || "Cannot start assessment at this time");
+            toast.error(startErr.message || 'Cannot start the paper right now');
             navigate('/onboarding');
             return;
           }
         }
 
-        if (!activeSession || !activeSession.questions || activeSession.questions.length === 0) {
-          try {
-            activeSession = await startSession();
-          } catch (startErr) {
-            console.error("Start session retry failed", startErr);
-            toast.error(startErr.message || "Failed to load test questions");
-            navigate('/onboarding');
-            return;
-          }
-        }
-        
-        // Find first unanswered question
-        if (activeSession && activeSession.questions && activeSession.questions.length > 0) {
-          const nextUnanswered = activeSession.questions.findIndex(q => q.selectedOptionIndex === null);
-          if (nextUnanswered !== -1) {
-            setCurrentQuestionIndex(nextUnanswered);
-            setSelectedOption(activeSession.questions[nextUnanswered].selectedOptionIndex);
-          } else {
-            setCurrentQuestionIndex(0);
-            setSelectedOption(activeSession.questions[0].selectedOptionIndex);
-          }
-        }
+        // Land on the first unanswered question.
+        const firstUnanswered = active.questions.findIndex((q) => q.selectedOptionIndex === null);
+        const idx = firstUnanswered === -1 ? 0 : firstUnanswered;
+        setCurrentQuestionIndex(idx);
+        setSelectedOption(active.questions[idx].selectedOptionIndex);
 
-        // Setup timer accurately
-        let expiryTime = NaN;
-        if (activeSession.expiresAt) {
-          const val = activeSession.expiresAt;
-          if (typeof val === 'number') {
-            expiryTime = val < 10000000000 ? val * 1000 : val;
-          } else {
-            expiryTime = new Date(val).getTime();
-          }
-        }
-        
-        if (isNaN(expiryTime)) {
-          let startedAtMs = Date.now();
-          if (activeSession.startedAt) {
-            const parsed = new Date(activeSession.startedAt).getTime();
-            if (!isNaN(parsed)) {
-              startedAtMs = parsed < 10000000000 ? parsed * 1000 : parsed;
-            }
-          }
-          expiryTime = startedAtMs + (20 * 60 * 1000);
-        }
-        
-        const now = Date.now();
-        let remaining = Math.floor((expiryTime - now) / 1000);
-        if (remaining <= 0) {
-          try {
-            activeSession = await startSession();
-            remaining = 20 * 60;
-          } catch (e) {
-            remaining = 60;
-          }
-        }
-        
-        setTimeLeft(Math.max(60, remaining));
-
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load test session");
+        // Timer comes from expiresAt, which the backend always sends.
+        setExpiresAtMs(parseExpiry(active.expiresAt));
+      } catch {
+        toast.error('Could not load the paper');
         navigate('/onboarding');
       }
     };
+
     init();
   }, []);
 
-  // Timer countdown
+  const handleTimeUp = useCallback(async () => {
+    if (!session || result) return;
+    try {
+      await submitTest(session.sessionId);
+    } catch {
+      /* the paper is taken up regardless */
+    }
+  }, [session, result, submitTest]);
+
+  // --- countdown, driven off the absolute expiry ------------------------
   useEffect(() => {
-    if (!session || result || timeLeft === null) return;
-    
-    if (timeLeft <= 0) {
-      if (!submittingRef.current) {
+    if (result || expiresAtMs === null) return;
+
+    const tick = () => {
+      const remaining = isNaN(expiresAtMs)
+        ? null
+        : Math.max(0, Math.round((expiresAtMs - Date.now()) / 1000));
+
+      setTimeLeft(remaining);
+
+      if (remaining === 0 && !submittingRef.current) {
         submittingRef.current = true;
         handleTimeUp();
       }
-      return;
-    }
+    };
 
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev === null) return null;
-        if (prev <= 1) {
-          clearInterval(timer);
-          if (!submittingRef.current) {
-            submittingRef.current = true;
-            handleTimeUp();
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiresAtMs, result, handleTimeUp]);
 
-    return () => clearInterval(timer);
-  }, [timeLeft === null, session?.sessionId, result]);
-
-  // Protect against accidental tab closure / navigation
+  // Guard against losing work to a stray tab close.
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
+    const onBeforeUnload = (e) => {
       if (session && !result) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [session, result]);
 
-  const handleTimeUp = async () => {
-    if (session && !result) {
-      toast.error("Time's up! Submitting your test automatically.");
-      try {
-        await submitTest(session.sessionId);
-      } catch (e) {
-        console.error("Auto submit failed", e);
-      }
-    }
-  };
-
-  const handleOptionSelect = (index) => {
-    setSelectedOption(index);
-  };
+  const reduced = useReducedMotion();
 
   const handleNext = async () => {
     if (selectedOption === null || !session) return;
-    
-    const currentQ = session.questions[currentQuestionIndex];
-    
+
+    const questions = session.questions;
+    const currentQ = questions[currentQuestionIndex];
+
     try {
       await submitAnswer(session.sessionId, currentQ.questionId, selectedOption);
-      session.questions[currentQuestionIndex].selectedOptionIndex = selectedOption;
+      questions[currentQuestionIndex].selectedOptionIndex = selectedOption;
 
-      if (currentQuestionIndex < session.questions.length - 1) {
-        setCurrentQuestionIndex(prev => prev + 1);
-        setSelectedOption(session.questions[currentQuestionIndex + 1].selectedOptionIndex);
+      if (currentQuestionIndex < questions.length - 1) {
+        const nextIdx = currentQuestionIndex + 1;
+        const nextQ = questions[nextIdx];
+
+        const advance = () => {
+          setCurrentQuestionIndex(nextIdx);
+          setSelectedOption(nextQ.selectedOptionIndex);
+        };
+
+        // A new subject gets a full-bleed divider before the question shows.
+        if (nextQ.interestName && nextQ.interestName !== currentQ.interestName && !reduced) {
+          setDivider(nextQ.interestName);
+          setTimeout(() => { advance(); setDivider(null); }, DIVIDER_MS);
+        } else {
+          advance();
+        }
       } else {
-        // Last question
         await submitTest(session.sessionId);
       }
-    } catch (error) {
-      toast.error("Failed to save answer");
+    } catch {
+      toast.error('That answer did not save');
     }
   };
 
   const formatTime = (seconds) => {
-    if (seconds === null || seconds === undefined) return '20:00';
+    if (seconds === null || seconds === undefined) return '--:--';
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
@@ -194,155 +159,207 @@ export default function SeriousnessTestPage() {
     navigate('/onboarding');
   };
 
-  // Render Result Screen
+  // --- result ------------------------------------------------------------
   if (result) {
     return (
-      <div className="min-h-screen bg-slate-900 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-8 sm:p-10 border border-gray-100">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-200">
-              <Shield className="w-8 h-8 text-brand-600" />
-            </div>
-            <h2 className="text-3xl font-black text-gray-900">Assessment Complete!</h2>
-            <p className="mt-2 text-sm text-gray-500">Your commitment level has been evaluated:</p>
-            <div className="mt-4 inline-flex items-center justify-center px-6 py-2.5 rounded-full shadow-sm text-lg font-bold text-white bg-brand-600">
-              {result.overallLevel}
-            </div>
-          </div>
-          
-          <div className="mt-8 border-t border-gray-100 pt-8">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Domain Breakdown</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {result.results?.map((b) => (
-                <div key={b.interestId} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                  <h4 className="font-bold text-gray-900">{b.interestName}</h4>
-                  <div className="mt-2 text-sm text-gray-500 space-y-1">
-                    <p>Score: <span className="font-semibold text-gray-900">{b.score} / {b.totalQuestions}</span></p>
-                    <p>Domain Band: <span className="font-bold text-brand-600">{b.level}</span></p>
-                  </div>
+      <div className="min-h-screen bg-paper px-6 py-20">
+        <motion.div
+          initial={reduced ? { opacity: 0 } : { opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={transition(page, reduced)}
+          className="mx-auto max-w-2xl"
+        >
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Paper taken up</p>
+
+          <h1 className="mt-5 font-display text-5xl font-semibold leading-none tracking-tightest text-ink">
+            {result.overallLevel}
+          </h1>
+
+          {result.overallScore !== undefined && result.overallScore !== null && (
+            <p className="mt-3 font-display text-lg text-mute tnum">
+              {result.overallScore}
+            </p>
+          )}
+
+          {/* Copy comes from the API — no invented grade language. */}
+          {result.message && (
+            <p className="mt-6 max-w-lg text-sm leading-relaxed text-ink">{result.message}</p>
+          )}
+
+          {result.results?.length > 0 && (
+            <dl className="mt-12 divide-y divide-line border-y border-line">
+              {result.results.map((b) => (
+                <div key={b.interestId} className="flex items-baseline justify-between gap-6 py-4">
+                  <dt className="text-sm text-ink">{b.interestName}</dt>
+                  <dd className="flex items-baseline gap-5 text-right">
+                    <span className="text-sm text-mute tnum">
+                      {b.score}/{b.totalQuestions}
+                    </span>
+                    <span className="font-display text-base font-semibold text-accent-700 min-w-24">
+                      {b.level}
+                    </span>
+                  </dd>
                 </div>
               ))}
-            </div>
-          </div>
-          
-          <div className="mt-10 flex justify-center">
-            <Button onClick={handleContinueOnboarding} size="lg" className="w-full sm:w-auto px-8">
-              Continue Onboarding
-            </Button>
-          </div>
-        </div>
+            </dl>
+          )}
+
+          <Button onClick={handleContinueOnboarding} size="lg" className="mt-12">
+            Carry on
+          </Button>
+        </motion.div>
       </div>
     );
   }
 
-  // Loading state
+  // --- loading -----------------------------------------------------------
   if (!session || !session.questions || session.questions.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-brand-500 border-t-transparent mb-4" />
-        <p className="text-gray-300 font-medium">Preparing your assessment paper...</p>
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <p className="font-mono text-[11px] uppercase tracking-widest text-mute">
+          Handing out the paper…
+        </p>
       </div>
     );
   }
 
-  const currentQ = session.questions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === session.questions.length - 1;
-  const progressPercent = ((currentQuestionIndex + 1) / session.questions.length) * 100;
+  const questions = session.questions;
+  const currentQ = questions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+  const answered = questions.filter((q) => q.selectedOptionIndex !== null).length;
+  const lowTime = timeLeft !== null && timeLeft < 300;
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col select-none">
-      
-      {/* Distraction-Free Exam Header */}
-      <header className="bg-slate-800/80 backdrop-blur border-b border-slate-700/60 px-6 py-4 flex items-center justify-between z-20">
-        <div className="flex items-center space-x-3">
-          <span className="text-xl font-black text-white tracking-tight">CollZap</span>
-          <span className="text-xs bg-brand-500/20 text-brand-300 font-semibold px-2 py-0.5 rounded border border-brand-400/30">
-            Locked Assessment Mode
-          </span>
+    <div className="flex min-h-screen flex-col bg-paper">
+      {/* Invigilator's header */}
+      <header className="border-b border-line">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-6 px-6 py-4">
+          <div className="flex items-baseline gap-3">
+            <span className="font-display text-base font-semibold tracking-tightest text-ink">CollZap</span>
+            <span className="hidden font-mono text-[10px] uppercase tracking-widest text-mute sm:inline">
+              Assessment
+            </span>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-mute tnum">
+              {answered}/{questions.length} done
+            </span>
+            <span
+              className={cn(
+                'font-display text-xl tnum tabular-nums transition-colors',
+                lowTime ? 'text-bad' : 'text-ink'
+              )}
+              aria-live="polite"
+            >
+              {formatTime(timeLeft)}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className={`flex items-center font-mono font-bold text-base px-3 py-1.5 rounded-lg border ${
-            timeLeft !== null && timeLeft < 300 
-              ? 'bg-red-500/20 border-red-500/40 text-red-400 animate-pulse' 
-              : 'bg-slate-700/50 border-slate-600 text-white'
-          }`}>
-            <Timer className="w-4 h-4 mr-2 text-brand-400" />
-            {formatTime(timeLeft)}
-          </div>
+        {/* progress rule */}
+        <div className="h-px w-full bg-line">
+          <motion.div
+            className="h-px bg-accent-500"
+            animate={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+            transition={transition(snappy, reduced)}
+          />
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-2xl">
-          
-          {/* Progress Indicator */}
-          <div className="mb-6">
-            <div className="flex justify-between text-xs font-semibold text-gray-300 mb-2 uppercase tracking-wider">
-              <span>Question {currentQuestionIndex + 1} of {session.questions.length}</span>
-              <span>{Math.round(progressPercent)}% Completed</span>
-            </div>
-            <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
-              <div 
-                className="bg-brand-500 h-2 rounded-full transition-all duration-300 shadow-sm" 
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Question Card */}
-          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
-            <div className="mb-6">
-              <Badge variant="secondary" className="mb-3 font-semibold text-brand-700 bg-brand-50 border-brand-200">
-                {currentQ.interestName}
-              </Badge>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 leading-snug">
-                {currentQ.questionText}
-              </h3>
-            </div>
-            
-            <div className="space-y-3">
-              {currentQ.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleOptionSelect(index)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center ${
-                    selectedOption === index 
-                      ? 'border-brand-600 bg-brand-50/70 shadow-sm ring-1 ring-brand-500' 
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 ${
-                    selectedOption === index ? 'border-brand-600 bg-brand-600' : 'border-gray-300'
-                  }`}>
-                    {selectedOption === index && <div className="w-2 h-2 rounded-full bg-white" />}
-                  </div>
-                  <span className={`text-sm font-medium ${selectedOption === index ? 'text-brand-950 font-semibold' : 'text-gray-700'}`}>
-                    {option}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="text-xs text-gray-400 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1 text-amber-500 flex-shrink-0" />
-                Answers cannot be modified once you proceed
+      <main className="flex flex-1 items-center px-6 py-14">
+        <div className="mx-auto w-full max-w-2xl">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentQuestionIndex}
+              initial={reduced ? { opacity: 0 } : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduced ? { opacity: 0 } : { opacity: 0, y: -12 }}
+              transition={transition(page, reduced)}
+            >
+              <div className="mb-8 flex items-baseline gap-4">
+                <span className="font-display text-5xl leading-none text-line tnum">
+                  {String(currentQuestionIndex + 1).padStart(2, '0')}
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-accent-700">
+                  {currentQ.interestName}
+                </span>
               </div>
-              <Button 
-                onClick={handleNext} 
-                disabled={selectedOption === null || loading}
-                loading={loading}
-                size="lg"
-                className="w-full sm:w-auto px-8"
-              >
-                {isLastQuestion ? 'Submit Assessment' : 'Next Question'}
-              </Button>
-            </div>
-          </div>
+
+              <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-[2.1rem]">
+                {currentQ.questionText}
+              </h1>
+
+              <div className="mt-10 divide-y divide-line border-y border-line">
+                {currentQ.options.map((option, index) => {
+                  const isOn = selectedOption === index;
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedOption(index)}
+                      aria-pressed={isOn}
+                      className={cn(
+                        'group flex w-full items-start gap-4 py-4 text-left transition-colors',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded-sm',
+                        isOn ? 'text-ink' : 'text-mute hover:text-ink'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border font-mono text-[10px] transition-colors',
+                          isOn ? 'border-accent-600 bg-accent-600 text-white' : 'border-line text-mute'
+                        )}
+                      >
+                        {String.fromCharCode(65 + index)}
+                      </span>
+                      <span className={cn('text-[0.95rem] leading-relaxed', isOn && 'font-medium')}>
+                        {option}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-10 flex items-center justify-between gap-6">
+                <p className="text-xs text-mute">Once you move on, that one is set.</p>
+                <Button
+                  onClick={handleNext}
+                  disabled={selectedOption === null || loading}
+                  loading={loading}
+                  size="lg"
+                >
+                  {isLastQuestion ? 'Hand it in' : 'Next'}
+                </Button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
+
+      {/* Full-bleed subject divider between interests */}
+      <AnimatePresence>
+        {divider && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="fixed inset-0 z-40 flex items-center justify-center bg-paper"
+          >
+            <motion.div
+              initial={{ y: 14, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="px-8 text-center"
+            >
+              <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Next section</p>
+              <p className="mt-4 font-display text-5xl font-semibold tracking-tightest text-ink">
+                {divider}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

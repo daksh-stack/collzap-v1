@@ -1,15 +1,77 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, ShieldCheck, User, Compass, ArrowRight, CheckCircle2, FileText } from 'lucide-react';
-import { useModerationStore } from '../../../store/useModerationStore';
-import { useUserStore } from '../../../store/useUserStore';
+import { motion } from 'motion/react';
 import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import StepHeader from './StepHeader';
+import { useModerationStore } from '../../../store/useModerationStore';
+import { useReducedMotion } from '../../../lib/motion';
+
+/** A real clock face — hands that actually move, not a spinner. */
+function Clock({ reduced }) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    // One tick a second is enough; under reduced motion we still show the
+    // correct time, we just do not animate the sweep.
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const s = now.getSeconds();
+  const m = now.getMinutes() + s / 60;
+  const h = (now.getHours() % 12) + m / 60;
+
+  return (
+    <svg viewBox="0 0 100 100" className="h-24 w-24" aria-hidden="true">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#DDD4C8" strokeWidth="1.5" />
+      {Array.from({ length: 12 }).map((_, i) => {
+        const a = (i * 30 * Math.PI) / 180;
+        const inner = i % 3 === 0 ? 36 : 40;
+        return (
+          <line
+            key={i}
+            x1={50 + inner * Math.sin(a)}
+            y1={50 - inner * Math.cos(a)}
+            x2={50 + 43 * Math.sin(a)}
+            y2={50 - 43 * Math.cos(a)}
+            stroke="#6B645C"
+            strokeWidth={i % 3 === 0 ? 2 : 1}
+            opacity={i % 3 === 0 ? 0.75 : 0.35}
+          />
+        );
+      })}
+      {/* hour */}
+      <line
+        x1="50" y1="50"
+        x2={50 + 24 * Math.sin((h * 30 * Math.PI) / 180)}
+        y2={50 - 24 * Math.cos((h * 30 * Math.PI) / 180)}
+        stroke="#1A1714" strokeWidth="3" strokeLinecap="round"
+      />
+      {/* minute */}
+      <line
+        x1="50" y1="50"
+        x2={50 + 34 * Math.sin((m * 6 * Math.PI) / 180)}
+        y2={50 - 34 * Math.cos((m * 6 * Math.PI) / 180)}
+        stroke="#1A1714" strokeWidth="2" strokeLinecap="round"
+      />
+      {/* second — the only moving accent */}
+      <line
+        x1="50" y1="50"
+        x2={50 + 38 * Math.sin((s * 6 * Math.PI) / 180)}
+        y2={50 - 38 * Math.cos((s * 6 * Math.PI) / 180)}
+        stroke="#C45C26" strokeWidth="1"
+        strokeLinecap="round"
+        style={reduced ? undefined : { transition: 'all 0.2s cubic-bezier(0.22,1,0.36,1)' }}
+      />
+      <circle cx="50" cy="50" r="2.5" fill="#1A1714" />
+    </svg>
+  );
+}
 
 export default function AwaitingVerificationStep() {
   const navigate = useNavigate();
-  const { verificationStatus, fetchVerificationStatus, loading } = useModerationStore();
-  const { onboarding } = useUserStore();
+  const { verificationStatus, fetchVerificationStatus } = useModerationStore();
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     fetchVerificationStatus().catch(console.error);
@@ -18,126 +80,55 @@ export default function AwaitingVerificationStep() {
   const latestDoc = verificationStatus?.documents?.[0];
 
   const formatDocType = (type) => {
-    if (!type) return 'College Document';
-    if (type === 'COLLEGE_ID') return 'Student ID Card';
-    if (type === 'FEE_RECEIPT') return 'Fee Receipt / Slip';
-    return type.replace(/_/g, ' ');
+    if (!type) return '—';
+    if (type === 'FEE_SLIP') return 'Fee slip';
+    if (type === 'ID_CARD') return 'ID card';
+    return type.replace(/_/g, ' ').toLowerCase();
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Recently';
-    try {
-      const d = new Date(dateString);
-      if (isNaN(d.getTime())) return 'Recently';
-      return d.toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return 'Recently';
-    }
+  const formatDate = (value) => {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   return (
-    <div className="max-w-xl mx-auto py-6 space-y-6">
-      {/* Header card */}
-      <div className="text-center bg-white rounded-2xl p-8 border border-brand-100 shadow-sm relative overflow-hidden">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 mb-4 shadow-inner">
-          <Clock className="h-8 w-8 text-amber-600 animate-pulse" />
-        </div>
-
-        <Badge variant="warning" className="mb-3 px-3 py-1 font-semibold text-xs uppercase tracking-wide">
-          Review in Progress
-        </Badge>
-        
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Verification Pending
-        </h2>
-        
-        <p className="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
-          Your college document was received and is in the queue for manual review. In the meantime, you have full access to explore the app!
-        </p>
-
-        {/* Submitted Document Summary */}
-        <div className="mt-6 bg-gray-50/80 rounded-xl p-4 text-left border border-gray-200/80 max-w-md mx-auto">
-          <div className="flex items-center justify-between border-b border-gray-200/60 pb-2 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center">
-              <FileText className="w-3.5 h-3.5 mr-1 text-gray-400" />
-              Submission Details
-            </span>
-            <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-              Pending Admin Review
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <span className="text-gray-500 block">Document Type:</span>
-              <span className="font-semibold text-gray-800">
-                {formatDocType(latestDoc?.documentType)}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-500 block">Submitted At:</span>
-              <span className="font-semibold text-gray-800">
-                {formatDate(latestDoc?.createdAt)}
-              </span>
-            </div>
-          </div>
-        </div>
+    <div>
+      <div className="mb-10">
+        <motion.div
+          initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Clock reduced={reduced} />
+        </motion.div>
       </div>
 
-      {/* Feature unlock roadmap */}
-      <div className="bg-gradient-to-br from-brand-50/50 to-indigo-50/30 rounded-2xl p-6 border border-brand-100">
-        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">
-          What you can do right now
-        </h3>
-        <div className="space-y-2.5">
-          <div className="flex items-start text-sm text-gray-700 bg-white/80 backdrop-blur rounded-xl p-3 border border-brand-100/50">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 mr-2.5 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-gray-900">Customise your profile & interests</p>
-              <p className="text-xs text-gray-500">Fine-tune your story prompts, photos, and project focus anytime.</p>
-            </div>
-          </div>
-          <div className="flex items-start text-sm text-gray-700 bg-white/80 backdrop-blur rounded-xl p-3 border border-brand-100/50">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 mr-2.5 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-gray-900">Practice Seriousness Assessment</p>
-              <p className="text-xs text-gray-500">Review your questions, standing, and prepare your level bands.</p>
-            </div>
-          </div>
-          <div className="flex items-start text-sm text-gray-700 bg-white/80 backdrop-blur rounded-xl p-3 border border-amber-200/50">
-            <Clock className="w-5 h-5 text-amber-500 mr-2.5 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-gray-900">Peer Matchmaking & Direct Chat</p>
-              <p className="text-xs text-amber-700 font-medium">Unlocks automatically the moment your document is approved.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StepHeader eyebrow="With a human" title="Setup is done.">
+        Matching stays locked until a human checks your ID. Nothing else is
+        pending on your side.
+      </StepHeader>
 
-      {/* Quick Navigation Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <Button 
-          onClick={() => navigate('/')} 
-          className="flex-1 py-3 justify-center shadow-sm"
-          icon={<Compass className="w-4 h-4" />}
-        >
-          Explore CollZap Dashboard
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/profile')} 
-          className="flex-1 py-3 justify-center"
-          icon={<User className="w-4 h-4" />}
-        >
-          View Profile
-        </Button>
+      <div className="max-w-lg">
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line">
+          <div className="bg-[#FBF8F2] px-5 py-4">
+            <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Sent</dt>
+            <dd className="mt-1 text-sm text-ink">{formatDocType(latestDoc?.documentType)}</dd>
+          </div>
+          <div className="bg-[#FBF8F2] px-5 py-4">
+            <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">At</dt>
+            <dd className="mt-1 text-sm text-ink tnum">{formatDate(latestDoc?.createdAt)}</dd>
+          </div>
+        </dl>
+
+        <div className="mt-10 flex flex-wrap gap-3">
+          <Button onClick={() => navigate('/')}>Look around</Button>
+          <Button variant="secondary" onClick={() => navigate('/profile')}>
+            Edit profile
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
-

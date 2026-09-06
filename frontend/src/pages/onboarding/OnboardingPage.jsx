@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import { useUserStore } from '../../store/useUserStore';
 import Spinner from '../../components/ui/Spinner';
+import { page, useReducedMotion, transition } from '../../lib/motion';
 
 // Import all steps
 import UploadDocumentStep from './steps/UploadDocumentStep';
@@ -12,44 +15,75 @@ import SelectInterestsStep from './steps/SelectInterestsStep';
 import TakeSeriousnessTestStep from './steps/TakeSeriousnessTestStep';
 import SelectConnectionTypeStep from './steps/SelectConnectionTypeStep';
 
+const STEP_COMPONENTS = {
+  UPLOAD_DOCUMENT: UploadDocumentStep,
+  AWAITING_VERIFICATION: AwaitingVerificationStep,
+  VERIFICATION_REJECTED: VerificationRejectedStep,
+  COMPLETE_PROFILE: CompleteProfileStep,
+  SELECT_PROJECT_TYPE: SelectProjectTypeStep,
+  SELECT_INTERESTS: SelectInterestsStep,
+  TAKE_SERIOUSNESS_TEST: TakeSeriousnessTestStep,
+  SELECT_CONNECTION_TYPE: SelectConnectionTypeStep,
+};
+
 export default function OnboardingPage() {
   const { onboarding, fetchOnboarding, loading } = useUserStore();
+  const navigate = useNavigate();
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     fetchOnboarding().catch(console.error);
   }, []);
 
+  const step = onboarding?.step;
+
+  // READY still leaves onboarding; the guard normally catches this first.
+  useEffect(() => {
+    if (step === 'READY') navigate('/', { replace: true });
+  }, [step, navigate]);
+
   if (loading && !onboarding) {
-    return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+    return (
+      <div className="flex justify-center py-24 text-accent-500">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   if (!onboarding) {
-    return <div className="text-center py-20 text-red-500">Failed to load onboarding state.</div>;
+    return (
+      <p className="py-24 text-center text-sm text-bad">
+        Could not load your setup state. Reload the page.
+      </p>
+    );
   }
 
-  // Route based on step
-  switch (onboarding.step) {
-    case 'UPLOAD_DOCUMENT':
-      return <UploadDocumentStep />;
-    case 'AWAITING_VERIFICATION':
-      return <AwaitingVerificationStep />;
-    case 'VERIFICATION_REJECTED':
-      return <VerificationRejectedStep />;
-    case 'COMPLETE_PROFILE':
-      return <CompleteProfileStep />;
-    case 'SELECT_PROJECT_TYPE':
-      return <SelectProjectTypeStep />;
-    case 'SELECT_INTERESTS':
-      return <SelectInterestsStep />;
-    case 'TAKE_SERIOUSNESS_TEST':
-      return <TakeSeriousnessTestStep />;
-    case 'SELECT_CONNECTION_TYPE':
-      return <SelectConnectionTypeStep />;
-    case 'READY':
-      // Force programmatic redirection if guard misses it
-      setTimeout(() => window.location.href = '/', 100);
-      return <div className="text-center py-20">Onboarding complete! Redirecting...</div>;
-    default:
-      return <div className="text-center py-20">Unknown step: {onboarding.step}</div>;
+  if (step === 'READY') {
+    return <p className="py-24 text-center text-sm text-mute">All set. Taking you in…</p>;
   }
+
+  const StepComponent = STEP_COMPONENTS[step];
+
+  if (!StepComponent) {
+    return (
+      <p className="py-24 text-center text-sm text-mute">
+        Unknown step: <span className="font-mono text-ink">{String(step)}</span>
+      </p>
+    );
+  }
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={step}
+        layoutId={reduced ? undefined : 'onboarding-panel'}
+        initial={reduced ? { opacity: 0 } : { opacity: 0, y: 14 }}
+        animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        exit={reduced ? { opacity: 0 } : { opacity: 0, y: -10 }}
+        transition={transition(page, reduced)}
+      >
+        <StepComponent />
+      </motion.div>
+    </AnimatePresence>
+  );
 }

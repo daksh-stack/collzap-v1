@@ -4,12 +4,19 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import TextArea from '../../../components/ui/TextArea';
 import Select from '../../../components/ui/Select';
+import StepHeader from './StepHeader';
 import { useUserStore } from '../../../store/useUserStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 
+const PROMPTS = [
+  { name: 'storyPrompt1', label: 'What are you actually into?', placeholder: 'Not the resume version.' },
+  { name: 'storyPrompt2', label: "What's open on your laptop right now?", placeholder: 'A repo, a paper, a half-dead side project…' },
+  { name: 'storyPrompt3', label: 'One thing people find out about you late', placeholder: 'Anything. Keep it short.' },
+];
+
 export default function CompleteProfileStep() {
   const { user } = useAuthStore();
-  const { updateProfile, fetchOnboarding, loading } = useUserStore();
+  const { profile, updateProfile, fetchOnboarding, loading } = useUserStore();
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -18,11 +25,9 @@ export default function CompleteProfileStep() {
     city: '',
     storyPrompt1: '',
     storyPrompt2: '',
-    storyPrompt3: ''
+    storyPrompt3: '',
   });
 
-  // Pre-fill if we already have profile data fetched
-  const { profile } = useUserStore.getState();
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -32,21 +37,21 @@ export default function CompleteProfileStep() {
         city: profile.city || '',
         storyPrompt1: profile.storyPrompt1 || '',
         storyPrompt2: profile.storyPrompt2 || '',
-        storyPrompt3: profile.storyPrompt3 || ''
+        storyPrompt3: profile.storyPrompt3 || '',
       });
     }
   }, [profile, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim() || !formData.city.trim()) {
-      toast.error('Name and City are required');
+      toast.error('Name and city are required');
       return;
     }
 
@@ -54,115 +59,70 @@ export default function CompleteProfileStep() {
       await updateProfile({
         ...formData,
         collegeId: user?.collegeId || profile?.collegeId,
-        yearOfStudy: parseInt(formData.yearOfStudy, 10)
+        yearOfStudy: parseInt(formData.yearOfStudy, 10),
       });
-      toast.success('Profile saved successfully');
-      // Advance step
       await fetchOnboarding();
     } catch (error) {
-      toast.error(error.message || 'Failed to save profile');
+      toast.error(error.message || 'Could not save that');
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Complete your profile</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Tell us a bit about yourself. This helps us match you with the right peers.
-        </p>
-      </div>
+    <div>
+      <StepHeader eyebrow="Step two" title="Who's asking?">
+        This is what a stranger sees before deciding whether to work with you.
+        Three honest lines beat three polished ones.
+      </StepHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
-          <Input
-            label="Full Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
-          
-          <Input
-            label="City"
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            placeholder="e.g. Mumbai, New York"
-            disabled={loading}
-            required
-          />
-
+      <form onSubmit={handleSubmit} className="max-w-lg space-y-10">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input label="Full name" name="name" value={formData.name} onChange={handleChange} disabled={loading} required />
+          <Input label="City" name="city" value={formData.city} onChange={handleChange} disabled={loading} required />
           <Select
-            label="Year of Study"
+            label="Year"
             name="yearOfStudy"
             value={formData.yearOfStudy}
             onChange={handleChange}
             disabled={loading}
             options={[
-              { value: '1', label: '1st Year' },
-              { value: '2', label: '2nd Year' },
-              { value: '3', label: '3rd Year' },
-              { value: '4', label: '4th Year' },
-              { value: '5', label: '5th Year' },
-              { value: '6', label: '6th+ Year' },
+              { value: '1', label: '1st year' },
+              { value: '2', label: '2nd year' },
+              { value: '3', label: '3rd year' },
+              { value: '4', label: '4th year' },
+              { value: '5', label: '5th year' },
+              { value: '6', label: '6th+ year' },
             ]}
           />
-
           <Input
-            label="Profile Photo URL"
+            label="Photo URL"
             name="profilePhotoUrl"
             type="url"
             value={formData.profilePhotoUrl}
             onChange={handleChange}
-            placeholder="https://example.com/photo.jpg"
             disabled={loading}
             required
           />
         </div>
 
-        <div className="border-t border-gray-200 pt-6 mt-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Icebreakers</h3>
-          <div className="space-y-4">
+        <div className="space-y-5 border-t border-line pt-8">
+          {PROMPTS.map((p) => (
             <TextArea
-              label="What drives you?"
-              name="storyPrompt1"
-              value={formData.storyPrompt1}
+              key={p.name}
+              label={p.label}
+              name={p.name}
+              value={formData[p.name]}
               onChange={handleChange}
-              placeholder="I'm passionate about building tech that helps people..."
+              placeholder={p.placeholder}
               disabled={loading}
               rows={2}
               required
             />
-            <TextArea
-              label="What are you currently working on?"
-              name="storyPrompt2"
-              value={formData.storyPrompt2}
-              onChange={handleChange}
-              placeholder="A side project using React and Spring Boot..."
-              disabled={loading}
-              rows={2}
-              required
-            />
-            <TextArea
-              label="Fun fact about you"
-              name="storyPrompt3"
-              value={formData.storyPrompt3}
-              onChange={handleChange}
-              placeholder="I can solve a Rubik's cube in under a minute..."
-              disabled={loading}
-              rows={2}
-              required
-            />
-          </div>
+          ))}
         </div>
 
-        <div className="flex justify-end pt-4">
-          <Button type="submit" loading={loading} className="w-full sm:w-auto">
-            Save & Continue
-          </Button>
-        </div>
+        <Button type="submit" size="lg" loading={loading}>
+          Save and continue
+        </Button>
       </form>
     </div>
   );

@@ -1,41 +1,46 @@
+import { useState } from 'react';
 import { cn } from '../../lib/utils';
 import { User } from 'lucide-react';
 
 export default function Avatar({ src, name, size = 'md', className }) {
+  const [failed, setFailed] = useState(false);
+
   const sizes = {
-    sm: 'h-8 w-8 text-xs',
-    md: 'h-10 w-10 text-sm',
-    lg: 'h-12 w-12 text-base',
-    xl: 'h-16 w-16 text-xl',
-    '2xl': 'h-24 w-24 text-3xl'
+    sm: 'h-8 w-8 text-[11px]',
+    md: 'h-10 w-10 text-xs',
+    lg: 'h-12 w-12 text-sm',
+    xl: 'h-16 w-16 text-lg',
+    '2xl': 'h-24 w-24 text-2xl',
   };
 
-  const initials = name 
+  const initials = name
     ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
     : null;
 
+  const showImage = src && !failed;
+
   return (
-    <div 
+    <div
       className={cn(
-        'relative inline-flex items-center justify-center rounded-full bg-brand-100 overflow-hidden shrink-0',
+        // Square-ish with a small radius reads more like an ID photo than a bubble.
+        'relative inline-flex items-center justify-center rounded overflow-hidden shrink-0',
+        'bg-accent-50 border border-line',
         sizes[size],
         className
       )}
       title={name}
     >
-      {src ? (
-        <img 
-          src={src} 
-          alt={name || 'Avatar'} 
+      {showImage ? (
+        <img
+          src={src}
+          alt={name || 'Avatar'}
           className="h-full w-full object-cover"
-          onError={(e) => {
-            e.target.style.display = 'none';
-          }}
+          onError={() => setFailed(true)}
         />
       ) : initials ? (
-        <span className="font-semibold text-brand-700 leading-none">{initials}</span>
+        <span className="font-display font-semibold text-accent-700 leading-none">{initials}</span>
       ) : (
-        <User className="h-1/2 w-1/2 text-brand-400" />
+        <User className="h-1/2 w-1/2 text-accent-300" strokeWidth={1.5} />
       )}
     </div>
   );

@@ -1,7 +1,10 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export default function Pagination({ page, totalPages, onPageChange, className }) {
+export default function Pagination({ page: pageProp, currentPage, totalPages, onPageChange, className }) {
+  // Callers use either `page` or `currentPage` for the same zero-based index.
+  const page = pageProp ?? currentPage ?? 0;
+
   if (totalPages <= 1) return null;
 
   return (

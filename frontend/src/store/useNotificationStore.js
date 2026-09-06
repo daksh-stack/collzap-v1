@@ -17,20 +17,19 @@ export const useNotificationStore = create((set, get) => ({
     try {
       const response = await api.get(`/notifications?page=${page}`);
       
-      set((state) => {
-        const newNotifications = page === 0 
-          ? response.content 
-          : [...state.notifications, ...response.content]; // Append older notifications
-
-        return {
-          notifications: newNotifications,
-          pagination: {
-            page: response.page,
-            totalPages: response.totalPages,
-            last: response.last
-          },
-          loading: false
-        };
+      // The page shows one page at a time, so each fetch replaces the list
+      // rather than appending. PageResponse: { content, page, size,
+      // totalElements, totalPages, last }.
+      set({
+        notifications: response.content,
+        pagination: {
+          page: response.page,
+          size: response.size,
+          totalElements: response.totalElements,
+          totalPages: response.totalPages,
+          last: response.last
+        },
+        loading: false
       });
       return response;
     } catch (error) {

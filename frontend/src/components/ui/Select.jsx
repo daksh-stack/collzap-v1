@@ -1,24 +1,31 @@
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { cn } from '../../lib/utils';
 
-const Select = forwardRef(({ 
-  className, 
-  label, 
-  error, 
+const Select = forwardRef(({
+  className,
+  label,
+  error,
   options = [],
-  ...props 
+  ...props
 }, ref) => {
+  const id = useId();
+
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-ink">
           {label}
         </label>
       )}
       <select
+        id={id}
+        aria-invalid={!!error}
         className={cn(
-          'flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-colors',
-          error && 'border-red-500 focus:ring-red-500',
+          'block h-11 w-full rounded border border-line bg-[#FBF8F2] px-3 text-sm text-ink',
+          'focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25',
+          'disabled:cursor-not-allowed disabled:opacity-50',
+          'transition-[border-color,box-shadow] duration-150',
+          error && 'border-bad focus:border-bad focus:ring-bad/25',
           className
         )}
         ref={ref}
@@ -30,9 +37,7 @@ const Select = forwardRef(({
           </option>
         ))}
       </select>
-      {error && (
-        <p className="mt-1 text-sm text-red-500">{error}</p>
-      )}
+      {error && <p className="mt-1.5 text-xs text-bad">{error}</p>}
     </div>
   );
 });

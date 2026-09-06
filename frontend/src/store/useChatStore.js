@@ -6,6 +6,7 @@ export const useChatStore = create((set, get) => ({
   currentRoom: null,
   rooms: {}, // Map of roomId -> ChatRoomDetailResponse
   messages: {}, // Map of roomId -> ChatMessageResponse[]
+  systemEvents: {}, // Map of roomId -> [{ id, name, at }] from MEMBER_JOINED
   pagination: {}, // Map of roomId -> { page, totalPages, last }
   loading: false,
   sending: false,
@@ -152,6 +153,21 @@ export const useChatStore = create((set, get) => ({
           ...state.messages,
           [roomId]: [...roomMessages, message]
         }
+      };
+    });
+  },
+
+  // MEMBER_JOINED lands here, never in messages[] — it is not a chat bubble.
+  addSystemEvent: (roomId, member, at) => {
+    if (!member) return;
+    set((state) => {
+      const existing = state.systemEvents[roomId] || [];
+      if (existing.some((e) => e.id === member.userId)) return state;
+      return {
+        systemEvents: {
+          ...state.systemEvents,
+          [roomId]: [...existing, { id: member.userId, name: member.name, at }],
+        },
       };
     });
   },

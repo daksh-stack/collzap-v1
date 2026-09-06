@@ -13,48 +13,57 @@ export default function Topbar({ setMobileOpen }) {
   const { unreadCount } = useNotificationStore();
 
   const handleLogout = async () => {
+    // logout() also disconnects the socket, dropping the notification queue.
     await logout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   const userMenuItems = [
-    { label: 'Your Profile', onClick: () => navigate('/profile') },
+    { label: 'Your profile', onClick: () => navigate('/profile') },
     { label: 'Settings', onClick: () => navigate('/settings') },
     { label: 'Sign out', onClick: handleLogout, danger: true },
   ];
 
+  const firstName = profile?.name?.split(' ')[0];
+
   return (
-    <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow-sm border-b border-gray-200">
+    <header className="sticky top-0 z-10 flex h-14 flex-shrink-0 items-center border-b border-line bg-paper">
       <button
         type="button"
-        className="border-r border-gray-200 px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 md:hidden"
+        aria-label="Open menu"
+        className="border-r border-line px-4 py-4 text-mute hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500 md:hidden"
         onClick={() => setMobileOpen(true)}
       >
-        <span className="sr-only">Open sidebar</span>
-        <Menu className="h-6 w-6" aria-hidden="true" />
+        <Menu className="h-5 w-5" aria-hidden="true" />
       </button>
-      <div className="flex flex-1 justify-between px-4">
-        <div className="flex flex-1">
-          {/* Add search here if needed later */}
-        </div>
-        <div className="ml-4 flex items-center md:ml-6 space-x-4">
+
+      <div className="flex flex-1 items-center justify-between px-5">
+        <p className="truncate text-sm text-mute">
+          {firstName ? <>Hey, <span className="text-ink">{firstName}</span></> : null}
+        </p>
+
+        <div className="flex items-center gap-4">
           <Link
             to="/notifications"
-            className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+            className="relative rounded p-1.5 text-mute transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
-            <span className="sr-only">View notifications</span>
-            <Bell className="h-6 w-6" aria-hidden="true" />
+            <Bell className="h-5 w-5" strokeWidth={1.6} aria-hidden="true" />
             {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+              <span className="absolute right-1 top-1 block h-1.5 w-1.5 rounded-full bg-accent-500 ring-2 ring-paper" />
             )}
           </Link>
 
           <Dropdown
-            trigger={<Avatar name={profile?.name} src={profile?.profilePhotoUrl} size="sm" />}
+            trigger={
+              <span className="block rounded" aria-label="Account menu">
+                <Avatar name={profile?.name} src={profile?.profilePhotoUrl} size="sm" />
+              </span>
+            }
             items={userMenuItems}
           />
         </div>
       </div>
-    </div>
+    </header>
   );
 }

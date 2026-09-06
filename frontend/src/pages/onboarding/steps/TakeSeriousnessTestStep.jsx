@@ -1,8 +1,8 @@
-import { useNavigate } from 'react-router-dom';
-import { Target, Clock, ShieldAlert } from 'lucide-react';
-import Button from '../../../components/ui/Button';
-import { useTestStore } from '../../../store/useTestStore';
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Button from '../../../components/ui/Button';
+import StepHeader from './StepHeader';
+import { useTestStore } from '../../../store/useTestStore';
 
 export default function TakeSeriousnessTestStep() {
   const navigate = useNavigate();
@@ -12,53 +12,47 @@ export default function TakeSeriousnessTestStep() {
     checkEligibility().catch(console.error);
   }, []);
 
+  // The session is started on /test, not here.
   const handleStart = () => {
     if (resetTestState) resetTestState();
     navigate('/test');
   };
 
+  const resuming = !!eligibility?.hasInProgressSession;
+  const blocked = eligibility && !eligibility.eligible && !resuming;
+
   return (
-    <div className="max-w-xl mx-auto text-center py-8">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 mb-6">
-        <Target className="h-8 w-8 text-brand-600" />
-      </div>
-      
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">
-        Seriousness Assessment
-      </h2>
-      
-      <p className="text-gray-500 mb-8 max-w-md mx-auto">
-        To ensure high-quality matches, we ask all users to complete a brief assessment. 
-        This helps us match you with peers who share your level of commitment and expertise.
-      </p>
+    <div>
+      <StepHeader eyebrow="Step five" title="Sit the paper.">
+        Twenty minutes, one sitting, no going back a question. It sets the level
+        band you get matched inside — so people stop getting paired with someone
+        three years ahead of them.
+      </StepHeader>
 
-      <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mb-10">
-        <div className="bg-gray-50 rounded-lg p-4 flex flex-col items-center">
-          <Clock className="h-6 w-6 text-gray-400 mb-2" />
-          <span className="text-sm font-medium text-gray-900">20 Minutes</span>
-          <span className="text-xs text-gray-500">Time Limit</span>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-4 flex flex-col items-center">
-          <ShieldAlert className="h-6 w-6 text-gray-400 mb-2" />
-          <span className="text-sm font-medium text-gray-900">30 Days</span>
-          <span className="text-xs text-gray-500">Retake Cooldown</span>
-        </div>
-      </div>
+      <div className="max-w-lg">
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line">
+          <div className="bg-[#FBF8F2] px-5 py-4">
+            <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Time</dt>
+            <dd className="mt-1 font-display text-2xl text-ink tnum">20 min</dd>
+          </div>
+          <div className="bg-[#FBF8F2] px-5 py-4">
+            <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Retake after</dt>
+            <dd className="mt-1 font-display text-2xl text-ink tnum">30 days</dd>
+          </div>
+        </dl>
 
-      <div className="max-w-xs mx-auto">
-        <Button 
-          onClick={handleStart} 
-          className="w-full text-lg h-12"
+        <Button
+          onClick={handleStart}
+          size="lg"
+          className="mt-10"
           loading={loading}
-          disabled={eligibility && !eligibility.eligible && !eligibility.hasActiveSession}
+          disabled={blocked}
         >
-          {eligibility?.hasActiveSession ? 'Resume Test' : 'Start Assessment'}
+          {resuming ? 'Resume' : 'Start the paper'}
         </Button>
-        
+
         {eligibility && !eligibility.eligible && (
-          <p className="mt-3 text-sm text-red-600">
-            {eligibility.reason}
-          </p>
+          <p className="mt-4 text-sm text-bad">{eligibility.reason}</p>
         )}
       </div>
     </div>
