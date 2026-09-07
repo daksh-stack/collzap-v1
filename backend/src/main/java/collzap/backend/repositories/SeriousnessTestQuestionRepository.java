@@ -30,4 +30,6 @@ public interface SeriousnessTestQuestionRepository extends JpaRepository<Serious
     long countByInterestIdAndActiveTrue(UUID interestId);
 
     long countByInterestId(UUID interestId);
+
+    org.springframework.data.domain.Page<SeriousnessTestQuestion> findByInterestId(UUID interestId, org.springframework.data.domain.Pageable pageable);
 }

@@ -21,6 +21,7 @@ public class CollzapProperties {
     private SeriousnessTest seriousnessTest = new SeriousnessTest();
     private Matching matching = new Matching();
     private Cors cors = new Cors();
+    private Cloudinary cloudinary = new Cloudinary();
 
     @Getter
     @Setter
@@ -98,5 +99,13 @@ public class CollzapProperties {
             "https://collzap.com",
             "https://www.collzap.com"
         );
+    }
+
+    @Getter
+    @Setter
+    public static class Cloudinary {
+        private String cloudName = "";
+        private String apiKey = "";
+        private String apiSecret = "";
     }
 }

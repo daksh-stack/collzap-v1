@@ -118,6 +118,23 @@ export default function SettingsPage() {
 
       <section>
         <h2 className="mb-1 font-mono text-[10px] uppercase tracking-widest text-mute">
+          Feedback & Ideas
+        </h2>
+        <div className="flex items-start justify-between gap-6 border-y border-line py-5">
+          <div>
+            <p className="text-sm font-medium text-ink">Suggest an interest or feature</p>
+            <p className="mt-1 text-sm text-mute">
+              Missing an interest, have a suggestion or found an issue? Tell the CollZap team.
+            </p>
+          </div>
+          <Button variant="secondary" size="sm" className="shrink-0" onClick={() => navigate('/feedback')}>
+            Give feedback
+          </Button>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-widest text-mute">
           Sessions
         </h2>
         <div className="flex items-start justify-between gap-6 border-y border-line py-5">

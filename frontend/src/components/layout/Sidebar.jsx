@@ -11,6 +11,7 @@ const navigation = [
   { name: 'Matches', href: '/matches', note: 'people, queued and found' },
   { name: 'Chat', href: '/chat', note: 'open threads' },
   { name: 'Profile', href: '/profile', note: 'what others see' },
+  { name: 'Feedback', href: '/feedback', note: 'ideas & suggestions' },
   { name: 'Notifications', href: '/notifications', note: null },
   { name: 'Settings', href: '/settings', note: null },
 ];
@@ -24,8 +25,8 @@ function NavList({ onNavigate }) {
     <nav className="flex-1 px-3 py-2" aria-label="Main">
       <ul className="space-y-0.5">
         {navigation.map((item) => {
-          const isActive = item.href === '/'
-            ? location.pathname === '/'
+          const isActive = (item.href === '/' || item.href === '/profile')
+            ? location.pathname === item.href
             : location.pathname.startsWith(item.href);
 
           return (

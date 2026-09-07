@@ -64,6 +64,7 @@ public class AdminService {
     private final VerificationService verificationService;
     private final MatchingService matchingService;
     private final ModerationService moderationService;
+    private final collzap.backend.repositories.SeriousnessTestQuestionRepository questionRepository;
 
     public AdminService(
         UserRepository userRepository,
@@ -76,7 +77,8 @@ public class AdminService {
         AdminUserRepository adminUserRepository,
         VerificationService verificationService,
         MatchingService matchingService,
-        ModerationService moderationService
+        ModerationService moderationService,
+        collzap.backend.repositories.SeriousnessTestQuestionRepository questionRepository
     ) {
         this.userRepository = userRepository;
         this.verificationDocumentRepository = verificationDocumentRepository;
@@ -89,6 +91,7 @@ public class AdminService {
         this.verificationService = verificationService;
         this.matchingService = matchingService;
         this.moderationService = moderationService;
+        this.questionRepository = questionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -248,6 +251,89 @@ public class AdminService {
                 feedback.getCreatedAt()
             )
         );
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<collzap.backend.dto.AdminDtos.AdminQuestionResponse> questions(UUID interestId, Pageable pageable) {
+        Page<collzap.backend.models.SeriousnessTestQuestion> page = interestId == null
+            ? questionRepository.findAll(pageable)
+            : questionRepository.findByInterestId(interestId, pageable);
+
+        return PageResponse.from(page, q -> new collzap.backend.dto.AdminDtos.AdminQuestionResponse(
+            q.getId(),
+            q.getQuestionText(),
+            q.getOptions(),
+            q.getCorrectOptionIndex(),
+            q.getInterest().getId(),
+            q.getInterest().getName()
+        ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<collzap.backend.dto.InterestDtos.InterestResponse> allInterests() {
+        return interestRepository.findAll().stream()
+            .map(interest -> new collzap.backend.dto.InterestDtos.InterestResponse(
+                interest.getId(),
+                interest.getName(),
+                interest.getCategory(),
+                interest.getDisplayOrder()
+            ))
+            .toList();
+    }
+
+    @Transactional
+    public collzap.backend.dto.AdminDtos.AdminQuestionResponse createQuestion(collzap.backend.dto.AdminDtos.QuestionRequest request) {
+        Interest interest = interestRepository.findById(request.interestId())
+            .orElseThrow(() -> new NotFoundException("Interest not found"));
+        
+        collzap.backend.models.SeriousnessTestQuestion question = new collzap.backend.models.SeriousnessTestQuestion(
+            interest,
+            request.questionText().trim(),
+            request.options(),
+            request.correctOptionIndex()
+        );
+        question = questionRepository.save(question);
+        
+        return new collzap.backend.dto.AdminDtos.AdminQuestionResponse(
+            question.getId(),
+            question.getQuestionText(),
+            question.getOptions(),
+            question.getCorrectOptionIndex(),
+            interest.getId(),
+            interest.getName()
+        );
+    }
+
+    @Transactional
+    public collzap.backend.dto.AdminDtos.AdminQuestionResponse updateQuestion(UUID id, collzap.backend.dto.AdminDtos.QuestionRequest request) {
+        collzap.backend.models.SeriousnessTestQuestion question = questionRepository.findById(id)
+            .orElseThrow(() -> new NotFoundException("Question not found"));
+            
+        Interest interest = interestRepository.findById(request.interestId())
+            .orElseThrow(() -> new NotFoundException("Interest not found"));
+            
+        question.setQuestionText(request.questionText().trim());
+        question.setOptions(request.options());
+        question.setCorrectOptionIndex(request.correctOptionIndex());
+        question.setInterest(interest);
+        
+        question = questionRepository.save(question);
+        
+        return new collzap.backend.dto.AdminDtos.AdminQuestionResponse(
+            question.getId(),
+            question.getQuestionText(),
+            question.getOptions(),
+            question.getCorrectOptionIndex(),
+            interest.getId(),
+            interest.getName()
+        );
+    }
+
+    @Transactional
+    public void deleteQuestion(UUID id) {
+        collzap.backend.models.SeriousnessTestQuestion question = questionRepository.findById(id)
+            .orElseThrow(() -> new NotFoundException("Question not found"));
+        questionRepository.delete(question);
     }
 
     @Transactional(readOnly = true)

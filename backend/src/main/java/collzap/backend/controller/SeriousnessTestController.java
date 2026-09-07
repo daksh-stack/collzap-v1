@@ -27,9 +27,8 @@ import jakarta.validation.Valid;
  * start so the client can page through it offline and drop in the divider screen
  * when the interest changes.
  *
- * <p>Two things stay on the server by design: the timer, which is silent and is
- * enforced at submit rather than counted down in the UI, and scoring, which never
- * sends a correct-answer index to a client.
+ * <p>Scoring stays on the server by design — correct-answer indices are never sent
+ * to the client.
  */
 @RestController
 @RequestMapping("/api/test")
@@ -63,35 +62,32 @@ public class SeriousnessTestController {
     }
 
     /** Records one answer and returns the progress counter for "Question X of 25". */
-    @PostMapping("/sessions/{sessionId}/answers")
+    @PostMapping("/answers")
     public AnswerAcceptedResponse answer(
         @AuthenticationPrincipal AuthPrincipal me,
-        @PathVariable UUID sessionId,
         @Valid @RequestBody SubmitAnswerRequest request
     ) {
-        return testService.answer(me.userId(), sessionId, request);
+        return testService.answer(me.userId(), request);
     }
 
-    /** Scores the sitting. Called after the last question; also runs on timer expiry. */
-    @PostMapping("/sessions/{sessionId}/submit")
+    /** Scores the sitting. Called after the last question. */
+    @PostMapping("/submit")
     public TestResultResponse submit(
-        @AuthenticationPrincipal AuthPrincipal me,
-        @PathVariable UUID sessionId
+        @AuthenticationPrincipal AuthPrincipal me
     ) {
-        return testService.submit(me.userId(), sessionId);
+        return testService.submit(me.userId());
     }
 
     /** The score screen: ring value, level label, per-interest tags, retake date. */
-    @GetMapping("/sessions/{sessionId}/result")
+    @GetMapping("/result")
     public TestResultResponse result(
-        @AuthenticationPrincipal AuthPrincipal me,
-        @PathVariable UUID sessionId
+        @AuthenticationPrincipal AuthPrincipal me
     ) {
-        return testService.result(me.userId(), sessionId);
+        return testService.result(me.userId());
     }
 
     /** The most recent result, for re-opening the score screen later. */
-    @GetMapping("/result")
+    @GetMapping("/latest-result")
     public TestResultResponse latestResult(@AuthenticationPrincipal AuthPrincipal me) {
         return testService.latestResult(me.userId());
     }

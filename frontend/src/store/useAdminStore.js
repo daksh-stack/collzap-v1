@@ -11,6 +11,8 @@ export const useAdminStore = create((set) => ({
   queue: [],
   reports: defaultPage,
   interestFeedback: defaultPage,
+  questions: defaultPage,
+  interests: [],
   loading: false,
   error: null,
 
@@ -163,6 +165,70 @@ export const useAdminStore = create((set) => ({
       const response = await api.post('/admin/colleges', payload);
       set({ loading: false });
       return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  fetchQuestions: async (interestId = null, page = 0) => {
+    set({ loading: true, error: null });
+    try {
+      const params = new URLSearchParams({ page });
+      if (interestId) params.append('interestId', interestId);
+      const questions = await api.get(`/admin/questions?${params.toString()}`);
+      set({ questions, loading: false });
+      return questions;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  createQuestion: async (questionText, options, correctOptionIndex, interestId) => {
+    set({ loading: true, error: null });
+    try {
+      const payload = { questionText, options, correctOptionIndex, interestId };
+      const response = await api.post('/admin/questions', payload);
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  updateQuestion: async (id, questionText, options, correctOptionIndex, interestId) => {
+    set({ loading: true, error: null });
+    try {
+      const payload = { questionText, options, correctOptionIndex, interestId };
+      const response = await api.post(`/admin/questions/${id}`, payload);
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  deleteQuestion: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/admin/questions/${id}/delete`);
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  fetchInterests: async () => {
+    set({ loading: true, error: null });
+    try {
+      const interests = await api.get('/admin/interests');
+      set({ interests, loading: false });
+      return interests;
     } catch (error) {
       set({ error: error.message, loading: false });
       throw error;

@@ -6,6 +6,7 @@ const Select = forwardRef(({
   label,
   error,
   options = [],
+  children,
   ...props
 }, ref) => {
   const id = useId();
@@ -31,7 +32,7 @@ const Select = forwardRef(({
         ref={ref}
         {...props}
       >
-        {options.map((option) => (
+        {children || options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>

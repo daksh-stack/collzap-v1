@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
 import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
+import FileUpload from '../../../components/ui/FileUpload';
 import StepHeader from './StepHeader';
 import { useModerationStore } from '../../../store/useModerationStore';
 import { cn } from '../../../lib/utils';
@@ -16,21 +16,19 @@ const TYPES = [
 export default function UploadDocumentStep() {
   const [documentType, setDocumentType] = useState('FEE_SLIP');
   const [documentUrl, setDocumentUrl] = useState('');
-  const [error, setError] = useState('');
   const reduced = useReducedMotion();
 
   const { uploadDocument, loading } = useModerationStore();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!documentUrl.trim()) {
-      setError('Paste a link first');
+    if (!documentUrl) {
+      toast.error('Upload a document first');
       return;
     }
-    setError('');
 
     try {
-      await uploadDocument(documentType, documentUrl.trim());
+      await uploadDocument(documentType, documentUrl);
       toast.success('Sent for review');
     } catch (err) {
       toast.error(err.message || 'Could not submit that');
@@ -40,8 +38,8 @@ export default function UploadDocumentStep() {
   return (
     <div>
       <StepHeader eyebrow="Step one" title="Prove you actually go there.">
-        Paste the Drive or campus-portal link to your fee slip or ID card. Make sure
-        the link opens for anyone — a locked file gets rejected.
+        Upload a photo of your fee slip or ID card. Make sure the name and year
+        are clearly visible.
       </StepHeader>
 
       <form onSubmit={handleSubmit} className="max-w-lg space-y-8">
@@ -81,17 +79,13 @@ export default function UploadDocumentStep() {
           </div>
         </fieldset>
 
-        <Input
-          label="Link to the document"
-          type="url"
-          placeholder="https://drive.google.com/…"
-          value={documentUrl}
-          onChange={(e) => { setDocumentUrl(e.target.value); if (error) setError(''); }}
-          disabled={loading}
-          error={error}
+        <FileUpload
+          category="DOCUMENT"
+          label="Upload your document"
+          onUploadComplete={(url) => setDocumentUrl(url)}
         />
 
-        <Button type="submit" size="lg" loading={loading}>
+        <Button type="submit" size="lg" loading={loading} disabled={!documentUrl}>
           Send for review
         </Button>
       </form>

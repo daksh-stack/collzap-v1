@@ -129,4 +129,30 @@ public final class AdminDtos {
         Instant createdAt
     ) {
     }
+
+    public record QuestionRequest(
+        @jakarta.validation.constraints.NotBlank(message = "Question text is required")
+        String questionText,
+        
+        @NotEmpty(message = "Exactly 4 options required")
+        @Size(min = 4, max = 4, message = "Exactly 4 options required")
+        List<String> options,
+        
+        @NotNull(message = "Correct option index required")
+        Integer correctOptionIndex,
+        
+        @NotNull(message = "Interest ID required")
+        UUID interestId
+    ) {
+    }
+
+    public record AdminQuestionResponse(
+        UUID id,
+        String questionText,
+        List<String> options,
+        int correctOptionIndex,
+        UUID interestId,
+        String interestName
+    ) {
+    }
 }

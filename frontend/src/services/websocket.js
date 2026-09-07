@@ -18,7 +18,7 @@ class WebSocketService {
   }
 
   connect() {
-    if (this.client && this.client.connected) {
+    if (this.client && (this.client.connected || this.client.active)) {
       return;
     }
 
@@ -37,8 +37,7 @@ class WebSocketService {
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },
-      // Chatty frame logging is useful locally and noise in production.
-      debug: DEV ? (str) => console.log('STOMP: ' + str) : () => {},
+      debug: () => {}, // Disabled chatty STOMP logging
       reconnectDelay: 5000, // Reconnect automatically after 5 seconds
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,

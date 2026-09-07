@@ -4,6 +4,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import TextArea from '../../../components/ui/TextArea';
 import Select from '../../../components/ui/Select';
+import FileUpload from '../../../components/ui/FileUpload';
 import StepHeader from './StepHeader';
 import { useUserStore } from '../../../store/useUserStore';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -55,6 +56,11 @@ export default function CompleteProfileStep() {
       return;
     }
 
+    if (!formData.profilePhotoUrl) {
+      toast.error('Upload a profile photo');
+      return;
+    }
+
     try {
       await updateProfile({
         ...formData,
@@ -75,6 +81,13 @@ export default function CompleteProfileStep() {
       </StepHeader>
 
       <form onSubmit={handleSubmit} className="max-w-lg space-y-10">
+        <FileUpload
+          category="PROFILE_PHOTO"
+          label="Profile photo"
+          onUploadComplete={(url) => setFormData((prev) => ({ ...prev, profilePhotoUrl: url }))}
+          existingUrl={formData.profilePhotoUrl}
+        />
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input label="Full name" name="name" value={formData.name} onChange={handleChange} disabled={loading} required />
           <Input label="City" name="city" value={formData.city} onChange={handleChange} disabled={loading} required />
@@ -92,15 +105,6 @@ export default function CompleteProfileStep() {
               { value: '5', label: '5th year' },
               { value: '6', label: '6th+ year' },
             ]}
-          />
-          <Input
-            label="Photo URL"
-            name="profilePhotoUrl"
-            type="url"
-            value={formData.profilePhotoUrl}
-            onChange={handleChange}
-            disabled={loading}
-            required
           />
         </div>
 

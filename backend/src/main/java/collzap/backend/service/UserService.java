@@ -36,8 +36,7 @@ import collzap.backend.repositories.OtpCodeRepository;
 import collzap.backend.repositories.RefreshTokenRepository;
 import collzap.backend.repositories.SeriousnessTestAnswerRepository;
 import collzap.backend.repositories.SeriousnessTestAttemptRepository;
-import collzap.backend.repositories.SeriousnessTestSessionQuestionRepository;
-import collzap.backend.repositories.SeriousnessTestSessionRepository;
+import collzap.backend.repositories.SeriousnessTestAttemptQuestionRepository;
 import collzap.backend.repositories.UserInterestSelectionRepository;
 import collzap.backend.repositories.UserProjectTypeSelectionRepository;
 import collzap.backend.repositories.UserRepository;
@@ -60,9 +59,8 @@ public class UserService {
     private final MessageReceiptRepository messageReceiptRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final SeriousnessTestAnswerRepository testAnswerRepository;
-    private final SeriousnessTestSessionQuestionRepository sessionQuestionRepository;
+    private final SeriousnessTestAttemptQuestionRepository sessionQuestionRepository;
     private final SeriousnessTestAttemptRepository testAttemptRepository;
-    private final SeriousnessTestSessionRepository testSessionRepository;
     private final InterestFeedbackRepository interestFeedbackRepository;
     private final ConnectionTypeSelectionRepository connectionTypeSelectionRepository;
     private final UserProjectTypeSelectionRepository projectTypeSelectionRepository;
@@ -82,9 +80,8 @@ public class UserService {
         MessageReceiptRepository messageReceiptRepository,
         ChatMessageRepository chatMessageRepository,
         SeriousnessTestAnswerRepository testAnswerRepository,
-        SeriousnessTestSessionQuestionRepository sessionQuestionRepository,
+        SeriousnessTestAttemptQuestionRepository sessionQuestionRepository,
         SeriousnessTestAttemptRepository testAttemptRepository,
-        SeriousnessTestSessionRepository testSessionRepository,
         InterestFeedbackRepository interestFeedbackRepository,
         ConnectionTypeSelectionRepository connectionTypeSelectionRepository,
         UserProjectTypeSelectionRepository projectTypeSelectionRepository,
@@ -105,7 +102,6 @@ public class UserService {
         this.testAnswerRepository = testAnswerRepository;
         this.sessionQuestionRepository = sessionQuestionRepository;
         this.testAttemptRepository = testAttemptRepository;
-        this.testSessionRepository = testSessionRepository;
         this.interestFeedbackRepository = interestFeedbackRepository;
         this.connectionTypeSelectionRepository = connectionTypeSelectionRepository;
         this.projectTypeSelectionRepository = projectTypeSelectionRepository;
@@ -242,10 +238,9 @@ public class UserService {
         String email = user.getEmail();
 
         // 1. Seriousness test data (deepest children first)
-        testAnswerRepository.deleteByUserId(userId);           // answers → attempts
-        sessionQuestionRepository.deleteByUserId(userId);      // session_questions → sessions
-        testAttemptRepository.deleteByUserId(userId);           // attempts → sessions
-        testSessionRepository.deleteByUserId(userId);           // sessions → user
+        testAnswerRepository.deleteByUserId(userId);
+        sessionQuestionRepository.deleteByUserId(userId);
+        testAttemptRepository.deleteByUserId(userId);
 
         // 2. Chat data: receipts reference messages, so delete receipts first,
         //    then delete receipts on user's own messages by other users,

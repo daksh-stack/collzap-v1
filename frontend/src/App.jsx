@@ -29,6 +29,7 @@ const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
 const PeerProfilePage = lazy(() => import('./pages/profile/PeerProfilePage'));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
+const FeedbackPage = lazy(() => import('./pages/feedback/FeedbackPage'));
 const SeriousnessTestPage = lazy(() => import('./pages/test/SeriousnessTestPage'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -39,6 +40,7 @@ const AdminQueuePage = lazy(() => import('./pages/admin/AdminQueuePage'));
 const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
 const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage'));
 const AdminCollegesPage = lazy(() => import('./pages/admin/AdminCollegesPage'));
+const AdminQuestionsPage = lazy(() => import('./pages/admin/AdminQuestionsPage'));
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
@@ -93,6 +95,7 @@ function App() {
                 <Route path="/matches/:groupId" element={<GroupDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/profile/:userId" element={<PeerProfilePage />} />
+                <Route path="/feedback" element={<FeedbackPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
               </Route>
@@ -111,6 +114,7 @@ function App() {
                 <Route path="/admin/reports" element={<AdminReportsPage />} />
                 <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
                 <Route path="/admin/colleges" element={<AdminCollegesPage />} />
+                <Route path="/admin/questions" element={<AdminQuestionsPage />} />
               </Route>
             </Route>
           </Route>

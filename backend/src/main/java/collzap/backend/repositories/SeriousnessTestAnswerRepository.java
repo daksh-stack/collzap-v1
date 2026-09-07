@@ -19,15 +19,7 @@ public interface SeriousnessTestAnswerRepository extends JpaRepository<Seriousne
 
     long countByAttemptIdAndCorrectTrue(UUID attemptId);
 
-    @Query("""
-        select a from SeriousnessTestAnswer a
-        join fetch a.question
-        where a.attempt.session.id = :sessionId
-        """)
-    List<SeriousnessTestAnswer> findBySessionId(@Param("sessionId") UUID sessionId);
 
-    @Query("select count(a) from SeriousnessTestAnswer a where a.attempt.session.id = :sessionId")
-    long countBySessionId(@Param("sessionId") UUID sessionId);
 
     @Modifying
     @Query("delete from SeriousnessTestAnswer a where a.attempt.user.id = :userId")

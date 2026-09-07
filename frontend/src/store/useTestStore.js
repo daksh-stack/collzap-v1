@@ -49,13 +49,22 @@ export const useTestStore = create((set) => ({
     }
   },
 
-  submitAnswer: async (sessionId, questionId, selectedOptionIndex) => {
+  submitAnswer: async (questionId, selectedOptionIndex) => {
     // Don't set loading true for every answer to avoid UI jank, just catch errors
     try {
-      const response = await api.post(`/test/sessions/${sessionId}/answers`, {
+      const response = await api.post(`/test/answers`, {
         questionId,
         selectedOptionIndex
       });
+      
+      set((state) => {
+        if (!state.session || !state.session.questions) return state;
+        const newQuestions = state.session.questions.map((q) => 
+          q.questionId === questionId ? { ...q, selectedOptionIndex } : q
+        );
+        return { session: { ...state.session, questions: newQuestions } };
+      });
+
       return response; // { answeredCount, totalQuestions }
     } catch (error) {
       set({ error: error.message });
@@ -63,10 +72,10 @@ export const useTestStore = create((set) => ({
     }
   },
 
-  submitTest: async (sessionId) => {
+  submitTest: async () => {
     set({ loading: true, error: null });
     try {
-      const result = await api.post(`/test/sessions/${sessionId}/submit`);
+      const result = await api.post(`/test/submit`);
       set({ result, session: null, loading: false });
       
       // Test completion affects onboarding state
@@ -79,10 +88,10 @@ export const useTestStore = create((set) => ({
     }
   },
 
-  fetchResult: async (sessionId) => {
+  fetchResult: async () => {
     set({ loading: true, error: null });
     try {
-      const result = await api.get(`/test/sessions/${sessionId}/result`);
+      const result = await api.get(`/test/result`);
       set({ result, loading: false });
       return result;
     } catch (error) {
@@ -94,7 +103,7 @@ export const useTestStore = create((set) => ({
   fetchLatestResult: async () => {
     set({ loading: true, error: null });
     try {
-      const result = await api.get('/test/result');
+      const result = await api.get('/test/latest-result');
       set({ result, loading: false });
       return result;
     } catch (error) {

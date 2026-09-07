@@ -27,7 +27,6 @@ import lombok.Setter;
     name = "seriousness_test_attempts",
     indexes = {
         @Index(name = "idx_test_attempts_user_id", columnList = "user_id"),
-        @Index(name = "idx_test_attempts_session_id", columnList = "session_id"),
         @Index(name = "idx_test_attempts_user_interest", columnList = "user_id, interest_id")
     }
 )
@@ -35,10 +34,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class SeriousnessTestAttempt extends BaseEntity {
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "session_id", nullable = false)
-    private SeriousnessTestSession session;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -73,8 +68,7 @@ public class SeriousnessTestAttempt extends BaseEntity {
     @Column(name = "next_retake_date")
     private LocalDate nextRetakeDate;
 
-    public SeriousnessTestAttempt(SeriousnessTestSession session, User user, Interest interest, int questionCount) {
-        this.session = session;
+    public SeriousnessTestAttempt(User user, Interest interest, int questionCount) {
         this.user = user;
         this.interest = interest;
         this.questionCount = questionCount;
