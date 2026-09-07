@@ -40,6 +40,7 @@ const AdminQueuePage = lazy(() => import('./pages/admin/AdminQueuePage'));
 const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
 const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage'));
 const AdminCollegesPage = lazy(() => import('./pages/admin/AdminCollegesPage'));
+const AdminInterestsPage = lazy(() => import('./pages/admin/AdminInterestsPage'));
 const AdminQuestionsPage = lazy(() => import('./pages/admin/AdminQuestionsPage'));
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
@@ -114,6 +115,7 @@ function App() {
                 <Route path="/admin/reports" element={<AdminReportsPage />} />
                 <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
                 <Route path="/admin/colleges" element={<AdminCollegesPage />} />
+                <Route path="/admin/interests" element={<AdminInterestsPage />} />
                 <Route path="/admin/questions" element={<AdminQuestionsPage />} />
               </Route>
             </Route>

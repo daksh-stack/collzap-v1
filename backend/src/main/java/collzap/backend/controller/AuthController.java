@@ -14,6 +14,7 @@ import collzap.backend.dto.AuthDtos.RefreshTokenRequest;
 import collzap.backend.dto.AuthDtos.RequestOtpRequest;
 import collzap.backend.dto.AuthDtos.VerifyOtpRequest;
 import collzap.backend.dto.CommonDtos.MessageResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.service.AuthService;
 import jakarta.validation.Valid;
 
@@ -36,12 +37,14 @@ public class AuthController {
     }
 
     /** Emails a one-time code to a recognised college address. */
+    @RateLimited(name = "otp-request", limit = 10, windowSeconds = 3600, keyType = RateLimited.KeyType.IP)
     @PostMapping("/otp")
     public OtpSentResponse requestOtp(@Valid @RequestBody RequestOtpRequest request) {
         return authService.requestOtp(request);
     }
 
     /** Verifies the code, creating the account on first use, and issues tokens. */
+    @RateLimited(name = "otp-verify", limit = 20, windowSeconds = 3600, keyType = RateLimited.KeyType.IP)
     @PostMapping("/otp/verify")
     public ResponseEntity<AuthResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         AuthResponse response = authService.verifyOtp(request);

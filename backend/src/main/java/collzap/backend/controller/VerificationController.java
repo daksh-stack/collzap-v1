@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import collzap.backend.dto.CollegeDtos.UploadDocumentRequest;
 import collzap.backend.dto.CollegeDtos.VerificationDocumentResponse;
 import collzap.backend.dto.CollegeDtos.VerificationStatusResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.VerificationService;
 import jakarta.validation.Valid;
@@ -41,6 +42,7 @@ public class VerificationController {
      * Records a fee slip or ID card for manual review. The client uploads the file
      * to storage itself and posts the resulting URL.
      */
+    @RateLimited(name = "verification-upload", limit = 5, windowSeconds = 3600)
     @PostMapping("/documents")
     public ResponseEntity<VerificationDocumentResponse> upload(
         @AuthenticationPrincipal AuthPrincipal me,

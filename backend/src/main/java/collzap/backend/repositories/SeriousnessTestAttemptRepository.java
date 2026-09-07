@@ -40,4 +40,6 @@ public interface SeriousnessTestAttemptRepository extends JpaRepository<Seriousn
     );
 
     void deleteByUserId(UUID userId);
+
+    long countByInterestId(UUID interestId);
 }

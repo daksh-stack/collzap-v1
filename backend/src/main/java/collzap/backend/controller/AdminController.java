@@ -162,6 +162,25 @@ public class AdminController {
         return adminService.allInterests();
     }
 
+    @PostMapping("/interests")
+    public ResponseEntity<collzap.backend.dto.InterestDtos.InterestResponse> createInterest(
+            @Valid @RequestBody collzap.backend.dto.InterestDtos.CreateInterestRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createInterest(request));
+    }
+
+    @PostMapping("/interests/{id}")
+    public collzap.backend.dto.InterestDtos.InterestResponse updateInterest(
+            @PathVariable UUID id,
+            @Valid @RequestBody collzap.backend.dto.InterestDtos.UpdateInterestRequest request) {
+        return adminService.updateInterest(id, request);
+    }
+
+    @PostMapping("/interests/{id}/delete")
+    public MessageResponse deleteInterest(@PathVariable UUID id) {
+        adminService.deleteInterest(id);
+        return MessageResponse.of("Interest deleted");
+    }
+
     /** Questions management */
     @GetMapping("/questions")
     public PageResponse<collzap.backend.dto.AdminDtos.AdminQuestionResponse> questions(
@@ -181,6 +200,12 @@ public class AdminController {
             @PathVariable UUID id,
             @Valid @RequestBody collzap.backend.dto.AdminDtos.QuestionRequest request) {
         return adminService.updateQuestion(id, request);
+    }
+
+    @PostMapping("/questions/delete-all")
+    public MessageResponse deleteAllQuestions() {
+        long count = adminService.deleteAllQuestions();
+        return MessageResponse.of("Deleted " + count + " question(s)");
     }
 
     @PostMapping("/questions/{id}/delete")

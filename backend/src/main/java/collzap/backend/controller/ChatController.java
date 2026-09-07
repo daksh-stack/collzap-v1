@@ -19,6 +19,7 @@ import collzap.backend.dto.ChatDtos.ChatRoomDetailResponse;
 import collzap.backend.dto.ChatDtos.MarkReadResponse;
 import collzap.backend.dto.ChatDtos.SendMessageRequest;
 import collzap.backend.dto.CommonDtos.PageResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.ChatService;
 import jakarta.validation.Valid;
@@ -68,6 +69,7 @@ public class ChatController {
         return chatService.history(me.userId(), roomId, pageable);
     }
 
+    @RateLimited(name = "chat-send", limit = 30, windowSeconds = 60)
     @PostMapping("/{roomId}/messages")
     public ChatMessageResponse send(
         @AuthenticationPrincipal AuthPrincipal me,

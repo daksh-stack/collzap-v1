@@ -19,6 +19,7 @@ import collzap.backend.dto.UserDtos.UpdatePhotoRequest;
 import collzap.backend.dto.UserDtos.UpdateProfileRequest;
 import collzap.backend.dto.UserDtos.UpdateSettingsRequest;
 import collzap.backend.dto.UserDtos.UserResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.AuthService;
 import collzap.backend.service.MatchingService;
@@ -100,6 +101,7 @@ public class MeController {
     }
 
     /** Registers a push token. Re-registering the same token is a no-op. */
+    @RateLimited(name = "register-device", limit = 10, windowSeconds = 86400)
     @PostMapping("/devices")
     public MessageResponse registerDevice(
         @AuthenticationPrincipal AuthPrincipal me,

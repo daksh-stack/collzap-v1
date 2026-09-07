@@ -1,12 +1,10 @@
 package collzap.backend.controller;
 
-import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +15,7 @@ import collzap.backend.dto.TestDtos.SubmitAnswerRequest;
 import collzap.backend.dto.TestDtos.TestEligibilityResponse;
 import collzap.backend.dto.TestDtos.TestResultResponse;
 import collzap.backend.dto.TestDtos.TestSessionResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.SeriousnessTestService;
 import jakarta.validation.Valid;
@@ -62,6 +61,7 @@ public class SeriousnessTestController {
     }
 
     /** Records one answer and returns the progress counter for "Question X of 25". */
+    @RateLimited(name = "test-answer", limit = 60, windowSeconds = 60)
     @PostMapping("/answers")
     public AnswerAcceptedResponse answer(
         @AuthenticationPrincipal AuthPrincipal me,

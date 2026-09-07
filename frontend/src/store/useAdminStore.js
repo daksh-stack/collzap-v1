@@ -223,12 +223,60 @@ export const useAdminStore = create((set) => ({
     }
   },
 
+  deleteAllQuestions: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post('/admin/questions/delete-all');
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
   fetchInterests: async () => {
     set({ loading: true, error: null });
     try {
       const interests = await api.get('/admin/interests');
       set({ interests, loading: false });
       return interests;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  createInterest: async (name, category) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post('/admin/interests', { name, category });
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  updateInterest: async (id, name) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/admin/interests/${id}`, { name });
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  deleteInterest: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/admin/interests/${id}/delete`);
+      set({ loading: false });
+      return response;
     } catch (error) {
       set({ error: error.message, loading: false });
       throw error;

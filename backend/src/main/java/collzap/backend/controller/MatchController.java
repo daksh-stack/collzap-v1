@@ -14,6 +14,7 @@ import collzap.backend.dto.CommonDtos.MessageResponse;
 import collzap.backend.dto.MatchDtos.CircleResponse;
 import collzap.backend.dto.MatchDtos.FindMatchesResponse;
 import collzap.backend.dto.MatchDtos.MatchGroupResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.MatchingService;
 
@@ -39,6 +40,7 @@ public class MatchController {
     }
 
     /** "Find My Peers". Same college, interest, level band and connection type. */
+    @RateLimited(name = "match-find", limit = 10, windowSeconds = 60)
     @PostMapping("/find")
     public FindMatchesResponse find(@AuthenticationPrincipal AuthPrincipal me) {
         return matchingService.findMatches(me.userId());

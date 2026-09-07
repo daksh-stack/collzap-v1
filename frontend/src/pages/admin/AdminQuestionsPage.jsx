@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, FileJson, AlertTriangle } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Spinner from '../../components/ui/Spinner';
 import Pagination from '../../components/ui/Pagination';
 import Select from '../../components/ui/Select';
+import TextArea from '../../components/ui/TextArea';
 import { useAdminStore } from '../../store/useAdminStore';
 import AdminPageHeader from './AdminPageHeader';
 import toast from 'react-hot-toast';
 
 export default function AdminQuestionsPage() {
-  const { questions, interests, fetchInterests, fetchQuestions, createQuestion, updateQuestion, deleteQuestion, loading } = useAdminStore();
+  const { questions, interests, fetchInterests, fetchQuestions, createQuestion, updateQuestion, deleteQuestion, deleteAllQuestions, createInterest, loading } = useAdminStore();
   
   const [activeInterest, setActiveInterest] = useState('ALL');
   const [page, setPage] = useState(0);
@@ -24,6 +25,14 @@ export default function AdminQuestionsPage() {
     options: ['', '', '', ''],
     correctOptionIndex: 0
   });
+
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkJsonText, setBulkJsonText] = useState('');
+  const [bulkImporting, setBulkImporting] = useState(false);
+
+  const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
+  const [deleteAllConfirmText, setDeleteAllConfirmText] = useState('');
+  const [deletingAll, setDeletingAll] = useState(false);
 
   useEffect(() => {
     fetchInterests();
@@ -99,6 +108,117 @@ export default function AdminQuestionsPage() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (deleteAllConfirmText.trim().toUpperCase() !== 'DELETE') return;
+    setDeletingAll(true);
+    try {
+      await deleteAllQuestions();
+      toast.success('All questions deleted');
+      setIsDeleteAllModalOpen(false);
+      setDeleteAllConfirmText('');
+      setActiveInterest('ALL');
+      setPage(0);
+      fetchQuestions(null, 0);
+    } catch {
+      toast.error('Failed to delete all questions');
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
+  const handleBulkImport = async () => {
+    let items;
+    try {
+      items = JSON.parse(bulkJsonText);
+      if (!Array.isArray(items)) throw new Error('JSON must be an array of questions');
+    } catch (e) {
+      return toast.error(`Invalid JSON: ${e.message}`);
+    }
+    if (items.length === 0) return toast.error('No questions found in JSON');
+
+    setBulkImporting(true);
+    let successCount = 0;
+    const errors = [];
+
+    // Seeded from the interests already loaded; grows as new ones are auto-created
+    // during this run so later rows referencing the same new name reuse it instead
+    // of creating a duplicate.
+    const interestByName = new Map(interests.map(i => [i.name.trim().toLowerCase(), i]));
+    const startingInterestCount = interestByName.size;
+    const parseCategory = (rawType) => {
+      const normalized = String(rawType || '').toLowerCase().replace(/[-\s]/g, '');
+      return normalized === 'shortterm' ? 'SHORT_TERM' : 'LONG_TERM';
+    };
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i] || {};
+      const label = item.question ? `"${String(item.question).slice(0, 40)}"` : `item ${i + 1}`;
+      try {
+        const interestName = String(item.interest || '').trim();
+        const interestKey = interestName.toLowerCase();
+        if (!interestKey) throw new Error('missing "interest"');
+
+        let interest = interestByName.get(interestKey);
+        if (!interest) {
+          // First "type" value seen for a brand-new name wins; later rows in this
+          // same paste reuse the interest created here regardless of their own type.
+          interest = await createInterest(interestName, parseCategory(item.type));
+          interestByName.set(interestKey, interest);
+        }
+
+        const questionText = String(item.question || '').trim();
+        if (!questionText) throw new Error('missing "question" text');
+
+        const rawOptions = Array.isArray(item.options) ? item.options : [];
+        if (rawOptions.length !== 4) {
+          throw new Error(`expected exactly 4 options, got ${rawOptions.length}`);
+        }
+
+        const optionTexts = rawOptions.map(opt => String(typeof opt === 'string' ? opt : opt?.text || '').trim());
+        if (optionTexts.some(t => !t)) throw new Error('one or more options have empty text');
+
+        let correctOptionIndex;
+        if (rawOptions.every(opt => opt && typeof opt === 'object' && typeof opt.points === 'number')) {
+          correctOptionIndex = rawOptions.reduce(
+            (maxIdx, opt, idx, arr) => (opt.points > arr[maxIdx].points ? idx : maxIdx),
+            0
+          );
+        } else if (typeof item.correctOptionIndex === 'number') {
+          correctOptionIndex = item.correctOptionIndex;
+        } else {
+          throw new Error('cannot determine correct option (no "points" on options and no "correctOptionIndex")');
+        }
+
+        await createQuestion(questionText, optionTexts, correctOptionIndex, interest.id);
+        successCount++;
+      } catch (err) {
+        errors.push(`${label}: ${err.message}`);
+      }
+    }
+
+    setBulkImporting(false);
+
+    if (interestByName.size > startingInterestCount) {
+      fetchInterests();
+    }
+
+    if (successCount > 0) {
+      toast.success(`Imported ${successCount}/${items.length} questions`);
+    }
+    if (errors.length > 0) {
+      const preview = errors.slice(0, 5).join(' | ');
+      const more = errors.length > 5 ? ` (+${errors.length - 5} more)` : '';
+      toast.error(`${errors.length} question(s) skipped: ${preview}${more}`, { duration: 8000 });
+    }
+
+    if (successCount > 0) {
+      setIsBulkModalOpen(false);
+      setBulkJsonText('');
+      const interestId = activeInterest === 'ALL' ? null : activeInterest;
+      fetchQuestions(interestId, page);
+    }
+  };
+
   const rows = questions?.content || [];
 
   return (
@@ -115,6 +235,12 @@ export default function AdminQuestionsPage() {
               <option key={i.id} value={i.id}>{i.name}</option>
             ))}
           </Select>
+          <Button variant="outline" onClick={() => setIsBulkModalOpen(true)}>
+            <FileJson className="mr-2 h-4 w-4" /> Bulk JSON
+          </Button>
+          <Button variant="danger" onClick={() => setIsDeleteAllModalOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" /> Delete All
+          </Button>
           <Button onClick={() => handleOpenModal()}>
             <Plus className="mr-2 h-4 w-4" /> New
           </Button>
@@ -243,6 +369,91 @@ export default function AdminQuestionsPage() {
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} loading={loading}>Save</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={isBulkModalOpen} onClose={() => setIsBulkModalOpen(false)} title="Bulk Import Questions" size="lg">
+        <div className="space-y-6">
+          <div className="rounded-lg border border-accent-500/20 bg-accent-500/5 p-4">
+            <h3 className="font-mono text-[10px] font-semibold uppercase tracking-widest text-accent-700">
+              Format Requirements
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-ink/80">
+              Paste a JSON array of questions. Each item requires an <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">interest</code> name
+              (matched case-insensitively — if no interest with that name exists yet, one is created automatically, using <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">type</code> ("Long-Term"/"Short-Term") for its category, defaulting to Long-Term), a <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">question</code> string, and exactly 4
+              <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">options</code>. Each option must have <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">text</code> and <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">points</code>.
+              The option with the highest points will be automatically set as the correct answer.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="font-mono text-[10px] font-semibold uppercase tracking-widest text-mute">
+              JSON Data
+            </label>
+            <TextArea
+              rows={14}
+              className="font-mono text-xs placeholder:text-mute/40"
+              placeholder={`[\n  {\n    "interest": "Coding & Software Development",\n    "type": "Long-Term",\n    "question_number": 1,\n    "question": "What does API stand for?",\n    "options": [\n      {\n        "label": "A",\n        "text": "Application Programming Interface",\n        "points": 1\n      },\n      {\n        "label": "B",\n        "text": "Applied Program Internet",\n        "points": 0\n      },\n      {\n        "label": "C",\n        "text": "Advanced Protocol Interchange",\n        "points": 0\n      },\n      {\n        "label": "D",\n        "text": "Automated Programming Instruction",\n        "points": 0\n      }\n    ]\n  }\n]`}
+              value={bulkJsonText}
+              onChange={(e) => setBulkJsonText(e.target.value)}
+              style={{ whiteSpace: 'pre', overflowX: 'auto' }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between border-t border-line pt-4">
+            <p className="text-xs text-mute">
+              Malformed items will be skipped and reported.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={() => setIsBulkModalOpen(false)} disabled={bulkImporting}>Cancel</Button>
+              <Button onClick={handleBulkImport} loading={bulkImporting} disabled={!bulkJsonText.trim()}>
+                Start Import
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={isDeleteAllModalOpen}
+        onClose={() => { if (!deletingAll) { setIsDeleteAllModalOpen(false); setDeleteAllConfirmText(''); } }}
+        title="Delete All Questions"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
+            <p className="text-xs leading-relaxed text-ink/80">
+              This permanently deletes <span className="font-semibold text-ink">every question across every interest</span>,
+              regardless of the current filter. This cannot be undone.
+            </p>
+          </div>
+
+          <Input
+            label={'Type "DELETE" to confirm'}
+            value={deleteAllConfirmText}
+            onChange={(e) => setDeleteAllConfirmText(e.target.value)}
+            placeholder="DELETE"
+            autoFocus
+          />
+
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => { setIsDeleteAllModalOpen(false); setDeleteAllConfirmText(''); }}
+              disabled={deletingAll}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteAll}
+              loading={deletingAll}
+              disabled={deleteAllConfirmText.trim().toUpperCase() !== 'DELETE'}
+            >
+              Delete All
+            </Button>
           </div>
         </div>
       </Modal>

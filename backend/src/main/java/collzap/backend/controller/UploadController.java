@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.CloudinaryService;
 
@@ -40,6 +41,7 @@ public class UploadController {
         this.cloudinaryService = cloudinaryService;
     }
 
+    @RateLimited(name = "file-upload", limit = 20, windowSeconds = 3600)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> upload(
         @AuthenticationPrincipal AuthPrincipal me,

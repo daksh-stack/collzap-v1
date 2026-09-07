@@ -66,7 +66,10 @@ public class CollzapProperties {
     public static class Admin {
         /** Bootstrap operator, created on first startup if the table is empty. */
         private String bootstrapUsername = "admin";
+        /** Blank generates and logs a random password once, instead of a fixed default. */
         private String bootstrapPassword = "";
+        /** Demo colleges/interests/questions on an empty database. Off in production. */
+        private boolean seedDemoData = true;
     }
 
     @Getter

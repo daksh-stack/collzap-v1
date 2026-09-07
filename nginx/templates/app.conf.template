@@ -1,0 +1,72 @@
+# Reverse proxy for the Collzap API. The frontend is hosted elsewhere; this box
+# only serves the API and WebSocket for ${API_DOMAIN}.
+#
+# Rendered from this .template by the official nginx image's docker-entrypoint
+# (envsubst), which only replaces names that are actual container env vars —
+# nginx's own $host/$remote_addr/etc. below are left untouched since they
+# aren't set as env vars.
+#
+# client_max_body_size and the proxy timeouts below exist specifically so nginx
+# doesn't reject or kill calls that touch external APIs (Cloudinary uploads,
+# the seriousness-test/chat flow) before they ever reach the backend:
+#   - nginx's default client_max_body_size is 1M, well under the app's 5MB
+#     upload limit — without raising it here, every upload above 1MB gets a
+#     413 from nginx and never reaches Spring at all.
+#   - default proxy timeouts (60s) are usually fine, but are set explicitly
+#     and a little generous below so a slow Cloudinary upload isn't cut off
+#     mid-request.
+#   - the /ws/ location gets the Upgrade/Connection headers and a long
+#     read timeout WebSockets need — without these, every chat socket
+#     handshake fails or gets dropped after 60s of inactivity.
+
+server {
+    listen 80;
+    server_name ${API_DOMAIN};
+
+    # Let's Encrypt HTTP-01 challenge.
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${API_DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/${API_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${API_DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    client_max_body_size 10M;
+
+    location /ws/ {
+        proxy_pass http://backend:8081;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Chat sockets are long-lived and mostly idle between messages; a short
+        # read timeout here would silently drop connections mid-conversation.
+        proxy_read_timeout 7d;
+    }
+
+    location / {
+        proxy_pass http://backend:8081;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 10s;
+        proxy_send_timeout 90s;
+        proxy_read_timeout 90s;
+    }
+}

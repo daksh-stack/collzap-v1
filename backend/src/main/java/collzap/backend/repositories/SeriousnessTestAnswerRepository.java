@@ -24,4 +24,8 @@ public interface SeriousnessTestAnswerRepository extends JpaRepository<Seriousne
     @Modifying
     @Query("delete from SeriousnessTestAnswer a where a.attempt.user.id = :userId")
     void deleteByUserId(@Param("userId") UUID userId);
+
+    @Modifying
+    @Query("delete from SeriousnessTestAnswer a where a.question.interest.id = :interestId")
+    void deleteByQuestionInterestId(@Param("interestId") UUID interestId);
 }

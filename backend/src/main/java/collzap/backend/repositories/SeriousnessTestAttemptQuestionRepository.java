@@ -38,4 +38,8 @@ public interface SeriousnessTestAttemptQuestionRepository
     @Modifying
     @Query("delete from SeriousnessTestAttemptQuestion sq where sq.attempt.user.id = :userId")
     void deleteByUserId(@Param("userId") UUID userId);
+
+    @Modifying
+    @Query("delete from SeriousnessTestAttemptQuestion sq where sq.question.interest.id = :interestId")
+    void deleteByQuestionInterestId(@Param("interestId") UUID interestId);
 }

@@ -70,6 +70,8 @@ public interface MatchGroupRepository extends JpaRepository<MatchGroup, UUID> {
 
     long countByStatus(MatchGroupStatus status);
 
+    long countByInterestId(UUID interestId);
+
     /** Admin matches table, newest first. */
     @Query(
         value = """
