@@ -20,7 +20,8 @@ export default function AuthGuard() {
   }, [isAuthenticated, isAdmin]);
 
   const isPublicRoute = location.pathname === '/login' ||
-                        location.pathname === '/verify-otp' ||
+                        location.pathname === '/signup' ||
+                        location.pathname === '/forgot-password' ||
                         location.pathname === '/admin/login';
 
   if (!isAuthenticated && !isPublicRoute) {

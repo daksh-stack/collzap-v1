@@ -6,9 +6,12 @@ import java.util.UUID;
 
 import collzap.backend.enums.DocumentStatus;
 import collzap.backend.enums.DocumentType;
+import collzap.backend.enums.VerificationMethod;
 import collzap.backend.enums.VerificationStatus;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public final class CollegeDtos {
@@ -39,7 +42,36 @@ public final class CollegeDtos {
 
         @NotBlank(message = "Document URL is required")
         @Size(max = 1000)
-        String documentUrl
+        String documentUrl,
+
+        @NotNull(message = "College is required")
+        UUID collegeId
+    ) {
+    }
+
+    public record RequestCollegeEmailOtpRequest(
+        @NotBlank(message = "Email is required")
+        @Email(message = "Enter a valid college email")
+        @Size(max = 254)
+        String email
+    ) {
+    }
+
+    public record ConfirmCollegeEmailOtpRequest(
+        @NotBlank(message = "Email is required")
+        @Email(message = "Enter a valid college email")
+        String email,
+
+        @NotBlank(message = "Enter the code we emailed you")
+        @Pattern(regexp = "\\d{4,8}", message = "The code must be 4 to 8 digits")
+        String code
+    ) {
+    }
+
+    public record CollegeEmailOtpSentResponse(
+        String email,
+        String collegeName,
+        long expiresInSeconds
     ) {
     }
 
@@ -58,7 +90,8 @@ public final class CollegeDtos {
         VerificationStatus status,
         String message,
         boolean canUploadDocument,
-        List<VerificationDocumentResponse> documents
+        List<VerificationDocumentResponse> documents,
+        VerificationMethod method
     ) {
     }
 

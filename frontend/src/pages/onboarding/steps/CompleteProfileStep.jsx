@@ -17,7 +17,7 @@ const PROMPTS = [
 
 export default function CompleteProfileStep() {
   const { user } = useAuthStore();
-  const { profile, updateProfile, fetchOnboarding, loading } = useUserStore();
+  const { profile, fetchMe, updateProfile, fetchOnboarding, loading } = useUserStore();
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -28,6 +28,14 @@ export default function CompleteProfileStep() {
     storyPrompt2: '',
     storyPrompt3: '',
   });
+
+  useEffect(() => {
+    // College is only set during the earlier verification step, not at
+    // signup — the cached user/profile can predate it, so refetch here to
+    // make sure collegeId (required by the backend) is actually present.
+    fetchMe().catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (profile) {
@@ -61,10 +69,16 @@ export default function CompleteProfileStep() {
       return;
     }
 
+    const collegeId = profile?.collegeId || user?.collegeId;
+    if (!collegeId) {
+      toast.error('Could not confirm your college — reload the page and try again');
+      return;
+    }
+
     try {
       await updateProfile({
         ...formData,
-        collegeId: user?.collegeId || profile?.collegeId,
+        collegeId,
         yearOfStudy: parseInt(formData.yearOfStudy, 10),
       });
       await fetchOnboarding();

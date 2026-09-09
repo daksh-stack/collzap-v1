@@ -15,7 +15,8 @@ import Spinner from './components/ui/Spinner';
 
 // Pages (Lazy Loaded)
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
-const OtpVerifyPage = lazy(() => import('./pages/auth/OtpVerifyPage'));
+const SignupPage = lazy(() => import('./pages/auth/SignupPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const AdminLoginPage = lazy(() => import('./pages/auth/AdminLoginPage'));
 
 const OnboardingPage = lazy(() => import('./pages/onboarding/OnboardingPage'));
@@ -64,7 +65,8 @@ function App() {
           <Route element={<AuthGuard />}>
             <Route element={<PublicLayout />}>
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/verify-otp" element={<OtpVerifyPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
             </Route>
           </Route>

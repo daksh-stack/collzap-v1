@@ -8,31 +8,37 @@ import PasswordInput from '../../components/ui/PasswordInput';
 import { useAuthStore } from '../../store/useAuthStore';
 import { page, useReducedMotion, transition } from '../../lib/motion';
 
-export default function LoginPage() {
+export default function SignupPage() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const { login, loading } = useAuthStore();
+  const { signup, loading } = useAuthStore();
   const navigate = useNavigate();
   const reduced = useReducedMotion();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error('Enter your email and password');
+    if (!name || !email || !password) {
+      toast.error('Fill in every field');
+      return;
+    }
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
 
     try {
-      const response = await login(email, password);
-      navigate(response.nextStep === 'READY' ? '/' : '/onboarding', { replace: true });
+      await signup(email, password, name);
+      // Every fresh signup lands on VERIFY_EMAIL first.
+      navigate('/onboarding', { replace: true });
     } catch (error) {
-      if (error.code === 'password_reset_required') {
-        toast.error("This account doesn't have a password yet — set one now.");
-        navigate('/forgot-password', { state: { email } });
-        return;
-      }
-      toast.error(error.message || 'Could not sign in');
+      toast.error(error.message || 'Could not create your account');
     }
   };
 
@@ -43,13 +49,21 @@ export default function LoginPage() {
       transition={transition(page, reduced)}
     >
       <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tightest text-ink">
-        Back again.
+        Get on the list.
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-mute">
-        Sign in with your email and password.
+        Any email works. We'll confirm it's real, then it's yours.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-9 space-y-3">
+        <Input
+          label="Your name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoComplete="name"
+          disabled={loading}
+        />
+
         <Input
           label="Email"
           type="email"
@@ -63,23 +77,21 @@ export default function LoginPage() {
           label="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
+          autoComplete="new-password"
+          hint="At least 8 characters"
           disabled={loading}
         />
 
-        <div className="flex justify-end">
-          <button
-            type="button"
-            className="text-xs text-mute hover:text-ink transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
-            onClick={() => navigate('/forgot-password', { state: { email } })}
-            disabled={loading}
-          >
-            Forgot password?
-          </button>
-        </div>
+        <PasswordInput
+          label="Confirm password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          autoComplete="new-password"
+          disabled={loading}
+        />
 
         <Button type="submit" className="w-full" size="lg" loading={loading}>
-          Log in
+          Create account
         </Button>
       </form>
 
@@ -87,12 +99,12 @@ export default function LoginPage() {
         <button
           type="button"
           className="text-sm text-mute hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded-sm"
-          onClick={() => navigate('/signup')}
+          onClick={() => navigate('/login')}
           disabled={loading}
         >
-          First time here?{' '}
+          Already have an account?{' '}
           <span className="font-medium text-accent-700 underline underline-offset-4 decoration-accent-300">
-            Sign up
+            Log in
           </span>
         </button>
       </div>

@@ -29,7 +29,6 @@ import collzap.backend.enums.SeriousnessLevel;
 import collzap.backend.enums.TestAttemptStatus;
 import collzap.backend.exception.BadRequestException;
 import collzap.backend.exception.ConflictException;
-import collzap.backend.exception.ForbiddenException;
 import collzap.backend.exception.NotFoundException;
 import collzap.backend.models.Interest;
 import collzap.backend.models.SeriousnessTestAnswer;
@@ -161,7 +160,6 @@ public class SeriousnessTestService {
             throw new ConflictException(eligibility.reason());
         }
 
-        Instant now = Instant.now();
         attemptRepository.findActiveAttemptsByUserId(userId)
             .forEach(open -> {
                 open.setStatus(TestAttemptStatus.ABANDONED);

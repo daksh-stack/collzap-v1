@@ -6,6 +6,7 @@ import Spinner from '../../components/ui/Spinner';
 import { page, useReducedMotion, transition } from '../../lib/motion';
 
 // Import all steps
+import VerifyEmailStep from './steps/VerifyEmailStep';
 import UploadDocumentStep from './steps/UploadDocumentStep';
 import AwaitingVerificationStep from './steps/AwaitingVerificationStep';
 import VerificationRejectedStep from './steps/VerificationRejectedStep';
@@ -16,6 +17,7 @@ import TakeSeriousnessTestStep from './steps/TakeSeriousnessTestStep';
 import SelectConnectionTypeStep from './steps/SelectConnectionTypeStep';
 
 const STEP_COMPONENTS = {
+  VERIFY_EMAIL: VerifyEmailStep,
   UPLOAD_DOCUMENT: UploadDocumentStep,
   AWAITING_VERIFICATION: AwaitingVerificationStep,
   VERIFICATION_REJECTED: VerificationRejectedStep,

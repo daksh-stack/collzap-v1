@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import collzap.backend.dto.AuthDtos.OtpIssuedResponse;
+import collzap.backend.dto.AuthDtos.VerifyEmailRequest;
 import collzap.backend.dto.CommonDtos.MessageResponse;
 import collzap.backend.dto.UserDtos.OnboardingStateResponse;
 import collzap.backend.dto.UserDtos.RegisterDeviceRequest;
@@ -66,6 +68,22 @@ public class MeController {
     @GetMapping("/onboarding")
     public OnboardingStateResponse onboarding(@AuthenticationPrincipal AuthPrincipal me) {
         return onboardingService.describe(me.userId());
+    }
+
+    /** Confirms the login email during onboarding's VERIFY_EMAIL step. */
+    @RateLimited(name = "verify-email", limit = 10, windowSeconds = 3600)
+    @PostMapping("/verify-email")
+    public OnboardingStateResponse verifyEmail(
+        @AuthenticationPrincipal AuthPrincipal me,
+        @Valid @RequestBody VerifyEmailRequest request
+    ) {
+        return authService.verifyEmail(me.userId(), request.code());
+    }
+
+    @RateLimited(name = "verify-email-resend", limit = 5, windowSeconds = 3600)
+    @PostMapping("/verify-email/resend")
+    public OtpIssuedResponse resendVerifyEmail(@AuthenticationPrincipal AuthPrincipal me) {
+        return authService.resendVerifyEmail(me.userId());
     }
 
     /** Profile setup and later edits both post here. */

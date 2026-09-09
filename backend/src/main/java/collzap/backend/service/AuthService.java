@@ -7,6 +7,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,16 +18,21 @@ import collzap.backend.dto.AuthDtos.AccessTokenResponse;
 import collzap.backend.dto.AuthDtos.AdminAuthResponse;
 import collzap.backend.dto.AuthDtos.AdminLoginRequest;
 import collzap.backend.dto.AuthDtos.AuthResponse;
-import collzap.backend.dto.AuthDtos.OtpSentResponse;
-import collzap.backend.dto.AuthDtos.RequestOtpRequest;
-import collzap.backend.dto.AuthDtos.VerifyOtpRequest;
+import collzap.backend.dto.AuthDtos.ForgotPasswordRequest;
+import collzap.backend.dto.AuthDtos.LoginRequest;
+import collzap.backend.dto.AuthDtos.OtpIssuedResponse;
+import collzap.backend.dto.AuthDtos.ResetPasswordRequest;
+import collzap.backend.dto.AuthDtos.SignupRequest;
+import collzap.backend.dto.AuthDtos.SignupResponse;
+import collzap.backend.dto.UserDtos.OnboardingStateResponse;
 import collzap.backend.enums.OtpPurpose;
 import collzap.backend.enums.Status;
-import collzap.backend.exception.ForbiddenException;
-import collzap.backend.exception.UnauthorizedException;
 import collzap.backend.exception.BadRequestException;
+import collzap.backend.exception.ForbiddenException;
+import collzap.backend.exception.NotFoundException;
+import collzap.backend.exception.PasswordResetRequiredException;
+import collzap.backend.exception.UnauthorizedException;
 import collzap.backend.models.AdminUser;
-import collzap.backend.models.College;
 import collzap.backend.models.RefreshToken;
 import collzap.backend.models.User;
 import collzap.backend.repositories.AdminUserRepository;
@@ -35,9 +41,9 @@ import collzap.backend.repositories.UserRepository;
 import collzap.backend.security.JwtService;
 
 /**
- * Signup, login and token lifecycle. Signup and login are the same two calls —
- * request a code, then verify it — because the college email decides everything
- * and there is no password to collect.
+ * Signup, login, forgot-password and token lifecycle. Any email works — the app
+ * doesn't require a college address to sign up; college affiliation is captured
+ * later, during student verification, not here.
  */
 @Service
 public class AuthService {
@@ -48,7 +54,6 @@ public class AuthService {
     private final UserRepository userRepository;
     private final AdminUserRepository adminUserRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final CollegeService collegeService;
     private final OtpService otpService;
     private final JwtService jwtService;
     private final OnboardingService onboardingService;
@@ -60,7 +65,6 @@ public class AuthService {
         UserRepository userRepository,
         AdminUserRepository adminUserRepository,
         RefreshTokenRepository refreshTokenRepository,
-        CollegeService collegeService,
         OtpService otpService,
         JwtService jwtService,
         OnboardingService onboardingService,
@@ -70,7 +74,6 @@ public class AuthService {
         this.userRepository = userRepository;
         this.adminUserRepository = adminUserRepository;
         this.refreshTokenRepository = refreshTokenRepository;
-        this.collegeService = collegeService;
         this.otpService = otpService;
         this.jwtService = jwtService;
         this.onboardingService = onboardingService;
@@ -79,56 +82,102 @@ public class AuthService {
     }
 
     @Transactional
-    public OtpSentResponse requestOtp(RequestOtpRequest request) {
+    public SignupResponse signup(SignupRequest request) {
         String email = OtpService.normalize(request.email());
-        College college = collegeService.requireByEmail(email);
-        boolean existing = userRepository.existsByEmailIgnoreCase(email);
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
 
-        if (Boolean.TRUE.equals(request.isSignup()) && existing) {
-            throw new BadRequestException("An account with this email already exists. Please log in.");
+        // SECURITY-CRITICAL: key this off emailVerified, not hasPassword(). Every
+        // pre-existing (legacy) account has hasPassword()==false too — checking
+        // password presence here would let anyone "sign up" with an existing user's
+        // email, silently set a brand-new password on THEIR account, and get logged
+        // straight into it with no OTP check at all. emailVerified correctly tells
+        // apart a real account (legacy, always true; or modern-and-completed, true)
+        // from an abandoned first-time signup nobody ever proved ownership of
+        // (false) — only the latter is safe to let a retry reclaim.
+        if (user != null && user.isEmailVerified()) {
+            throw new BadRequestException(
+                "An account with this email already exists. Log in, or use Forgot Password if you don't have a password set.");
         }
-        if (Boolean.FALSE.equals(request.isSignup()) && !existing) {
-            throw new BadRequestException("No account found with this email. Please sign up.");
+        if (user == null) {
+            user = new User(null, email, request.name().trim());
+            user.setEmailVerified(false);
+        } else {
+            user.setName(request.name().trim());
         }
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user = userRepository.save(user);
 
-        long expiresIn = otpService.issue(email, existing ? OtpPurpose.LOGIN : OtpPurpose.SIGNUP);
-
-        return new OtpSentResponse(
-            email,
-            college.getName(),
-            existing,
-            expiresIn,
-            existing
-                ? "Welcome back. We sent a code to your college email."
-                : "We sent a code to your college email to confirm it is yours."
+        long otpExpiresIn = otpService.issue(email, OtpPurpose.SIGNUP);
+        AuthResponse auth = buildAuthResponse(user);
+        return new SignupResponse(
+            auth.accessToken(), auth.refreshToken(), auth.tokenType(),
+            auth.expiresInSeconds(), auth.nextStep(), auth.user(), otpExpiresIn
         );
     }
 
     @Transactional
-    public AuthResponse verifyOtp(VerifyOtpRequest request) {
+    public AuthResponse login(LoginRequest request) {
         String email = OtpService.normalize(request.email());
-        College college = collegeService.requireByEmail(email);
+        User user = userRepository.findByEmailIgnoreCase(email)
+            .orElseThrow(() -> new UnauthorizedException("Email or password is incorrect"));
 
-        User existing = userRepository.findByEmailIgnoreCase(email).orElse(null);
-        OtpPurpose purpose = existing != null ? OtpPurpose.LOGIN : OtpPurpose.SIGNUP;
-        otpService.verify(email, request.code(), purpose);
-
-        User user;
-        if (existing != null) {
-            if (existing.getAccountStatus() == Status.DELETED) {
-                existing.setAccountStatus(Status.ACTIVE);
-                existing.setProfileVisible(true);
-                existing.setNotificationsEnabled(true);
-            }
-            user = existing;
-        } else {
-            user = new User(college, email, defaultName(request.name(), email));
-            user = userRepository.save(user);
+        if (!user.hasPassword()) {
+            throw new PasswordResetRequiredException(
+                "This account has no password yet. Reset your password to continue.");
         }
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new UnauthorizedException("Email or password is incorrect");
+        }
+        reactivateIfDeleted(user);
         user.setLastSeenAt(Instant.now());
-        user = userRepository.save(user);
+        return buildAuthResponse(userRepository.save(user));
+    }
 
-        return buildAuthResponse(user);
+    @Transactional
+    public OtpIssuedResponse forgotPassword(ForgotPasswordRequest request) {
+        String email = OtpService.normalize(request.email());
+        if (!userRepository.existsByEmailIgnoreCase(email)) {
+            throw new BadRequestException("No account found with this email.");
+        }
+        long expiresIn = otpService.issue(email, OtpPurpose.PASSWORD_RESET);
+        return new OtpIssuedResponse(email, expiresIn, "We sent a code to reset your password.");
+    }
+
+    @Transactional
+    public AuthResponse resetPassword(ResetPasswordRequest request) {
+        String email = OtpService.normalize(request.email());
+        User user = userRepository.findByEmailIgnoreCase(email)
+            .orElseThrow(() -> new BadRequestException("No account found with this email."));
+        otpService.verify(email, request.code(), OtpPurpose.PASSWORD_RESET);
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        // Proving control of the inbox this way satisfies email verification too —
+        // this is exactly what lets a pre-existing no-password account "just work"
+        // through this same endpoint, with no separate migration flow.
+        user.setEmailVerified(true);
+        reactivateIfDeleted(user);
+        return buildAuthResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public OnboardingStateResponse verifyEmail(UUID userId, String code) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+        otpService.verify(user.getEmail(), code, OtpPurpose.SIGNUP);
+        user.setEmailVerified(true);
+        userRepository.save(user);
+        return onboardingService.describe(user);
+    }
+
+    @Transactional
+    public OtpIssuedResponse resendVerifyEmail(UUID userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+        if (user.isEmailVerified()) {
+            throw new BadRequestException("Your email is already verified");
+        }
+        long expiresIn = otpService.issue(user.getEmail(), OtpPurpose.SIGNUP);
+        return new OtpIssuedResponse(user.getEmail(), expiresIn, "New code sent.");
     }
 
     @Transactional
@@ -161,7 +210,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void logoutEverywhere(java.util.UUID userId) {
+    public void logoutEverywhere(UUID userId) {
         refreshTokenRepository.revokeAllForUser(userId, Instant.now());
     }
 
@@ -195,6 +244,14 @@ public class AuthService {
         );
     }
 
+    private static void reactivateIfDeleted(User user) {
+        if (user.getAccountStatus() == Status.DELETED) {
+            user.setAccountStatus(Status.ACTIVE);
+            user.setProfileVisible(true);
+            user.setNotificationsEnabled(true);
+        }
+    }
+
     private String issueRefreshToken(User user) {
         byte[] bytes = new byte[REFRESH_TOKEN_BYTES];
         random.nextBytes(bytes);
@@ -218,24 +275,5 @@ public class AuthService {
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 is unavailable", ex);
         }
-    }
-
-    /** Name is auto-filled from the email local part when signup did not supply one. */
-    private static String defaultName(String supplied, String email) {
-        if (supplied != null && !supplied.isBlank()) {
-            return supplied.trim();
-        }
-        String localPart = email.substring(0, email.indexOf('@'));
-        String cleaned = localPart.replaceAll("[._\\-0-9]+", " ").trim();
-        if (cleaned.isEmpty()) {
-            return localPart;
-        }
-        StringBuilder builder = new StringBuilder(cleaned.length());
-        boolean capitalise = true;
-        for (char ch : cleaned.toCharArray()) {
-            builder.append(capitalise ? Character.toUpperCase(ch) : ch);
-            capitalise = ch == ' ';
-        }
-        return builder.toString();
     }
 }

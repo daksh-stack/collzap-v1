@@ -15,14 +15,64 @@ export const useAuthStore = create(
       loading: false,
       error: null,
 
-      requestOtp: async (email, name = null, isSignup = null) => {
+      signup: async (email, password, name) => {
         set({ loading: true, error: null });
         try {
-          const payload = { email };
-          if (name) payload.name = name;
-          if (isSignup !== null) payload.isSignup = isSignup;
-          // For OTP request, we don't need auth, so we can use standard api call
-          const response = await api.post('/auth/otp', payload);
+          const response = await api.post('/auth/signup', { email, password, name });
+          set({
+            user: response.user,
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken,
+            isAuthenticated: true,
+            nextStep: response.nextStep,
+            loading: false,
+          });
+          return response; // also carries otpExpiresInSeconds
+        } catch (error) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
+      login: async (email, password) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await api.post('/auth/login', { email, password });
+          set({
+            user: response.user,
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken,
+            isAuthenticated: true,
+            nextStep: response.nextStep,
+            loading: false,
+          });
+          return response;
+        } catch (error) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
+      verifyEmail: async (code) => {
+        set({ loading: true, error: null });
+        try {
+          const onboarding = await api.post('/me/verify-email', { code });
+          set({ nextStep: onboarding.step, loading: false });
+          return onboarding;
+        } catch (error) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
+      resendVerifyEmail: async () => {
+        return api.post('/me/verify-email/resend');
+      },
+
+      forgotPassword: async (email) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await api.post('/auth/forgot-password', { email });
           set({ loading: false });
           return response;
         } catch (error) {
@@ -31,19 +81,17 @@ export const useAuthStore = create(
         }
       },
 
-      verifyOtp: async (email, code, name = null) => {
+      resetPassword: async (email, code, newPassword) => {
         set({ loading: true, error: null });
         try {
-          const payload = name ? { email, code, name } : { email, code };
-          const response = await api.post('/auth/otp/verify', payload);
-          
-          set({ 
+          const response = await api.post('/auth/reset-password', { email, code, newPassword });
+          set({
             user: response.user,
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
             isAuthenticated: true,
             nextStep: response.nextStep,
-            loading: false 
+            loading: false,
           });
           return response;
         } catch (error) {
@@ -104,7 +152,7 @@ export const useAuthStore = create(
         set({ loading: true, error: null });
         try {
           const response = await api.post('/admin/auth/login', { username, password });
-          
+
           // AdminAuthResponse is not a UserResponse, so build a minimal user object.
           const adminUser = {
               name: response.username,
@@ -134,9 +182,9 @@ export const useAuthStore = create(
       name: 'auth-storage', // name of item in storage (must be unique)
       storage: createJSONStorage(() => localStorage), // (optional) by default the 'localStorage' is used
       // We don't want to persist loading and error states
-      partialize: (state) => ({ 
-          user: state.user, 
-          accessToken: state.accessToken, 
+      partialize: (state) => ({
+          user: state.user,
+          accessToken: state.accessToken,
           refreshToken: state.refreshToken,
           isAuthenticated: state.isAuthenticated,
           nextStep: state.nextStep
