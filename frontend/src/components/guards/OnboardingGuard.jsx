@@ -4,7 +4,7 @@ import { useTestStore } from '../../store/useTestStore';
 
 export default function OnboardingGuard() {
   const { nextStep } = useAuthStore((state) => state);
-  const { session, result } = useTestStore((state) => state);
+  const { session, result, startBlocked } = useTestStore((state) => state);
   const location = useLocation();
 
   const isStrictOnboardingRoute = location.pathname.startsWith('/onboarding');
@@ -16,8 +16,12 @@ export default function OnboardingGuard() {
     return <Navigate to="/test" replace />;
   }
 
-  // If required onboarding step is TAKE_SERIOUSNESS_TEST and they try to navigate away, redirect straight to /test
-  if (nextStep === 'TAKE_SERIOUSNESS_TEST' && !isTestRoute) {
+  // If required onboarding step is TAKE_SERIOUSNESS_TEST and they try to navigate away, redirect straight to /test.
+  //
+  // `startBlocked` is the escape hatch: when the sitting cannot be started at
+  // all (an empty question bank returns 409), forcing the user back here would
+  // bounce them between /onboarding and /test forever. Let them out instead.
+  if (nextStep === 'TAKE_SERIOUSNESS_TEST' && !isTestRoute && !startBlocked) {
     return <Navigate to="/test" replace />;
   }
 

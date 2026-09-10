@@ -70,7 +70,8 @@ export default function AdminVerificationsPage() {
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              {/* Wraps rather than pushing Approve past the edge on a phone. */}
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 {doc.documentUrl && (
                   <a
                     href={doc.documentUrl}

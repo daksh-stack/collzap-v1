@@ -41,6 +41,9 @@ const Button = forwardRef(({
     sm: 'h-8 px-3 text-xs gap-1.5',
     md: 'h-10 px-4 text-sm gap-2',
     lg: 'h-12 px-7 text-base gap-2.5',
+    // Square, for a lone glyph. 40px keeps it above the 44px-with-gap touch
+    // target the admin row actions need on a phone.
+    icon: 'h-10 w-10 shrink-0 p-0',
   };
 
   // Magnetic hover: pointer-driven transform, never layout.

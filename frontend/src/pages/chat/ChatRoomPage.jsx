@@ -117,7 +117,7 @@ export default function ChatRoomPage() {
   const isGroup = memberCount > 2;
 
   return (
-    <div className="flex h-[calc(100vh-9rem)] flex-col overflow-hidden rounded-lg border border-line bg-surface">
+    <div className="flex h-[calc(100dvh-var(--app-chrome,9rem))] flex-col overflow-hidden rounded-lg border border-line bg-surface">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-3">
         <button

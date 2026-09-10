@@ -9,8 +9,21 @@ export const useTestStore = create((set) => ({
   loading: false,
   error: null,
 
+  /**
+   * True once starting a sitting has failed (most often because the question
+   * bank for a chosen interest is empty, which the backend reports as a 409).
+   *
+   * OnboardingGuard reads this and stops forcing navigation to /test. That is
+   * what breaks the /test -> /onboarding -> /test loop: deliberately NOT reset
+   * on mount, so a failure stays sticky until the user retries or a sitting
+   * actually starts.
+   */
+  startBlocked: false,
+
+  clearStartBlocked: () => set({ startBlocked: false }),
+
   resetTestState: () => {
-    set({ session: null, result: null, error: null, loading: false });
+    set({ session: null, result: null, error: null, loading: false, startBlocked: false });
   },
 
   checkEligibility: async () => {
@@ -29,10 +42,11 @@ export const useTestStore = create((set) => ({
     set({ loading: true, error: null, result: null });
     try {
       const session = await api.post('/test/sessions');
-      set({ session, result: null, loading: false });
+      set({ session, result: null, loading: false, startBlocked: false });
       return session;
     } catch (error) {
-      set({ error: error.message, loading: false });
+      // Sticky: the guard uses this to stop bouncing the user back to /test.
+      set({ error: error.message, loading: false, startBlocked: true });
       throw error;
     }
   },
@@ -41,9 +55,10 @@ export const useTestStore = create((set) => ({
     set({ loading: true, error: null });
     try {
       const session = await api.get('/test/sessions/current');
-      set({ session, loading: false });
+      set({ session, loading: false, startBlocked: false });
       return session;
     } catch (error) {
+      // A 404 here just means "no sitting in progress" — not a blocked state.
       set({ error: error.message, loading: false });
       throw error;
     }

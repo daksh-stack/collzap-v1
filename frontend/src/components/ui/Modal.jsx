@@ -104,7 +104,9 @@ export default function Modal({ open, onClose, title, children, className, layou
             exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: 4 }}
             transition={transition(snappy, reduced)}
             className={cn(
-              'relative w-full flex flex-col max-h-[88vh]',
+              // dvh, not vh: a phone's collapsing address bar otherwise pushes
+              // the footer buttons of a tall dialog below the fold.
+              'relative w-full flex flex-col max-h-[88dvh]',
               'bg-surface border border-line rounded-lg shadow-lg',
               widths[size] || widths.md,
               className
@@ -114,7 +116,7 @@ export default function Modal({ open, onClose, title, children, className, layou
             aria-label={typeof title === 'string' ? title : undefined}
           >
             {title && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-line">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-line sm:px-6">
                 <h2 className="font-display text-lg font-semibold text-ink tracking-tight">{title}</h2>
                 <button
                   onClick={onClose}
@@ -125,7 +127,7 @@ export default function Modal({ open, onClose, title, children, className, layou
                 </button>
               </div>
             )}
-            <div className="p-6 overflow-y-auto">
+            <div className="p-5 overflow-y-auto sm:p-6">
               {children}
             </div>
           </motion.div>

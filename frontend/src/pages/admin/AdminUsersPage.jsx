@@ -79,8 +79,12 @@ export default function AdminUsersPage() {
         className="mb-6"
       />
 
-      <div className="overflow-x-auto rounded-lg border border-line">
-        <table className="min-w-full divide-y divide-line text-sm">
+      {/* Five columns of ops detail do not survive a phone. Below md the same
+          rows become stacked cards; the table returns when there is width for
+          it. `min-w` keeps the table honest so the scroller actually scrolls
+          rather than crushing every column. */}
+      <div className="hidden overflow-x-auto rounded-lg border border-line md:block">
+        <table className="min-w-[52rem] divide-y divide-line text-sm">
           <thead className="bg-ink/[0.02]">
             <tr>
               {['User', 'College', 'Verification', 'Account', 'Joined', ''].map((h, i) => (
@@ -139,6 +143,46 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
+      <div className="overflow-hidden rounded-lg border border-line bg-surface md:hidden">
+        {loading && rows.length === 0 ? (
+          <div className="px-4 py-12 text-center text-accent-500"><Spinner /></div>
+        ) : rows.length === 0 ? (
+          <p className="px-4 py-12 text-center text-sm text-mute">Nobody matches that.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {rows.map((user) => (
+              <li key={user.id}>
+                {/* The whole card is the affordance, so no stray "Open" button
+                    hiding beyond the right edge. */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenUser(user)}
+                  className="block w-full px-4 py-3.5 text-left transition-colors hover:bg-ink/[0.02] focus-visible:outline-none focus-visible:bg-ink/[0.04]"
+                >
+                  {/* Spans, not paragraphs: a <button> may only contain
+                      phrasing content. */}
+                  <span className="block truncate text-sm font-medium text-ink">{user.name}</span>
+                  <span className="block truncate text-xs text-mute">{user.email}</span>
+                  <span className="mt-1 block truncate text-xs text-mute">
+                    {user.collegeName || '—'}
+                    {user.yearOfStudy ? ` · Year ${user.yearOfStudy}` : ''}
+                  </span>
+                  <span className="mt-2.5 flex flex-wrap items-center gap-2">
+                    {verificationBadge(user.verificationStatus)}
+                    <Badge variant={user.accountStatus === 'DELETED' ? 'destructive' : 'secondary'}>
+                      {user.accountStatus || 'ACTIVE'}
+                    </Badge>
+                    <span className="ml-auto shrink-0 text-[11px] text-mute tnum">
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {users?.totalPages > 1 && (
         <Pagination
           page={users.page ?? page}
@@ -167,7 +211,7 @@ export default function AdminUsersPage() {
 
             {loadingDetail && <div className="text-accent-500"><Spinner size="sm" /></div>}
 
-            <dl className="grid grid-cols-2 gap-px overflow-hidden rounded border border-line bg-line text-sm">
+            <dl className="grid gap-px overflow-hidden rounded border border-line bg-line text-sm sm:grid-cols-2">
               {[
                 ['College', selectedUser.collegeName],
                 ['City', selectedUser.city],

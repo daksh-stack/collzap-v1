@@ -3,7 +3,19 @@ import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { snappy, useReducedMotion, transition } from '../../lib/motion';
 
-export default function Dropdown({ trigger, items, align = 'right', className, label = 'Open menu' }) {
+/**
+ * `placement="top"` opens the menu upward — needed by triggers that sit near
+ * the bottom of the viewport, such as the mobile nav capsule, where the
+ * default downward menu would fall off-screen.
+ */
+export default function Dropdown({
+  trigger,
+  items,
+  align = 'right',
+  placement = 'bottom',
+  className,
+  label = 'Open menu',
+}) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
   const reduced = useReducedMotion();
@@ -48,12 +60,13 @@ export default function Dropdown({ trigger, items, align = 'right', className, l
         {open && (
           <motion.div
             role="menu"
-            initial={reduced ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
+            initial={reduced ? { opacity: 0 } : { opacity: 0, y: placement === 'top' ? 4 : -4, scale: 0.98 }}
             animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-            exit={reduced ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
+            exit={reduced ? { opacity: 0 } : { opacity: 0, y: placement === 'top' ? 4 : -4, scale: 0.98 }}
             transition={transition(snappy, reduced)}
             className={cn(
-              'absolute z-20 mt-2 w-52 origin-top rounded-lg border border-line bg-surface py-1 shadow-lg',
+              'absolute z-20 w-52 rounded-lg border border-line bg-surface py-1 shadow-lg',
+              placement === 'top' ? 'bottom-full mb-2 origin-bottom' : 'mt-2 origin-top',
               align === 'right' ? 'right-0' : 'left-0'
             )}
           >

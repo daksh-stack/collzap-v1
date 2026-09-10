@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, FileJson, AlertTriangle } from 'lucide-react';
+import { Plus, Edit2, Trash2, FileJson, AlertTriangle } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
@@ -224,85 +224,89 @@ export default function AdminQuestionsPage() {
   return (
     <div>
       <AdminPageHeader title="Questions" count={questions?.totalElements}>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        {/* The filter claims a whole row on a phone; the three actions wrap
+            beneath it rather than running off the edge. */}
+        <div className="w-full sm:w-48">
           <Select
             value={activeInterest}
             onChange={(e) => { setPage(0); setActiveInterest(e.target.value); }}
-            className="w-full sm:w-48"
+            aria-label="Filter by interest"
           >
             <option value="ALL">All Interests</option>
             {interests.map(i => (
               <option key={i.id} value={i.id}>{i.name}</option>
             ))}
           </Select>
-          <Button variant="outline" onClick={() => setIsBulkModalOpen(true)}>
-            <FileJson className="mr-2 h-4 w-4" /> Bulk JSON
-          </Button>
-          <Button variant="danger" onClick={() => setIsDeleteAllModalOpen(true)}>
-            <Trash2 className="mr-2 h-4 w-4" /> Delete All
-          </Button>
-          <Button onClick={() => handleOpenModal()}>
-            <Plus className="mr-2 h-4 w-4" /> New
-          </Button>
         </div>
+        <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setIsBulkModalOpen(true)}>
+          <FileJson className="mr-2 h-4 w-4" /> Bulk JSON
+        </Button>
+        <Button variant="danger" className="flex-1 sm:flex-none" onClick={() => setIsDeleteAllModalOpen(true)}>
+          <Trash2 className="mr-2 h-4 w-4" /> Delete All
+        </Button>
+        <Button className="flex-1 sm:flex-none" onClick={() => handleOpenModal()}>
+          <Plus className="mr-2 h-4 w-4" /> New
+        </Button>
       </AdminPageHeader>
 
-      <div className="overflow-x-auto rounded-lg border border-line mt-6">
-        <table className="min-w-full divide-y divide-line text-sm">
-          <thead className="bg-ink/[0.02]">
-            <tr>
-              {['Interest', 'Question', ''].map((h, i) => (
-                <th
-                  key={i}
-                  scope="col"
-                  className="px-4 py-2.5 text-left font-mono text-[10px] font-medium uppercase tracking-widest text-mute"
-                >
-                  {h || <span className="sr-only">Actions</span>}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line bg-surface">
-            {loading && rows.length === 0 ? (
-              <tr><td colSpan="3" className="px-4 py-12 text-center text-accent-500"><Spinner /></td></tr>
-            ) : rows.length === 0 ? (
-              <tr><td colSpan="3" className="px-4 py-12 text-center text-sm text-mute">No questions found.</td></tr>
-            ) : (
-              rows.map((q) => (
-                <tr key={q.id} className="transition-colors hover:bg-ink/[0.02]">
-                  <td className="px-4 py-3 align-top">
+      {/*
+        A list, not a table. A question carries its four options with it, so
+        every row was already a card wearing a <td> — and at phone width the
+        three columns crushed the text into a ribbon while the row actions sat
+        off the right edge.
+      */}
+      <div className="mt-6 overflow-hidden rounded-lg border border-line bg-surface text-sm">
+        {loading && rows.length === 0 ? (
+          <div className="px-4 py-12 text-center text-accent-500"><Spinner /></div>
+        ) : rows.length === 0 ? (
+          <p className="px-4 py-12 text-center text-sm text-mute">No questions found.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {rows.map((q) => (
+              <li key={q.id} className="p-4 transition-colors hover:bg-ink/[0.02] sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                     <span className="inline-flex items-center rounded-md bg-ink/[0.04] px-2 py-1 text-xs font-medium text-ink ring-1 ring-inset ring-ink/10">
                       {q.interestName}
                     </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-ink mb-2">{q.questionText}</div>
-                    <ul className="space-y-1">
-                      {q.options.map((opt, idx) => (
-                        <li 
-                          key={idx} 
-                          className={`text-xs ${idx === q.correctOptionIndex ? 'font-semibold text-accent-600' : 'text-mute'}`}
-                        >
-                          {String.fromCharCode(65 + idx)}. {opt}
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-                  <td className="px-4 py-3 text-right align-top">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenModal(q)}>
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(q.id)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    <p className="mt-2 font-medium text-ink">{q.questionText}</p>
+                  </div>
+                  {/* Pinned beside the question at every width. */}
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Edit question"
+                      onClick={() => handleOpenModal(q)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Delete question"
+                      onClick={() => handleDelete(q.id)}
+                      className="text-bad hover:bg-bad/[0.07] hover:text-bad"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <ul className="mt-3 space-y-1">
+                  {q.options.map((opt, idx) => (
+                    <li
+                      key={idx}
+                      className={`text-xs ${idx === q.correctOptionIndex ? 'font-semibold text-accent-600' : 'text-mute'}`}
+                    >
+                      {String.fromCharCode(65 + idx)}. {opt}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {questions?.totalPages > 1 && (
@@ -401,11 +405,11 @@ export default function AdminQuestionsPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between border-t border-line pt-4">
+          <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-mute">
               Malformed items will be skipped and reported.
             </p>
-            <div className="flex gap-3">
+            <div className="flex justify-end gap-3">
               <Button variant="ghost" onClick={() => setIsBulkModalOpen(false)} disabled={bulkImporting}>Cancel</Button>
               <Button onClick={handleBulkImport} loading={bulkImporting} disabled={!bulkJsonText.trim()}>
                 Start Import
@@ -422,8 +426,8 @@ export default function AdminQuestionsPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <div className="flex gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
+          <div className="flex gap-3 rounded-lg border border-bad/30 bg-bad/[0.06] p-4">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-bad" />
             <p className="text-xs leading-relaxed text-ink/80">
               This permanently deletes <span className="font-semibold text-ink">every question across every interest</span>,
               regardless of the current filter. This cannot be undone.

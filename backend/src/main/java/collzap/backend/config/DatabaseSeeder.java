@@ -35,6 +35,14 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseSeeder.class);
 
+    /**
+     * Comfortably above what any single interest is asked for: a paper is
+     * {@code collzap.seriousness-test.total-questions} (25) split across the
+     * interests the user picked, so one interest is never asked for more than
+     * 25 and usually far fewer.
+     */
+    private static final int DEMO_QUESTIONS_PER_INTEREST = 25;
+
     private final AdminUserRepository adminUserRepository;
     private final CollegeRepository collegeRepository;
     private final InterestRepository interestRepository;
@@ -129,23 +137,42 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 
+    /**
+     * Fills any long-term interest whose question bank is empty.
+     *
+     * <p>Deliberately checked per interest rather than against the global row
+     * count. The old global guard meant that as soon as a single question
+     * existed anywhere, no interest was ever seeded again — so every interest
+     * added afterwards kept an empty bank, and an empty bank makes that
+     * interest unusable: {@code SeriousnessTestService.drawPaper} rejects the
+     * sitting with a 409 the moment a user picks it.
+     */
     private void seedQuestions() {
-        if (questionRepository.count() == 0) {
-            List<Interest> interests = interestRepository.findAll();
-            for (Interest interest : interests) {
-                if (interest.getCategory() == InterestCategory.LONG_TERM) {
-                    for (int i = 1; i <= 25; i++) {
-                        SeriousnessTestQuestion q = new SeriousnessTestQuestion(
-                            interest,
-                            "Dummy question " + i + " for " + interest.getName() + "?",
-                            List.of("Option A", "Option B", "Option C", "Option D"),
-                            0
-                        );
-                        questionRepository.save(q);
-                    }
-                }
+        int seededInterests = 0;
+
+        for (Interest interest : interestRepository.findAll()) {
+            if (interest.getCategory() != InterestCategory.LONG_TERM) {
+                continue;
             }
-            log.info("Seeded 25 dummy questions for each long-term interest");
+            if (questionRepository.countByInterestIdAndActiveTrue(interest.getId()) > 0) {
+                continue;
+            }
+
+            for (int i = 1; i <= DEMO_QUESTIONS_PER_INTEREST; i++) {
+                questionRepository.save(new SeriousnessTestQuestion(
+                    interest,
+                    "Dummy question " + i + " for " + interest.getName() + "?",
+                    List.of("Option A", "Option B", "Option C", "Option D"),
+                    0
+                ));
+            }
+            seededInterests++;
+            log.info("Seeded {} demo questions for interest '{}'",
+                DEMO_QUESTIONS_PER_INTEREST, interest.getName());
+        }
+
+        if (seededInterests == 0) {
+            log.info("Every long-term interest already has a question bank");
         }
     }
 }
