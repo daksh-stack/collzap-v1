@@ -1,0 +1,53 @@
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+    # No published port: nginx is the only public entry point, backend is only
+    # reachable from other containers on this network as http://backend:8081.
+    expose:
+      - "8081"
+    depends_on:
+      - redis
+    mem_limit: 500m
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Same free-tier sizing as before: capped memory with LRU eviction, no disk
+    # persistence — everything Redis holds here (rate-limit counters, caches)
+    # is disposable and cheaply rebuilt.
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --appendonly no
+    expose:
+      - "6379"
+    mem_limit: 150m
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+    depends_on:
+      - backend
+    mem_limit: 100m
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+    # Checks twice a day and only actually renews within ~30 days of expiry;
+    # a no-op check most of the time. See init-letsencrypt.sh for the first
+    # certificate — this loop only handles renewal after that.
+    entrypoint: >
+      /bin/sh -c "trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;"

@@ -21,6 +21,7 @@ export default function Topbar({ setMobileOpen }) {
 
   const userMenuItems = [
     { label: 'Your profile', onClick: () => navigate('/profile') },
+    { label: 'Give feedback', onClick: () => navigate('/feedback') },
     { label: 'Settings', onClick: () => navigate('/settings') },
     { label: 'Sign out', onClick: handleLogout, danger: true },
   ];

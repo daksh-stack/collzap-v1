@@ -19,21 +19,17 @@ import lombok.Setter;
  */
 @Entity
 @Table(
-    name = "seriousness_test_session_questions",
+    name = "seriousness_test_attempt_questions",
     uniqueConstraints = @UniqueConstraint(
-        name = "uk_session_question_order",
-        columnNames = {"session_id", "order_index"}
+        name = "uk_attempt_question_order",
+        columnNames = {"attempt_id", "question_id"}
     ),
-    indexes = @Index(name = "idx_session_questions_session_id", columnList = "session_id")
+    indexes = @Index(name = "idx_attempt_questions_attempt_id", columnList = "attempt_id")
 )
 @Getter
 @Setter
 @NoArgsConstructor
-public class SeriousnessTestSessionQuestion extends BaseEntity {
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "session_id", nullable = false)
-    private SeriousnessTestSession session;
+public class SeriousnessTestAttemptQuestion extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "attempt_id", nullable = false)
@@ -47,13 +43,11 @@ public class SeriousnessTestSessionQuestion extends BaseEntity {
     @Column(name = "order_index", nullable = false)
     private int orderIndex;
 
-    public SeriousnessTestSessionQuestion(
-        SeriousnessTestSession session,
+    public SeriousnessTestAttemptQuestion(
         SeriousnessTestAttempt attempt,
         SeriousnessTestQuestion question,
         int orderIndex
     ) {
-        this.session = session;
         this.attempt = attempt;
         this.question = question;
         this.orderIndex = orderIndex;

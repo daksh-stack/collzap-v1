@@ -22,11 +22,8 @@ public final class TestDtos {
      * <p>Deliberately carries no remaining-time field: the timer is silent.
      */
     public record TestSessionResponse(
-        UUID sessionId,
         int totalQuestions,
         int answeredCount,
-        Instant startedAt,
-        Instant expiresAt,
         List<TestQuestionResponse> questions
     ) {
     }
@@ -56,7 +53,6 @@ public final class TestDtos {
     }
 
     public record TestResultResponse(
-        UUID sessionId,
         Instant submittedAt,
         boolean autoSubmitted,
         int overallScore,
@@ -84,8 +80,7 @@ public final class TestDtos {
         boolean eligible,
         String reason,
         LocalDate nextRetakeDate,
-        boolean hasInProgressSession,
-        UUID inProgressSessionId
+        boolean hasInProgressSession
     ) {
     }
 }

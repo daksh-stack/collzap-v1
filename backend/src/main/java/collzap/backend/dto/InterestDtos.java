@@ -22,6 +22,23 @@ public final class InterestDtos {
     public record InterestResponse(UUID id, String name, InterestCategory category, int displayOrder) {
     }
 
+    public record CreateInterestRequest(
+        @NotBlank(message = "Name is required")
+        @Size(max = 120, message = "Name must be at most 120 characters")
+        String name,
+
+        @NotNull(message = "Category is required")
+        InterestCategory category
+    ) {
+    }
+
+    public record UpdateInterestRequest(
+        @NotBlank(message = "Name is required")
+        @Size(max = 120, message = "Name must be at most 120 characters")
+        String name
+    ) {
+    }
+
     /** Both grids in one call, along with the selection caps the UI counter shows. */
     public record InterestCatalogResponse(
         List<InterestResponse> longTerm,

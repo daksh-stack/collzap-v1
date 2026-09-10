@@ -10,6 +10,7 @@ import { snappy, useReducedMotion, transition } from '../../lib/motion';
 // EXACT backend OnboardingStep enums, in order.
 // VERIFICATION_REJECTED is a state of the document step, not its own item.
 const STEPS = [
+  { id: 'VERIFY_EMAIL', name: 'Email' },
   { id: 'UPLOAD_DOCUMENT', name: 'ID' },
   { id: 'COMPLETE_PROFILE', name: 'Profile' },
   { id: 'SELECT_PROJECT_TYPE', name: 'Scope' },

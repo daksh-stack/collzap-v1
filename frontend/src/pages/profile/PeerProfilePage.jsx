@@ -10,6 +10,7 @@ import TextArea from '../../components/ui/TextArea';
 import Spinner from '../../components/ui/Spinner';
 import { useUserStore } from '../../store/useUserStore';
 import { useModerationStore } from '../../store/useModerationStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const PROMPTS = [
   { key: 'storyPrompt1', q: 'What are you actually into?' },
@@ -29,10 +30,18 @@ export default function PeerProfilePage() {
   const [reportReason, setReportReason] = useState('');
   const [loaded, setLoaded] = useState(false);
 
+  const authUser = useAuthStore((state) => state.user);
+  const myProfile = useUserStore((state) => state.profile);
+  const myId = authUser?.id || myProfile?.id;
+
   // The store keeps a single peerProfile, populated by fetchPeerProfile below.
   const profile = peerProfile?.id === userId ? peerProfile : null;
 
   useEffect(() => {
+    if (myId && userId === myId) {
+      navigate('/profile', { replace: true });
+      return;
+    }
     setLoaded(false);
     fetchPeerProfile(userId)
       .catch(() => {
@@ -40,7 +49,7 @@ export default function PeerProfilePage() {
         navigate('/matches');
       })
       .finally(() => setLoaded(true));
-  }, [userId]);
+  }, [userId, myId]);
 
   const handleBlock = async () => {
     try {
@@ -161,14 +170,16 @@ export default function PeerProfilePage() {
             ))}
           </div>
 
-          <div className="mt-10 flex gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setReportModalOpen(true)}>
-              Report
-            </Button>
-            <Button variant="ghost" size="sm" className="text-bad hover:bg-bad/[0.07]" onClick={() => setBlockModalOpen(true)}>
-              Block
-            </Button>
-          </div>
+          {profile.id !== useAuthStore.getState().user?.id && (
+            <div className="mt-10 flex gap-3">
+              <Button variant="ghost" size="sm" onClick={() => setReportModalOpen(true)}>
+                Report
+              </Button>
+              <Button variant="ghost" size="sm" className="text-bad hover:bg-bad/[0.07]" onClick={() => setBlockModalOpen(true)}>
+                Block
+              </Button>
+            </div>
+          )}
         </section>
       </div>
 

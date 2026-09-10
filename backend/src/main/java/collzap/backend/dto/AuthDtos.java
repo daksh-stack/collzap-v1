@@ -12,46 +12,66 @@ public final class AuthDtos {
     private AuthDtos() {
     }
 
-    /**
-     * Signup and login share the OTP request endpoint: the college email decides
-     * the college, and whether an account already exists decides the flow.
-     */
-    public record RequestOtpRequest(
+    public record SignupRequest(
         @NotBlank(message = "Email is required")
-        @Email(message = "Enter a valid college email")
+        @Email(message = "Enter a valid email")
         @Size(max = 254)
         String email,
 
-        /** Optional on signup; ignored when the account already exists. */
+        @NotBlank(message = "Password is required")
+        @Size(min = 8, max = 72, message = "Password must be 8 to 72 characters")
+        String password,
+
+        @NotBlank(message = "Name is required")
         @Size(max = 120, message = "Name must be at most 120 characters")
-        String name,
-        
-        /** True if the user is explicitly trying to sign up, false if logging in */
-        Boolean isSignup
+        String name
     ) {
     }
 
-    public record OtpSentResponse(
-        String email,
-        String collegeName,
-        boolean existingAccount,
-        long expiresInSeconds,
-        String message
-    ) {
-    }
-
-    public record VerifyOtpRequest(
+    public record LoginRequest(
         @NotBlank(message = "Email is required")
-        @Email(message = "Enter a valid college email")
+        @Email(message = "Enter a valid email")
+        String email,
+
+        @NotBlank(message = "Password is required")
+        String password
+    ) {
+    }
+
+    public record ForgotPasswordRequest(
+        @NotBlank(message = "Email is required")
+        @Email(message = "Enter a valid email")
+        String email
+    ) {
+    }
+
+    public record ResetPasswordRequest(
+        @NotBlank(message = "Email is required")
+        @Email(message = "Enter a valid email")
         String email,
 
         @NotBlank(message = "Enter the code we emailed you")
         @Pattern(regexp = "\\d{4,8}", message = "The code must be 4 to 8 digits")
         String code,
 
-        /** Used only when creating a brand new account. */
-        @Size(max = 120)
-        String name
+        @NotBlank(message = "Password is required")
+        @Size(min = 8, max = 72, message = "Password must be 8 to 72 characters")
+        String newPassword
+    ) {
+    }
+
+    public record VerifyEmailRequest(
+        @NotBlank(message = "Enter the code we emailed you")
+        @Pattern(regexp = "\\d{4,8}", message = "The code must be 4 to 8 digits")
+        String code
+    ) {
+    }
+
+    /** "We sent a code" acknowledgement shared by forgot-password and college-email verification. */
+    public record OtpIssuedResponse(
+        String email,
+        long expiresInSeconds,
+        String message
     ) {
     }
 
@@ -62,6 +82,18 @@ public final class AuthDtos {
         long expiresInSeconds,
         OnboardingStep nextStep,
         UserDtos.UserResponse user
+    ) {
+    }
+
+    /** Mirrors AuthResponse but also carries how long the just-issued signup verification code lives. */
+    public record SignupResponse(
+        String accessToken,
+        String refreshToken,
+        String tokenType,
+        long expiresInSeconds,
+        OnboardingStep nextStep,
+        UserDtos.UserResponse user,
+        long otpExpiresInSeconds
     ) {
     }
 

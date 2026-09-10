@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import collzap.backend.enums.Status;
+import collzap.backend.enums.VerificationMethod;
 import collzap.backend.enums.VerificationStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -32,8 +33,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class User extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "college_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "college_id", nullable = true)
     private College college;
 
     @Column(name = "email", nullable = false, unique = true)
@@ -41,6 +42,23 @@ public class User extends BaseEntity {
 
     @Column(name = "name", nullable = false)
     private String name;
+
+    /** Null means no password set yet — a legacy pre-password account, or an abandoned signup. */
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    /**
+     * Whether the login email itself has been confirmed. Pre-existing accounts (created
+     * under the old college-email-OTP flow) default to true via the column's DB default —
+     * they proved email ownership already, they just never set a password.
+     */
+    @Column(name = "email_verified", nullable = false, columnDefinition = "boolean default true")
+    private boolean emailVerified = true;
+
+    /** How verification was actually satisfied. Null until either method is engaged. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "verification_method", length = 32)
+    private VerificationMethod verificationMethod;
 
     // ---- Profile setup ----
 
@@ -108,6 +126,10 @@ public class User extends BaseEntity {
 
     public boolean isVerified() {
         return verificationStatus == VerificationStatus.APPROVED;
+    }
+
+    public boolean hasPassword() {
+        return passwordHash != null;
     }
 
     public boolean isActive() {

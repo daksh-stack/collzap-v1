@@ -1,5 +1,11 @@
 package collzap.backend.config;
 
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -10,55 +16,85 @@ import collzap.backend.enums.InterestCategory;
 import collzap.backend.models.AdminUser;
 import collzap.backend.models.College;
 import collzap.backend.models.Interest;
+import collzap.backend.models.SeriousnessTestQuestion;
 import collzap.backend.repositories.AdminUserRepository;
 import collzap.backend.repositories.CollegeRepository;
 import collzap.backend.repositories.InterestRepository;
 import collzap.backend.repositories.SeriousnessTestQuestionRepository;
-import collzap.backend.models.SeriousnessTestQuestion;
 
-import java.util.List;
-
+/**
+ * First-boot setup: a bootstrap admin operator, and — only when
+ * {@code collzap.admin.seed-demo-data} is enabled (the local-dev default) —
+ * placeholder colleges/interests/questions so the app is usable without
+ * manual data entry. That demo data must stay off in production, where a real
+ * question bank and college list already exist or are entered deliberately
+ * through the admin panel.
+ */
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DatabaseSeeder.class);
 
     private final AdminUserRepository adminUserRepository;
     private final CollegeRepository collegeRepository;
     private final InterestRepository interestRepository;
     private final SeriousnessTestQuestionRepository questionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CollzapProperties properties;
 
     public DatabaseSeeder(
             AdminUserRepository adminUserRepository,
             CollegeRepository collegeRepository,
             InterestRepository interestRepository,
             SeriousnessTestQuestionRepository questionRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            CollzapProperties properties) {
         this.adminUserRepository = adminUserRepository;
         this.collegeRepository = collegeRepository;
         this.interestRepository = interestRepository;
         this.questionRepository = questionRepository;
         this.passwordEncoder = passwordEncoder;
+        this.properties = properties;
     }
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
         seedAdmin();
-        seedColleges();
-        seedInterests();
-        seedQuestions();
+        if (properties.getAdmin().isSeedDemoData()) {
+            seedColleges();
+            seedInterests();
+            seedQuestions();
+        }
     }
 
     private void seedAdmin() {
-        if (adminUserRepository.count() == 0) {
-            AdminUser admin = new AdminUser(
-                    "admin",
-                    passwordEncoder.encode("admin"),
-                    AdminRole.ADMIN
-            );
-            adminUserRepository.save(admin);
-            System.out.println("Seeded default admin user (admin / admin)");
+        if (adminUserRepository.count() > 0) {
+            return;
         }
+        String username = properties.getAdmin().getBootstrapUsername();
+        String configuredPassword = properties.getAdmin().getBootstrapPassword();
+        String password = configuredPassword.isBlank() ? generatePassword() : configuredPassword;
+
+        AdminUser admin = new AdminUser(username, passwordEncoder.encode(password), AdminRole.ADMIN);
+        adminUserRepository.save(admin);
+
+        if (configuredPassword.isBlank()) {
+            log.warn(
+                "No collzap.admin.bootstrap-password set — generated a one-time admin password.\n"
+                    + "Username: {}\nPassword: {}\n"
+                    + "This is logged only this once; save it now, then change it.",
+                username, password
+            );
+        } else {
+            log.info("Seeded bootstrap admin user '{}'", username);
+        }
+    }
+
+    private static String generatePassword() {
+        byte[] bytes = new byte[18];
+        new SecureRandom().nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private void seedColleges() {
@@ -72,7 +108,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         for (College c : colleges) {
             if (!collegeRepository.existsByEmailDomainIgnoreCase(c.getEmailDomain())) {
                 collegeRepository.save(c);
-                System.out.println("Seeded college: " + c.getEmailDomain());
+                log.info("Seeded demo college: {}", c.getEmailDomain());
             }
         }
     }
@@ -89,7 +125,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 new Interest("Assignment Help", InterestCategory.SHORT_TERM, 3)
             );
             interestRepository.saveAll(interests);
-            System.out.println("Seeded default interests");
+            log.info("Seeded demo interests");
         }
     }
 
@@ -109,7 +145,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     }
                 }
             }
-            System.out.println("Seeded 25 dummy questions for each long-term interest");
+            log.info("Seeded 25 dummy questions for each long-term interest");
         }
     }
 }

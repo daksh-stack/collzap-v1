@@ -114,6 +114,9 @@ public class OnboardingService {
         List<UserInterestSelection> selections,
         List<ConnectionTypeSelection> connectionTypes
     ) {
+        if (!user.isEmailVerified()) {
+            return OnboardingStep.VERIFY_EMAIL;
+        }
         if (user.getVerificationStatus() == VerificationStatus.REJECTED) {
             return OnboardingStep.VERIFICATION_REJECTED;
         }

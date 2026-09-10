@@ -5,7 +5,9 @@ package collzap.backend.enums;
  * from {@code GET /api/me/state} so the client always knows which screen to show.
  */
 public enum OnboardingStep {
-    /** College email confirmed, but no fee slip / ID card uploaded yet. */
+    /** Signed up, but the login email is not confirmed yet. */
+    VERIFY_EMAIL,
+    /** Email confirmed, but student verification (document or college email) not done yet. */
     UPLOAD_DOCUMENT,
     /** Document submitted, admin has not reviewed it — the clock icon state. */
     AWAITING_VERIFICATION,

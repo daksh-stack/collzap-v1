@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import toast from 'react-hot-toast';
@@ -11,27 +11,20 @@ import { snappy, page, useReducedMotion, transition } from '../../lib/motion';
 
 const DIVIDER_MS = 800;
 
-/** Parse the ISO instant the backend sends. Returns NaN if unusable. */
-function parseExpiry(value) {
-  if (!value) return NaN;
-  if (typeof value === 'number') return value < 1e11 ? value * 1000 : value;
-  return new Date(value).getTime();
-}
-
 export default function SeriousnessTestPage() {
   const navigate = useNavigate();
   const { session, result, startSession, fetchCurrentSession, submitAnswer, submitTest, resetTestState, loading } = useTestStore();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [expiresAtMs, setExpiresAtMs] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(null);
   const [divider, setDivider] = useState(null); // interest name being announced
-  const submittingRef = useRef(false);
+
+  const initialized = useRef(false);
 
   // --- session bootstrap -------------------------------------------------
   useEffect(() => {
-    submittingRef.current = false;
+    if (initialized.current) return;
+    initialized.current = true;
     useTestStore.setState({ result: null });
 
     const init = async () => {
@@ -41,6 +34,16 @@ export default function SeriousnessTestPage() {
           active = await fetchCurrentSession();
         } catch {
           active = null;
+        }
+
+        // Self-heal corrupted sessions (more than 25 questions) caused by the previous race condition bug
+        if (active && active.questions && active.questions.length > 25) {
+          try {
+            await import('../../api/api').then(m => m.api.post('/test/reset'));
+            active = null; // force restart
+          } catch (e) {
+            console.error('Failed to reset corrupted session', e);
+          }
         }
 
         if (!active || !active.questions || active.questions.length === 0) {
@@ -58,9 +61,6 @@ export default function SeriousnessTestPage() {
         const idx = firstUnanswered === -1 ? 0 : firstUnanswered;
         setCurrentQuestionIndex(idx);
         setSelectedOption(active.questions[idx].selectedOptionIndex);
-
-        // Timer comes from expiresAt, which the backend always sends.
-        setExpiresAtMs(parseExpiry(active.expiresAt));
       } catch {
         toast.error('Could not load the paper');
         navigate('/onboarding');
@@ -69,37 +69,6 @@ export default function SeriousnessTestPage() {
 
     init();
   }, []);
-
-  const handleTimeUp = useCallback(async () => {
-    if (!session || result) return;
-    try {
-      await submitTest(session.sessionId);
-    } catch {
-      /* the paper is taken up regardless */
-    }
-  }, [session, result, submitTest]);
-
-  // --- countdown, driven off the absolute expiry ------------------------
-  useEffect(() => {
-    if (result || expiresAtMs === null) return;
-
-    const tick = () => {
-      const remaining = isNaN(expiresAtMs)
-        ? null
-        : Math.max(0, Math.round((expiresAtMs - Date.now()) / 1000));
-
-      setTimeLeft(remaining);
-
-      if (remaining === 0 && !submittingRef.current) {
-        submittingRef.current = true;
-        handleTimeUp();
-      }
-    };
-
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [expiresAtMs, result, handleTimeUp]);
 
   // Guard against losing work to a stray tab close.
   useEffect(() => {
@@ -122,8 +91,7 @@ export default function SeriousnessTestPage() {
     const currentQ = questions[currentQuestionIndex];
 
     try {
-      await submitAnswer(session.sessionId, currentQ.questionId, selectedOption);
-      questions[currentQuestionIndex].selectedOptionIndex = selectedOption;
+      await submitAnswer(currentQ.questionId, selectedOption);
 
       if (currentQuestionIndex < questions.length - 1) {
         const nextIdx = currentQuestionIndex + 1;
@@ -142,18 +110,11 @@ export default function SeriousnessTestPage() {
           advance();
         }
       } else {
-        await submitTest(session.sessionId);
+        await submitTest();
       }
-    } catch {
-      toast.error('That answer did not save');
+    } catch (err) {
+      toast.error(err.message || 'That answer did not save');
     }
-  };
-
-  const formatTime = (seconds) => {
-    if (seconds === null || seconds === undefined) return '--:--';
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   const handleContinueOnboarding = () => {
@@ -238,11 +199,10 @@ export default function SeriousnessTestPage() {
   const currentQ = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const answered = questions.filter((q) => q.selectedOptionIndex !== null).length;
-  const lowTime = timeLeft !== null && timeLeft < 300;
 
   return (
     <div className="flex min-h-screen flex-col bg-paper">
-      {/* Invigilator's header */}
+      {/* Header */}
       <header className="border-b border-line">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-6 px-6 py-4">
           <div className="flex items-center gap-3">
@@ -252,20 +212,9 @@ export default function SeriousnessTestPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-6">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-mute tnum">
-              {answered}/{questions.length} done
-            </span>
-            <span
-              className={cn(
-                'font-display text-xl tnum tabular-nums transition-colors',
-                lowTime ? 'text-bad' : 'text-ink'
-              )}
-              aria-live="polite"
-            >
-              {formatTime(timeLeft)}
-            </span>
-          </div>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-mute tnum">
+            {answered}/{questions.length} done
+          </span>
         </div>
 
         {/* progress rule */}

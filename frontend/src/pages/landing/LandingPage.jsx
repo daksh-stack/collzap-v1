@@ -117,7 +117,7 @@ function Nav() {
           <ThemeToggle
             className={cn('mr-1', !scrolled && 'text-[#A8BDD8] hover:bg-white/10 hover:text-white')}
           />
-          <Link to="/login">
+          <Link to="/signup">
             <Button size="sm" variant="gradient">Get started</Button>
           </Link>
         </nav>
@@ -182,7 +182,7 @@ function Hero() {
           {...reveal(reduced, 0.24)}
           className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
-          <Link to="/login" className="w-full sm:w-auto">
+          <Link to="/signup" className="w-full sm:w-auto">
             <Button
               size="lg"
               variant="gradient"
@@ -441,7 +441,7 @@ function FinalCta() {
           <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-white/85">
             Verify once. Get matched with people who mean it.
           </p>
-          <Link to="/login" className="mt-9 inline-block">
+          <Link to="/signup" className="mt-9 inline-block">
             <Button
               size="lg"
               className="bg-white text-[#0A3F8C] shadow-lg hover:bg-white hover:brightness-95"

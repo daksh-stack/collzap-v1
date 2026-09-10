@@ -4,6 +4,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import TextArea from '../../../components/ui/TextArea';
 import Select from '../../../components/ui/Select';
+import FileUpload from '../../../components/ui/FileUpload';
 import StepHeader from './StepHeader';
 import { useUserStore } from '../../../store/useUserStore';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -16,7 +17,7 @@ const PROMPTS = [
 
 export default function CompleteProfileStep() {
   const { user } = useAuthStore();
-  const { profile, updateProfile, fetchOnboarding, loading } = useUserStore();
+  const { profile, fetchMe, updateProfile, fetchOnboarding, loading } = useUserStore();
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -27,6 +28,14 @@ export default function CompleteProfileStep() {
     storyPrompt2: '',
     storyPrompt3: '',
   });
+
+  useEffect(() => {
+    // College is only set during the earlier verification step, not at
+    // signup — the cached user/profile can predate it, so refetch here to
+    // make sure collegeId (required by the backend) is actually present.
+    fetchMe().catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (profile) {
@@ -55,10 +64,21 @@ export default function CompleteProfileStep() {
       return;
     }
 
+    if (!formData.profilePhotoUrl) {
+      toast.error('Upload a profile photo');
+      return;
+    }
+
+    const collegeId = profile?.collegeId || user?.collegeId;
+    if (!collegeId) {
+      toast.error('Could not confirm your college — reload the page and try again');
+      return;
+    }
+
     try {
       await updateProfile({
         ...formData,
-        collegeId: user?.collegeId || profile?.collegeId,
+        collegeId,
         yearOfStudy: parseInt(formData.yearOfStudy, 10),
       });
       await fetchOnboarding();
@@ -69,12 +89,19 @@ export default function CompleteProfileStep() {
 
   return (
     <div>
-      <StepHeader eyebrow="Step two" title="Who's asking?">
+      <StepHeader eyebrow="Step three" title="Who's asking?">
         This is what a stranger sees before deciding whether to work with you.
         Three honest lines beat three polished ones.
       </StepHeader>
 
       <form onSubmit={handleSubmit} className="max-w-lg space-y-10">
+        <FileUpload
+          category="PROFILE_PHOTO"
+          label="Profile photo"
+          onUploadComplete={(url) => setFormData((prev) => ({ ...prev, profilePhotoUrl: url }))}
+          existingUrl={formData.profilePhotoUrl}
+        />
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input label="Full name" name="name" value={formData.name} onChange={handleChange} disabled={loading} required />
           <Input label="City" name="city" value={formData.city} onChange={handleChange} disabled={loading} required />
@@ -92,15 +119,6 @@ export default function CompleteProfileStep() {
               { value: '5', label: '5th year' },
               { value: '6', label: '6th+ year' },
             ]}
-          />
-          <Input
-            label="Photo URL"
-            name="profilePhotoUrl"
-            type="url"
-            value={formData.profilePhotoUrl}
-            onChange={handleChange}
-            disabled={loading}
-            required
           />
         </div>
 

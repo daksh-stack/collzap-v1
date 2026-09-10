@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +74,7 @@ public class InterestService {
         this.levelLookup = levelLookup;
     }
 
+    @Cacheable("interestCatalog")
     @Transactional(readOnly = true)
     public InterestCatalogResponse catalog() {
         return new InterestCatalogResponse(

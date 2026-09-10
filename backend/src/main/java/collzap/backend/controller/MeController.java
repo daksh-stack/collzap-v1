@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import collzap.backend.dto.AuthDtos.OtpIssuedResponse;
+import collzap.backend.dto.AuthDtos.VerifyEmailRequest;
 import collzap.backend.dto.CommonDtos.MessageResponse;
 import collzap.backend.dto.UserDtos.OnboardingStateResponse;
 import collzap.backend.dto.UserDtos.RegisterDeviceRequest;
@@ -19,6 +21,7 @@ import collzap.backend.dto.UserDtos.UpdatePhotoRequest;
 import collzap.backend.dto.UserDtos.UpdateProfileRequest;
 import collzap.backend.dto.UserDtos.UpdateSettingsRequest;
 import collzap.backend.dto.UserDtos.UserResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.AuthService;
 import collzap.backend.service.MatchingService;
@@ -67,6 +70,22 @@ public class MeController {
         return onboardingService.describe(me.userId());
     }
 
+    /** Confirms the login email during onboarding's VERIFY_EMAIL step. */
+    @RateLimited(name = "verify-email", limit = 10, windowSeconds = 3600)
+    @PostMapping("/verify-email")
+    public OnboardingStateResponse verifyEmail(
+        @AuthenticationPrincipal AuthPrincipal me,
+        @Valid @RequestBody VerifyEmailRequest request
+    ) {
+        return authService.verifyEmail(me.userId(), request.code());
+    }
+
+    @RateLimited(name = "verify-email-resend", limit = 5, windowSeconds = 3600)
+    @PostMapping("/verify-email/resend")
+    public OtpIssuedResponse resendVerifyEmail(@AuthenticationPrincipal AuthPrincipal me) {
+        return authService.resendVerifyEmail(me.userId());
+    }
+
     /** Profile setup and later edits both post here. */
     @PutMapping("/profile")
     public UserResponse updateProfile(
@@ -100,6 +119,7 @@ public class MeController {
     }
 
     /** Registers a push token. Re-registering the same token is a no-op. */
+    @RateLimited(name = "register-device", limit = 10, windowSeconds = 86400)
     @PostMapping("/devices")
     public MessageResponse registerDevice(
         @AuthenticationPrincipal AuthPrincipal me,

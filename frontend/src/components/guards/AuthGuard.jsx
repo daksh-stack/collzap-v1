@@ -19,10 +19,11 @@ export default function AuthGuard() {
     }
   }, [isAuthenticated, isAdmin]);
 
-  // `/` is the public marketing landing. The student app home is `/home`.
+  // `/` is the public marketing landing; the student app home is `/home`.
   const isPublicRoute = location.pathname === '/' ||
                         location.pathname === '/login' ||
-                        location.pathname === '/verify-otp' ||
+                        location.pathname === '/signup' ||
+                        location.pathname === '/forgot-password' ||
                         location.pathname === '/admin/login';
 
   if (!isAuthenticated && !isPublicRoute) {

@@ -6,8 +6,10 @@ export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/a
 // Endpoints that must never trigger a token refresh. A 401 from these means
 // "bad credentials / bad OTP", not "expired session".
 const NO_REFRESH_PATHS = [
-  '/auth/otp',
-  '/auth/otp/verify',
+  '/auth/signup',
+  '/auth/login',
+  '/auth/forgot-password',
+  '/auth/reset-password',
   '/admin/auth/login',
   '/auth/logout',
   '/auth/refresh',
@@ -58,6 +60,14 @@ api.interceptors.response.use(
     }
 
     const url = originalRequest?.url || '';
+    // Backend's ApiError.code (e.g. "password_reset_required") — lets callers
+    // branch on the specific failure instead of parsing the message string.
+    const code = error.response?.data?.code;
+    const rejectWithCode = (message) => {
+      const err = new Error(message);
+      if (code) err.code = code;
+      return Promise.reject(err);
+    };
 
     // If we get a 401 (Unauthorized) and it's not a retry attempt
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -67,7 +77,7 @@ api.interceptors.response.use(
         if (url.includes('/auth/refresh')) {
           useAuthStore.getState().logout();
         }
-        return Promise.reject(new Error(normalizedError));
+        return rejectWithCode(normalizedError);
       }
 
       // Admin sessions have no refresh token — nothing to refresh with.
@@ -101,6 +111,6 @@ api.interceptors.response.use(
     }
 
     // For any other error, reject with the normalized error message
-    return Promise.reject(new Error(normalizedError));
+    return rejectWithCode(normalizedError);
   }
 );

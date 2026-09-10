@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import collzap.backend.dto.AuthDtos.AdminAuthResponse;
 import collzap.backend.dto.AuthDtos.AdminLoginRequest;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.service.AuthService;
 import jakarta.validation.Valid;
 
@@ -25,6 +26,7 @@ public class AdminAuthController {
         this.authService = authService;
     }
 
+    @RateLimited(name = "admin-login", limit = 10, windowSeconds = 3600, keyType = RateLimited.KeyType.IP)
     @PostMapping("/login")
     public AdminAuthResponse login(@Valid @RequestBody AdminLoginRequest request) {
         return authService.adminLogin(request);

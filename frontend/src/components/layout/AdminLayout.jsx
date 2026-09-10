@@ -15,6 +15,8 @@ const navigation = [
   { name: 'Reports', href: '/admin/reports' },
   { name: 'Feedback', href: '/admin/feedback' },
   { name: 'Colleges', href: '/admin/colleges' },
+  { name: 'Interests', href: '/admin/interests' },
+  { name: 'Questions', href: '/admin/questions' },
 ];
 
 export default function AdminLayout() {

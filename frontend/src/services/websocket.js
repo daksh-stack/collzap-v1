@@ -15,10 +15,11 @@ class WebSocketService {
     this.pendingRooms = new Set();
     this.notificationsSub = null;
     this.wantNotifications = false;
+    this.connectFailures = 0;
   }
 
   connect() {
-    if (this.client && this.client.connected) {
+    if (this.client && (this.client.connected || this.client.active)) {
       return;
     }
 
@@ -34,11 +35,19 @@ class WebSocketService {
     this.client = new Client({
       // Create a custom WebSocket factory to use SockJS
       webSocketFactory: () => new SockJS(socketUrl),
-      connectHeaders: {
-        Authorization: `Bearer ${token}`
+      // Read the token fresh on every (re)connect attempt instead of once at
+      // construction time — otherwise the built-in reconnectDelay loop keeps
+      // retrying with whatever token was current the first time forever,
+      // even after it's refreshed elsewhere or the user logs out.
+      beforeConnect: () => {
+        const currentToken = useAuthStore.getState().accessToken;
+        if (!currentToken) {
+          this.client.deactivate();
+          return;
+        }
+        this.client.connectHeaders = { Authorization: `Bearer ${currentToken}` };
       },
-      // Chatty frame logging is useful locally and noise in production.
-      debug: DEV ? (str) => console.log('STOMP: ' + str) : () => {},
+      debug: () => {}, // Disabled chatty STOMP logging
       reconnectDelay: 5000, // Reconnect automatically after 5 seconds
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
@@ -46,6 +55,7 @@ class WebSocketService {
 
     this.client.onConnect = () => {
       if (DEV) console.log('Connected to WebSocket server');
+      this.connectFailures = 0;
 
       // Subscribe all pending rooms
       this.pendingRooms.forEach(roomId => {
@@ -64,6 +74,21 @@ class WebSocketService {
       if (DEV) {
         console.warn('Broker reported error:', frame.headers['message'], frame.body);
       }
+      // The CONNECT frame is rejected when the token is invalid/expired
+      // (StompAuthChannelInterceptor). A fresh token from beforeConnect
+      // fixes most cases, but if it fails repeatedly in a row the access
+      // token itself is stale — try one refresh instead of retrying every
+      // 5s forever with a token that will never be accepted.
+      this.connectFailures += 1;
+      if (this.connectFailures >= 2) {
+        this.connectFailures = 0;
+        this.client?.deactivate();
+        useAuthStore.getState().refresh()
+          .then(() => this.connect())
+          .catch(() => {
+            if (DEV) console.warn('WebSocket: token refresh failed, giving up until next connect()');
+          });
+      }
     };
 
     this.client.onWebSocketClose = () => {
@@ -77,6 +102,7 @@ class WebSocketService {
     if (this.client && this.client.connected) {
       this.client.deactivate();
     }
+    this.connectFailures = 0;
     this.subscriptions.clear();
     this.pendingRooms.clear();
     this.notificationsSub = null;

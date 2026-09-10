@@ -1,0 +1,25 @@
+# Secrets — never commit these
+.env
+.env.local
+.env.*.local
+backend/application-secrets.properties
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Java / backend
+backend/target/
+*.class
+
+# Let's Encrypt volumes (created on the server, not part of the repo)
+nginx/certbot/conf/
+nginx/certbot/www/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml

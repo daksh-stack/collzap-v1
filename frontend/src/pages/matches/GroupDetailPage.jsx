@@ -99,22 +99,24 @@ export default function GroupDetailPage() {
 
       <section>
         <h2 className="mb-4 flex items-baseline justify-between font-mono text-[10px] uppercase tracking-widest text-mute">
-          <span>In this group</span>
+          <span>{group.connectionType === 'ONE_ON_ONE' ? 'In this connection' : 'In this group'}</span>
           <span className="tnum">{group.memberCount}/{group.maxMembers}</span>
         </h2>
 
         <ul className="divide-y divide-line border-y border-line">
-          {group.members?.map((member) => (
+          {group.members?.map((member) => {
+            const isMe = member.self || member.userId === user?.id;
+            return (
             <li key={member.userId}>
               <button
-                onClick={() => navigate(`/profile/${member.userId}`)}
+                onClick={() => navigate(isMe ? '/profile' : `/profile/${member.userId}`)}
                 className="flex w-full items-center gap-4 py-4 text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
               >
                 <Avatar src={member.profilePhotoUrl} name={member.name} size="md" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-ink">
                     {member.name}
-                    {(member.self || member.userId === user?.id) && (
+                    {isMe && (
                       <span className="ml-2 font-normal text-mute">you</span>
                     )}
                   </span>
@@ -127,7 +129,7 @@ export default function GroupDetailPage() {
                 </span>
               </button>
             </li>
-          ))}
+          )})}
 
           {Array.from({ length: emptySeats }).map((_, i) => (
             <li key={`seat-${i}`} className="flex items-center gap-4 py-4">
@@ -138,10 +140,10 @@ export default function GroupDetailPage() {
         </ul>
       </section>
 
-      <Modal open={leaveModalOpen} onClose={() => setLeaveModalOpen(false)} title="Leave this group">
+      <Modal open={leaveModalOpen} onClose={() => setLeaveModalOpen(false)} title={group.connectionType === 'ONE_ON_ONE' ? 'Leave this connection' : 'Leave this group'}>
         <p className="text-sm leading-relaxed text-mute">
           You will drop out of the chat too, and you would have to match again to
-          get back in with these people.
+          get back in with {group.connectionType === 'ONE_ON_ONE' ? 'this person' : 'these people'}.
         </p>
         <div className="mt-8 flex justify-end gap-3">
           <Button variant="ghost" onClick={() => setLeaveModalOpen(false)}>Stay</Button>

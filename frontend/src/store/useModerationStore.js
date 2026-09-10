@@ -72,17 +72,42 @@ export const useModerationStore = create((set) => ({
     }
   },
 
-  uploadDocument: async (documentType, documentUrl) => {
+  uploadDocument: async (documentType, documentUrl, collegeId) => {
     set({ loading: true, error: null });
     try {
-      await api.post('/verification/documents', { documentType, documentUrl });
+      await api.post('/verification/documents', { documentType, documentUrl, collegeId });
       // Fetch latest status which will include the new document
       const verificationStatus = await api.get('/verification');
       set({ verificationStatus, loading: false });
-      
+
       // Verification status also affects onboarding state
       useUserStore.getState().fetchOnboarding();
-      
+
+      return verificationStatus;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  requestCollegeEmailOtp: async (email) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post('/verification/college-email', { email });
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  confirmCollegeEmailOtp: async (email, code) => {
+    set({ loading: true, error: null });
+    try {
+      const verificationStatus = await api.post('/verification/college-email/confirm', { email, code });
+      set({ verificationStatus, loading: false });
+      useUserStore.getState().fetchOnboarding();
       return verificationStatus;
     } catch (error) {
       set({ error: error.message, loading: false });

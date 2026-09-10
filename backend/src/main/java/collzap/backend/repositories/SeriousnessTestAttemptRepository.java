@@ -16,11 +16,9 @@ public interface SeriousnessTestAttemptRepository extends JpaRepository<Seriousn
     @Query("""
         select a from SeriousnessTestAttempt a
         join fetch a.interest
-        where a.session.id = :sessionId
+        where a.user.id = :userId and a.status = collzap.backend.enums.TestAttemptStatus.IN_PROGRESS
         """)
-    List<SeriousnessTestAttempt> findWithInterestBySessionId(@Param("sessionId") UUID sessionId);
-
-    List<SeriousnessTestAttempt> findBySessionId(UUID sessionId);
+    List<SeriousnessTestAttempt> findActiveAttemptsByUserId(@Param("userId") UUID userId);
 
     /**
      * The user's current standing per interest: the newest submitted attempt.
@@ -42,4 +40,6 @@ public interface SeriousnessTestAttemptRepository extends JpaRepository<Seriousn
     );
 
     void deleteByUserId(UUID userId);
+
+    long countByInterestId(UUID interestId);
 }

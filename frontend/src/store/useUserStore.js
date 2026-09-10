@@ -16,7 +16,7 @@ export const useUserStore = create((set) => ({
       const profile = await api.get('/me');
       set({ profile, loading: false });
       
-      // Also update the auth store's user reference if it's there
+      // Also update the auth store's use r reference if it's there
       if (useAuthStore.getState().user) {
           useAuthStore.setState({ user: profile });
       }

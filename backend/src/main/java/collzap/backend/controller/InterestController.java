@@ -15,6 +15,7 @@ import collzap.backend.dto.InterestDtos.InterestCatalogResponse;
 import collzap.backend.dto.InterestDtos.InterestFeedbackRequest;
 import collzap.backend.dto.InterestDtos.SelectInterestsRequest;
 import collzap.backend.dto.InterestDtos.UserInterestResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.InterestService;
 import jakarta.validation.Valid;
@@ -58,6 +59,7 @@ public class InterestController {
     }
 
     /** The "can't find your interest?" link. */
+    @RateLimited(name = "interest-feedback", limit = 5, windowSeconds = 3600)
     @PostMapping("/feedback")
     public MessageResponse feedback(
         @AuthenticationPrincipal AuthPrincipal me,

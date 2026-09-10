@@ -17,7 +17,8 @@ import Spinner from './components/ui/Spinner';
 // Pages (Lazy Loaded)
 const LandingPage = lazy(() => import('./pages/landing/LandingPage'));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
-const OtpVerifyPage = lazy(() => import('./pages/auth/OtpVerifyPage'));
+const SignupPage = lazy(() => import('./pages/auth/SignupPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const AdminLoginPage = lazy(() => import('./pages/auth/AdminLoginPage'));
 
 const OnboardingPage = lazy(() => import('./pages/onboarding/OnboardingPage'));
@@ -31,6 +32,7 @@ const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
 const PeerProfilePage = lazy(() => import('./pages/profile/PeerProfilePage'));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
+const FeedbackPage = lazy(() => import('./pages/feedback/FeedbackPage'));
 const SeriousnessTestPage = lazy(() => import('./pages/test/SeriousnessTestPage'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -41,6 +43,8 @@ const AdminQueuePage = lazy(() => import('./pages/admin/AdminQueuePage'));
 const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
 const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage'));
 const AdminCollegesPage = lazy(() => import('./pages/admin/AdminCollegesPage'));
+const AdminInterestsPage = lazy(() => import('./pages/admin/AdminInterestsPage'));
+const AdminQuestionsPage = lazy(() => import('./pages/admin/AdminQuestionsPage'));
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
@@ -75,7 +79,8 @@ function App() {
           <Route element={<AuthGuard />}>
             <Route element={<PublicLayout />}>
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/verify-otp" element={<OtpVerifyPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
             </Route>
           </Route>
@@ -107,6 +112,7 @@ function App() {
                 <Route path="/matches/:groupId" element={<GroupDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/profile/:userId" element={<PeerProfilePage />} />
+                <Route path="/feedback" element={<FeedbackPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
               </Route>
@@ -125,6 +131,8 @@ function App() {
                 <Route path="/admin/reports" element={<AdminReportsPage />} />
                 <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
                 <Route path="/admin/colleges" element={<AdminCollegesPage />} />
+                <Route path="/admin/interests" element={<AdminInterestsPage />} />
+                <Route path="/admin/questions" element={<AdminQuestionsPage />} />
               </Route>
             </Route>
           </Route>

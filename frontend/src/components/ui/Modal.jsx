@@ -15,6 +15,11 @@ export default function Modal({ open, onClose, title, children, className, layou
 
   useEffect(() => { setMounted(true); }, []);
 
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -26,13 +31,16 @@ export default function Modal({ open, onClose, title, children, className, layou
       const node = panelRef.current;
       if (!node) return;
       const first = node.querySelector(FOCUSABLE);
-      (first || node).focus?.();
+      // Only focus if focus is not already inside the modal
+      if (!node.contains(document.activeElement)) {
+        (first || node).focus?.();
+      }
     });
 
     const onKeyDown = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -67,7 +75,7 @@ export default function Modal({ open, onClose, title, children, className, layou
       // Return focus to whatever opened the dialog.
       restoreRef.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!mounted) return null;
 

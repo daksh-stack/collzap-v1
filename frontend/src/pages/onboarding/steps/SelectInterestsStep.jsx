@@ -104,7 +104,7 @@ export default function SelectInterestsStep() {
 
   return (
     <div>
-      <StepHeader eyebrow="Step four" title="What are you here for?">
+      <StepHeader eyebrow="Step five" title="What are you here for?">
         Be specific. &ldquo;Machine learning&rdquo; matches you with three hundred people;
         the sub-tag is what gets you the right one.
       </StepHeader>

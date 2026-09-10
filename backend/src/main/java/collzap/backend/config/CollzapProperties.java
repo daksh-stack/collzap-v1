@@ -21,6 +21,7 @@ public class CollzapProperties {
     private SeriousnessTest seriousnessTest = new SeriousnessTest();
     private Matching matching = new Matching();
     private Cors cors = new Cors();
+    private Cloudinary cloudinary = new Cloudinary();
 
     @Getter
     @Setter
@@ -65,7 +66,10 @@ public class CollzapProperties {
     public static class Admin {
         /** Bootstrap operator, created on first startup if the table is empty. */
         private String bootstrapUsername = "admin";
+        /** Blank generates and logs a random password once, instead of a fixed default. */
         private String bootstrapPassword = "";
+        /** Demo colleges/interests/questions on an empty database. Off in production. */
+        private boolean seedDemoData = true;
     }
 
     @Getter
@@ -98,5 +102,13 @@ public class CollzapProperties {
             "https://collzap.com",
             "https://www.collzap.com"
         );
+    }
+
+    @Getter
+    @Setter
+    public static class Cloudinary {
+        private String cloudName = "";
+        private String apiKey = "";
+        private String apiSecret = "";
     }
 }

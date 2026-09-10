@@ -9,9 +9,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import collzap.backend.dto.CollegeDtos.CollegeEmailOtpSentResponse;
+import collzap.backend.dto.CollegeDtos.ConfirmCollegeEmailOtpRequest;
+import collzap.backend.dto.CollegeDtos.RequestCollegeEmailOtpRequest;
 import collzap.backend.dto.CollegeDtos.UploadDocumentRequest;
 import collzap.backend.dto.CollegeDtos.VerificationDocumentResponse;
 import collzap.backend.dto.CollegeDtos.VerificationStatusResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.VerificationService;
 import jakarta.validation.Valid;
@@ -41,6 +45,7 @@ public class VerificationController {
      * Records a fee slip or ID card for manual review. The client uploads the file
      * to storage itself and posts the resulting URL.
      */
+    @RateLimited(name = "verification-upload", limit = 5, windowSeconds = 3600)
     @PostMapping("/documents")
     public ResponseEntity<VerificationDocumentResponse> upload(
         @AuthenticationPrincipal AuthPrincipal me,
@@ -48,5 +53,25 @@ public class VerificationController {
     ) {
         VerificationDocumentResponse response = verificationService.upload(me.userId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /** Sends an OTP to a college email as the alternative to document upload. */
+    @RateLimited(name = "college-verify-request", limit = 5, windowSeconds = 3600)
+    @PostMapping("/college-email")
+    public CollegeEmailOtpSentResponse requestCollegeEmail(
+        @AuthenticationPrincipal AuthPrincipal me,
+        @Valid @RequestBody RequestCollegeEmailOtpRequest request
+    ) {
+        return verificationService.requestCollegeEmailOtp(me.userId(), request);
+    }
+
+    /** Confirms the code — approves instantly, no admin review needed. */
+    @RateLimited(name = "college-verify-confirm", limit = 10, windowSeconds = 3600)
+    @PostMapping("/college-email/confirm")
+    public VerificationStatusResponse confirmCollegeEmail(
+        @AuthenticationPrincipal AuthPrincipal me,
+        @Valid @RequestBody ConfirmCollegeEmailOtpRequest request
+    ) {
+        return verificationService.confirmCollegeEmailOtp(me.userId(), request);
     }
 }

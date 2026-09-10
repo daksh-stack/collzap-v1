@@ -44,8 +44,11 @@ import jakarta.validation.Valid;
  * The {@code /admin} dashboard API. The whole prefix requires ROLE_ADMIN, which
  * only the operator login issues, so none of these need their own guard.
  *
- * <p>Every mutation delegates to the service that owns the rule rather than writing
- * rows directly — an operator approving a document or forcing a match triggers the
+ * <p>
+ * Every mutation delegates to the service that owns the rule rather than
+ * writing
+ * rows directly — an operator approving a document or forcing a match triggers
+ * the
  * same emails, notifications and capacity checks as the normal flow.
  */
 @RestController
@@ -73,10 +76,9 @@ public class AdminController {
      */
     @GetMapping("/users")
     public PageResponse<AdminUserRow> users(
-        @RequestParam(required = false) String search,
-        @RequestParam(required = false) Status status,
-        @PageableDefault(size = 25) Pageable pageable
-    ) {
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Status status,
+            @PageableDefault(size = 25) Pageable pageable) {
         return adminService.users(search, status, pageable);
     }
 
@@ -88,34 +90,34 @@ public class AdminController {
     /** The verification queue, oldest first. */
     @GetMapping("/verifications")
     public PageResponse<PendingVerificationRow> pendingVerifications(
-        @PageableDefault(size = 25) Pageable pageable
-    ) {
+            @PageableDefault(size = 25) Pageable pageable) {
         return adminService.pendingVerifications(pageable);
     }
 
     /**
-     * Approve or reject one document. Approving flips the user to verified and opens
+     * Approve or reject one document. Approving flips the user to verified and
+     * opens
      * matching; rejecting records the note and tells the user why.
      */
     @PostMapping("/verifications/{documentId}/review")
     public VerificationDocumentResponse review(
-        @AuthenticationPrincipal AuthPrincipal operator,
-        @PathVariable UUID documentId,
-        @Valid @RequestBody ReviewDocumentRequest request
-    ) {
+            @AuthenticationPrincipal AuthPrincipal operator,
+            @PathVariable UUID documentId,
+            @Valid @RequestBody ReviewDocumentRequest request) {
         return adminService.review(documentId, request, operator.userId());
     }
 
     /** The matches table, optionally narrowed to one status. */
     @GetMapping("/matches")
     public PageResponse<AdminMatchRow> matches(
-        @RequestParam(required = false) MatchGroupStatus status,
-        @PageableDefault(size = 25) Pageable pageable
-    ) {
+            @RequestParam(required = false) MatchGroupStatus status,
+            @PageableDefault(size = 25) Pageable pageable) {
         return adminService.matches(status, pageable);
     }
 
-    /** Everyone still waiting, longest wait first, with how long they have waited. */
+    /**
+     * Everyone still waiting, longest wait first, with how long they have waited.
+     */
     @GetMapping("/queue")
     public List<AdminQueueRow> queue() {
         return adminService.waitingQueue();
@@ -142,8 +144,7 @@ public class AdminController {
     /** "Can't find your interest" submissions, for deciding what to add next. */
     @GetMapping("/interest-feedback")
     public PageResponse<InterestFeedbackRow> interestFeedback(
-        @PageableDefault(size = 25) Pageable pageable
-    ) {
+            @PageableDefault(size = 25) Pageable pageable) {
         return adminService.interestFeedback(pageable);
     }
 
@@ -154,5 +155,62 @@ public class AdminController {
     @PostMapping("/colleges")
     public ResponseEntity<CollegeResponse> createCollege(@Valid @RequestBody CreateCollegeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(collegeService.create(request));
+    }
+
+    @GetMapping("/interests")
+    public List<collzap.backend.dto.InterestDtos.InterestResponse> allInterests() {
+        return adminService.allInterests();
+    }
+
+    @PostMapping("/interests")
+    public ResponseEntity<collzap.backend.dto.InterestDtos.InterestResponse> createInterest(
+            @Valid @RequestBody collzap.backend.dto.InterestDtos.CreateInterestRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createInterest(request));
+    }
+
+    @PostMapping("/interests/{id}")
+    public collzap.backend.dto.InterestDtos.InterestResponse updateInterest(
+            @PathVariable UUID id,
+            @Valid @RequestBody collzap.backend.dto.InterestDtos.UpdateInterestRequest request) {
+        return adminService.updateInterest(id, request);
+    }
+
+    @PostMapping("/interests/{id}/delete")
+    public MessageResponse deleteInterest(@PathVariable UUID id) {
+        adminService.deleteInterest(id);
+        return MessageResponse.of("Interest deleted");
+    }
+
+    /** Questions management */
+    @GetMapping("/questions")
+    public PageResponse<collzap.backend.dto.AdminDtos.AdminQuestionResponse> questions(
+            @RequestParam(required = false) UUID interestId,
+            @PageableDefault(size = 50) Pageable pageable) {
+        return adminService.questions(interestId, pageable);
+    }
+
+    @PostMapping("/questions")
+    public ResponseEntity<collzap.backend.dto.AdminDtos.AdminQuestionResponse> createQuestion(
+            @Valid @RequestBody collzap.backend.dto.AdminDtos.QuestionRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createQuestion(request));
+    }
+
+    @PostMapping("/questions/{id}")
+    public collzap.backend.dto.AdminDtos.AdminQuestionResponse updateQuestion(
+            @PathVariable UUID id,
+            @Valid @RequestBody collzap.backend.dto.AdminDtos.QuestionRequest request) {
+        return adminService.updateQuestion(id, request);
+    }
+
+    @PostMapping("/questions/delete-all")
+    public MessageResponse deleteAllQuestions() {
+        long count = adminService.deleteAllQuestions();
+        return MessageResponse.of("Deleted " + count + " question(s)");
+    }
+
+    @PostMapping("/questions/{id}/delete")
+    public MessageResponse deleteQuestion(@PathVariable UUID id) {
+        adminService.deleteQuestion(id);
+        return MessageResponse.of("Question deleted");
     }
 }

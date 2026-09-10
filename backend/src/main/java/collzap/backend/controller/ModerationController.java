@@ -16,6 +16,7 @@ import collzap.backend.dto.CommonDtos.MessageResponse;
 import collzap.backend.dto.ModerationDtos.BlockRequest;
 import collzap.backend.dto.ModerationDtos.BlockedUserResponse;
 import collzap.backend.dto.ModerationDtos.ReportRequest;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.ModerationService;
 import jakarta.validation.Valid;
@@ -36,6 +37,7 @@ public class ModerationController {
         this.moderationService = moderationService;
     }
 
+    @RateLimited(name = "moderation-block", limit = 20, windowSeconds = 3600)
     @PostMapping("/block")
     public MessageResponse block(
         @AuthenticationPrincipal AuthPrincipal me,
@@ -59,6 +61,7 @@ public class ModerationController {
         return moderationService.blockedUsers(me.userId());
     }
 
+    @RateLimited(name = "moderation-report", limit = 20, windowSeconds = 3600)
     @PostMapping("/report")
     public MessageResponse report(
         @AuthenticationPrincipal AuthPrincipal me,

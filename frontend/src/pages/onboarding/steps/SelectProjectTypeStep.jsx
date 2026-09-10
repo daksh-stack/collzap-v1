@@ -56,7 +56,7 @@ export default function SelectProjectTypeStep() {
 
   return (
     <div>
-      <StepHeader eyebrow="Step three" title="How long are you in for?">
+      <StepHeader eyebrow="Step four" title="How long are you in for?">
         Pick one or both. This decides who you get put in front of — nothing else
         about your profile matters as much.
       </StepHeader>

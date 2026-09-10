@@ -11,7 +11,7 @@ export default function OnboardingGuard() {
   const isTestRoute = location.pathname.startsWith('/test');
 
   // If an active test sitting is currently in progress, strictly lock navigation to /test
-  const isTestInProgress = session && session.sessionId && !result;
+  const isTestInProgress = session && session.questions && !result;
   if (isTestInProgress && !isTestRoute) {
     return <Navigate to="/test" replace />;
   }

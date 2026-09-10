@@ -51,7 +51,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("select u from User u join fetch u.college where u.id in :ids")
     List<User> findAllWithCollegeByIdIn(@Param("ids") List<UUID> ids);
 
-    @Query("select u from User u join fetch u.college where u.id = :id")
+    // Left join: college can legitimately be null between signup and verification —
+    // an inner join here would silently 404 a brand-new user's own GET /api/me instead
+    // of just returning them with a null college.
+    @Query("select u from User u left join fetch u.college where u.id = :id")
     Optional<User> findWithCollegeById(@Param("id") UUID id);
 
     long countByVerificationStatus(VerificationStatus status);

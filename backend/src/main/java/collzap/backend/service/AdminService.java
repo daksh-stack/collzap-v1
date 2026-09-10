@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -41,8 +42,14 @@ import collzap.backend.repositories.InterestFeedbackRepository;
 import collzap.backend.repositories.InterestRepository;
 import collzap.backend.repositories.MatchGroupRepository;
 import collzap.backend.repositories.MatchMemberRepository;
+import collzap.backend.repositories.SeriousnessTestAttemptRepository;
+import collzap.backend.repositories.UserInterestSelectionRepository;
 import collzap.backend.repositories.UserRepository;
 import collzap.backend.repositories.VerificationDocumentRepository;
+import collzap.backend.exception.ConflictException;
+import collzap.backend.dto.InterestDtos.CreateInterestRequest;
+import collzap.backend.dto.InterestDtos.InterestResponse;
+import collzap.backend.dto.InterestDtos.UpdateInterestRequest;
 
 /**
  * Everything behind {@code /admin}. This layer reads across the whole database
@@ -64,6 +71,11 @@ public class AdminService {
     private final VerificationService verificationService;
     private final MatchingService matchingService;
     private final ModerationService moderationService;
+    private final collzap.backend.repositories.SeriousnessTestQuestionRepository questionRepository;
+    private final collzap.backend.repositories.SeriousnessTestAttemptQuestionRepository attemptQuestionRepository;
+    private final collzap.backend.repositories.SeriousnessTestAnswerRepository answerRepository;
+    private final SeriousnessTestAttemptRepository attemptRepository;
+    private final UserInterestSelectionRepository userInterestSelectionRepository;
 
     public AdminService(
         UserRepository userRepository,
@@ -76,7 +88,12 @@ public class AdminService {
         AdminUserRepository adminUserRepository,
         VerificationService verificationService,
         MatchingService matchingService,
-        ModerationService moderationService
+        ModerationService moderationService,
+        collzap.backend.repositories.SeriousnessTestQuestionRepository questionRepository,
+        collzap.backend.repositories.SeriousnessTestAttemptQuestionRepository attemptQuestionRepository,
+        collzap.backend.repositories.SeriousnessTestAnswerRepository answerRepository,
+        SeriousnessTestAttemptRepository attemptRepository,
+        UserInterestSelectionRepository userInterestSelectionRepository
     ) {
         this.userRepository = userRepository;
         this.verificationDocumentRepository = verificationDocumentRepository;
@@ -89,6 +106,11 @@ public class AdminService {
         this.verificationService = verificationService;
         this.matchingService = matchingService;
         this.moderationService = moderationService;
+        this.questionRepository = questionRepository;
+        this.attemptQuestionRepository = attemptQuestionRepository;
+        this.answerRepository = answerRepository;
+        this.attemptRepository = attemptRepository;
+        this.userInterestSelectionRepository = userInterestSelectionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -248,6 +270,166 @@ public class AdminService {
                 feedback.getCreatedAt()
             )
         );
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<collzap.backend.dto.AdminDtos.AdminQuestionResponse> questions(UUID interestId, Pageable pageable) {
+        Page<collzap.backend.models.SeriousnessTestQuestion> page = interestId == null
+            ? questionRepository.findAll(pageable)
+            : questionRepository.findByInterestId(interestId, pageable);
+
+        return PageResponse.from(page, q -> new collzap.backend.dto.AdminDtos.AdminQuestionResponse(
+            q.getId(),
+            q.getQuestionText(),
+            q.getOptions(),
+            q.getCorrectOptionIndex(),
+            q.getInterest().getId(),
+            q.getInterest().getName()
+        ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<InterestResponse> allInterests() {
+        return interestRepository.findAll().stream()
+            .map(AdminService::toInterestResponse)
+            .toList();
+    }
+
+    @CacheEvict(value = "interestCatalog", allEntries = true)
+    @Transactional
+    public InterestResponse createInterest(CreateInterestRequest request) {
+        String name = request.name().trim();
+        if (interestRepository.existsByNameIgnoreCaseAndCategory(name, request.category())) {
+            throw new ConflictException("An interest named \"" + name + "\" already exists in this category");
+        }
+        int nextOrder = interestRepository.findFirstByCategoryOrderByDisplayOrderDesc(request.category())
+            .map(i -> i.getDisplayOrder() + 1)
+            .orElse(1);
+        Interest interest = interestRepository.save(new Interest(name, request.category(), nextOrder));
+        return toInterestResponse(interest);
+    }
+
+    @CacheEvict(value = "interestCatalog", allEntries = true)
+    @Transactional
+    public InterestResponse updateInterest(UUID id, UpdateInterestRequest request) {
+        Interest interest = interestRepository.findById(id)
+            .orElseThrow(() -> NotFoundException.of("Interest"));
+        String name = request.name().trim();
+        if (!name.equalsIgnoreCase(interest.getName())
+            && interestRepository.existsByNameIgnoreCaseAndCategory(name, interest.getCategory())) {
+            throw new ConflictException("An interest named \"" + name + "\" already exists in this category");
+        }
+        interest.setName(name);
+        interest = interestRepository.save(interest);
+        return toInterestResponse(interest);
+    }
+
+    /**
+     * Deletes an interest and its entire question bank (plus those questions'
+     * attempt-question/answer rows). Blocked outright if the interest still has
+     * any match groups, test attempts, or user selections — those aren't safe to
+     * cascade silently; the operator has to resolve them first.
+     */
+    @CacheEvict(value = "interestCatalog", allEntries = true)
+    @Transactional
+    public void deleteInterest(UUID id) {
+        Interest interest = interestRepository.findById(id)
+            .orElseThrow(() -> NotFoundException.of("Interest"));
+
+        long matchCount = matchGroupRepository.countByInterestId(id);
+        long attemptCount = attemptRepository.countByInterestId(id);
+        long selectionCount = userInterestSelectionRepository.countByInterestId(id);
+
+        if (matchCount > 0 || attemptCount > 0 || selectionCount > 0) {
+            List<String> reasons = new ArrayList<>();
+            if (matchCount > 0) reasons.add(matchCount + " match group(s)");
+            if (attemptCount > 0) reasons.add(attemptCount + " test attempt(s)");
+            if (selectionCount > 0) reasons.add(selectionCount + " user selection(s)");
+            throw new ConflictException(
+                "Cannot delete \"" + interest.getName() + "\": " + String.join(", ", reasons) + " still reference it"
+            );
+        }
+
+        answerRepository.deleteByQuestionInterestId(id);
+        attemptQuestionRepository.deleteByQuestionInterestId(id);
+        questionRepository.deleteByInterestId(id);
+        interestRepository.delete(interest);
+    }
+
+    private static InterestResponse toInterestResponse(Interest interest) {
+        return new InterestResponse(
+            interest.getId(), interest.getName(), interest.getCategory(), interest.getDisplayOrder()
+        );
+    }
+
+    @Transactional
+    public collzap.backend.dto.AdminDtos.AdminQuestionResponse createQuestion(collzap.backend.dto.AdminDtos.QuestionRequest request) {
+        Interest interest = interestRepository.findById(request.interestId())
+            .orElseThrow(() -> new NotFoundException("Interest not found"));
+        
+        collzap.backend.models.SeriousnessTestQuestion question = new collzap.backend.models.SeriousnessTestQuestion(
+            interest,
+            request.questionText().trim(),
+            request.options(),
+            request.correctOptionIndex()
+        );
+        question = questionRepository.save(question);
+        
+        return new collzap.backend.dto.AdminDtos.AdminQuestionResponse(
+            question.getId(),
+            question.getQuestionText(),
+            question.getOptions(),
+            question.getCorrectOptionIndex(),
+            interest.getId(),
+            interest.getName()
+        );
+    }
+
+    @Transactional
+    public collzap.backend.dto.AdminDtos.AdminQuestionResponse updateQuestion(UUID id, collzap.backend.dto.AdminDtos.QuestionRequest request) {
+        collzap.backend.models.SeriousnessTestQuestion question = questionRepository.findById(id)
+            .orElseThrow(() -> new NotFoundException("Question not found"));
+            
+        Interest interest = interestRepository.findById(request.interestId())
+            .orElseThrow(() -> new NotFoundException("Interest not found"));
+            
+        question.setQuestionText(request.questionText().trim());
+        question.setOptions(request.options());
+        question.setCorrectOptionIndex(request.correctOptionIndex());
+        question.setInterest(interest);
+        
+        question = questionRepository.save(question);
+        
+        return new collzap.backend.dto.AdminDtos.AdminQuestionResponse(
+            question.getId(),
+            question.getQuestionText(),
+            question.getOptions(),
+            question.getCorrectOptionIndex(),
+            interest.getId(),
+            interest.getName()
+        );
+    }
+
+    @Transactional
+    public void deleteQuestion(UUID id) {
+        collzap.backend.models.SeriousnessTestQuestion question = questionRepository.findById(id)
+            .orElseThrow(() -> new NotFoundException("Question not found"));
+        questionRepository.delete(question);
+    }
+
+    /**
+     * Wipes the entire question bank. Attempt-question and answer rows are removed
+     * first since both hold a non-nullable FK to the question — any in-progress or
+     * historical attempts lose their per-question detail and recorded answers, but
+     * the attempt records themselves (status, score) are untouched.
+     */
+    @Transactional
+    public long deleteAllQuestions() {
+        long count = questionRepository.count();
+        answerRepository.deleteAllInBatch();
+        attemptQuestionRepository.deleteAllInBatch();
+        questionRepository.deleteAllInBatch();
+        return count;
     }
 
     @Transactional(readOnly = true)

@@ -29,21 +29,18 @@ import collzap.backend.enums.SeriousnessLevel;
 import collzap.backend.enums.TestAttemptStatus;
 import collzap.backend.exception.BadRequestException;
 import collzap.backend.exception.ConflictException;
-import collzap.backend.exception.ForbiddenException;
 import collzap.backend.exception.NotFoundException;
 import collzap.backend.models.Interest;
 import collzap.backend.models.SeriousnessTestAnswer;
 import collzap.backend.models.SeriousnessTestAttempt;
 import collzap.backend.models.SeriousnessTestQuestion;
-import collzap.backend.models.SeriousnessTestSession;
-import collzap.backend.models.SeriousnessTestSessionQuestion;
+import collzap.backend.models.SeriousnessTestAttemptQuestion;
 import collzap.backend.models.User;
 import collzap.backend.models.UserInterestSelection;
 import collzap.backend.repositories.SeriousnessTestAnswerRepository;
 import collzap.backend.repositories.SeriousnessTestAttemptRepository;
 import collzap.backend.repositories.SeriousnessTestQuestionRepository;
-import collzap.backend.repositories.SeriousnessTestSessionQuestionRepository;
-import collzap.backend.repositories.SeriousnessTestSessionRepository;
+import collzap.backend.repositories.SeriousnessTestAttemptQuestionRepository;
 import collzap.backend.repositories.UserInterestSelectionRepository;
 import collzap.backend.repositories.UserProjectTypeSelectionRepository;
 
@@ -61,8 +58,7 @@ public class SeriousnessTestService {
 
     private static final Logger log = LoggerFactory.getLogger(SeriousnessTestService.class);
 
-    private final SeriousnessTestSessionRepository sessionRepository;
-    private final SeriousnessTestSessionQuestionRepository sessionQuestionRepository;
+    private final SeriousnessTestAttemptQuestionRepository sessionQuestionRepository;
     private final SeriousnessTestAttemptRepository attemptRepository;
     private final SeriousnessTestAnswerRepository answerRepository;
     private final SeriousnessTestQuestionRepository questionRepository;
@@ -72,8 +68,7 @@ public class SeriousnessTestService {
     private final CollzapProperties properties;
 
     public SeriousnessTestService(
-        SeriousnessTestSessionRepository sessionRepository,
-        SeriousnessTestSessionQuestionRepository sessionQuestionRepository,
+        SeriousnessTestAttemptQuestionRepository sessionQuestionRepository,
         SeriousnessTestAttemptRepository attemptRepository,
         SeriousnessTestAnswerRepository answerRepository,
         SeriousnessTestQuestionRepository questionRepository,
@@ -82,7 +77,6 @@ public class SeriousnessTestService {
         UserService userService,
         CollzapProperties properties
     ) {
-        this.sessionRepository = sessionRepository;
         this.sessionQuestionRepository = sessionQuestionRepository;
         this.attemptRepository = attemptRepository;
         this.answerRepository = answerRepository;
@@ -96,16 +90,15 @@ public class SeriousnessTestService {
     @Transactional(readOnly = true)
     public TestEligibilityResponse eligibility(UUID userId) {
         userService.require(userId);
-        Optional<SeriousnessTestSession> inProgress = sessionRepository
-            .findFirstByUserIdAndStatusOrderByCreatedAtDesc(userId, TestAttemptStatus.IN_PROGRESS);
+        List<SeriousnessTestAttempt> activeAttempts = attemptRepository
+            .findActiveAttemptsByUserId(userId);
 
-        if (inProgress.isPresent()) {
+        if (!activeAttempts.isEmpty()) {
             return new TestEligibilityResponse(
                 true,
                 null,
                 null,
-                true,
-                inProgress.get().getId()
+                true
             );
         }
 
@@ -114,8 +107,7 @@ public class SeriousnessTestService {
                 false,
                 "The seriousness test is only for Long-Term Peer matching.",
                 null,
-                false,
-                null
+                false
             );
         }
 
@@ -125,8 +117,7 @@ public class SeriousnessTestService {
                 false,
                 "Pick your Long-Term interests first.",
                 null,
-                false,
-                null
+                false
             );
         }
 
@@ -145,16 +136,14 @@ public class SeriousnessTestService {
                 false,
                 "You can retake the test on %s.".formatted(lockedUntil),
                 lockedUntil,
-                false,
-                null
+                false
             );
         }
         return new TestEligibilityResponse(
             true,
             null,
             null,
-            inProgress.isPresent(),
-            inProgress.map(SeriousnessTestSession::getId).orElse(null)
+            !activeAttempts.isEmpty()
         );
     }
 
@@ -171,69 +160,49 @@ public class SeriousnessTestService {
             throw new ConflictException(eligibility.reason());
         }
 
-        Instant now = Instant.now();
-        sessionRepository.findByUserIdAndStatus(userId, TestAttemptStatus.IN_PROGRESS)
+        attemptRepository.findActiveAttemptsByUserId(userId)
             .forEach(open -> {
                 open.setStatus(TestAttemptStatus.ABANDONED);
-                sessionRepository.save(open);
-                attemptRepository.findBySessionId(open.getId()).forEach(attempt -> {
-                    attempt.setStatus(TestAttemptStatus.ABANDONED);
-                    attemptRepository.save(attempt);
-                });
+                attemptRepository.save(open);
             });
 
         List<UserInterestSelection> selections = longTermSelections(userId);
         List<Interest> interests = selections.stream().map(UserInterestSelection::getInterest).toList();
         Map<Interest, List<SeriousnessTestQuestion>> paper = drawPaper(interests);
 
-        int actualTotal = paper.values().stream().mapToInt(List::size).sum();
-        SeriousnessTestSession session = sessionRepository.save(new SeriousnessTestSession(
-            user,
-            actualTotal,
-            now,
-            now.plus(properties.getSeriousnessTest().getDuration())
-        ));
-
         int orderIndex = 0;
         for (Map.Entry<Interest, List<SeriousnessTestQuestion>> entry : paper.entrySet()) {
             SeriousnessTestAttempt attempt = attemptRepository.save(new SeriousnessTestAttempt(
-                session,
                 user,
                 entry.getKey(),
                 entry.getValue().size()
             ));
             for (SeriousnessTestQuestion question : entry.getValue()) {
                 sessionQuestionRepository.save(
-                    new SeriousnessTestSessionQuestion(session, attempt, question, orderIndex++));
+                    new SeriousnessTestAttemptQuestion(attempt, question, orderIndex++));
             }
         }
-        return describe(session);
+        return describe(userId);
     }
 
     @Transactional(readOnly = true)
     public TestSessionResponse currentSession(UUID userId) {
-        SeriousnessTestSession session = sessionRepository
-            .findFirstByUserIdAndStatusOrderByCreatedAtDesc(userId, TestAttemptStatus.IN_PROGRESS)
-            .orElseThrow(() -> new NotFoundException("No test in progress"));
-        return describe(session);
+        List<SeriousnessTestAttempt> attempts = attemptRepository.findActiveAttemptsByUserId(userId);
+        if (attempts.isEmpty()) {
+            throw new NotFoundException("No test in progress");
+        }
+        return describe(userId);
     }
 
     @Transactional
-    public AnswerAcceptedResponse answer(UUID userId, UUID sessionId, SubmitAnswerRequest request) {
-        SeriousnessTestSession session = requireOwnSession(userId, sessionId);
-        Instant now = Instant.now();
-
-        if (session.getStatus() != TestAttemptStatus.IN_PROGRESS) {
-            throw new ConflictException("This test has already been submitted");
-        }
-        if (session.isExpired(now)) {
-            // The timer is silent, so the client finds out here rather than from a countdown.
-            finalise(session, true, now);
-            throw new ConflictException("This test has already been submitted");
+    public AnswerAcceptedResponse answer(UUID userId, SubmitAnswerRequest request) {
+        List<SeriousnessTestAttempt> attempts = attemptRepository.findActiveAttemptsByUserId(userId);
+        if (attempts.isEmpty()) {
+            throw new ConflictException("No test in progress");
         }
 
-        SeriousnessTestSessionQuestion paperEntry = sessionQuestionRepository
-            .findBySessionIdAndQuestionId(sessionId, request.questionId())
+        SeriousnessTestAttemptQuestion paperEntry = sessionQuestionRepository
+            .findByUserIdAndQuestionIdInProgress(userId, request.questionId())
             .orElseThrow(() -> new NotFoundException("That question is not part of this test"));
 
         SeriousnessTestQuestion question = paperEntry.getQuestion();
@@ -249,62 +218,64 @@ public class SeriousnessTestService {
             .orElseGet(() -> new SeriousnessTestAnswer(attempt, question, selected, correct));
         answer.setSelectedOptionIndex(selected);
         answer.setCorrect(correct);
-        answerRepository.save(answer);
+        try {
+            answerRepository.saveAndFlush(answer);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // Concurrent insert race condition: another thread created this answer just now.
+            // Fetch it, update it, and save.
+            answer = answerRepository.findByAttemptIdAndQuestionId(attempt.getId(), question.getId())
+                .orElseThrow(() -> new ConflictException("Answer was saved by another request but cannot be found"));
+            answer.setSelectedOptionIndex(selected);
+            answer.setCorrect(correct);
+            answerRepository.saveAndFlush(answer);
+        }
+
+        int totalQuestions = attempts.stream().mapToInt(SeriousnessTestAttempt::getQuestionCount).sum();
+        long answeredCount = attempts.stream()
+            .mapToLong(a -> answerRepository.findByAttemptId(a.getId()).size())
+            .sum();
 
         return new AnswerAcceptedResponse(
-            (int) answerRepository.countBySessionId(sessionId),
-            session.getTotalQuestions()
+            (int) answeredCount,
+            totalQuestions
         );
     }
 
     @Transactional
-    public TestResultResponse submit(UUID userId, UUID sessionId) {
-        SeriousnessTestSession session = requireOwnSession(userId, sessionId);
-        if (session.getStatus() == TestAttemptStatus.SUBMITTED) {
-            return buildResult(session);
-        }
-        if (session.getStatus() != TestAttemptStatus.IN_PROGRESS) {
+    public TestResultResponse submit(UUID userId) {
+        List<SeriousnessTestAttempt> attempts = attemptRepository.findActiveAttemptsByUserId(userId);
+        if (attempts.isEmpty()) {
             throw new ConflictException("This test was abandoned. Start a new one.");
         }
         Instant now = Instant.now();
-        finalise(session, session.isExpired(now), now);
-        return buildResult(session);
+        finalise(attempts, now);
+        return result(userId);
     }
 
     @Transactional(readOnly = true)
-    public TestResultResponse result(UUID userId, UUID sessionId) {
-        SeriousnessTestSession session = requireOwnSession(userId, sessionId);
-        if (session.getStatus() != TestAttemptStatus.SUBMITTED) {
-            throw new ConflictException("This test has not been submitted yet");
-        }
-        return buildResult(session);
+    public TestResultResponse result(UUID userId) {
+        return latestResult(userId);
     }
 
     @Transactional(readOnly = true)
     public TestResultResponse latestResult(UUID userId) {
-        SeriousnessTestSession session = sessionRepository
-            .findFirstByUserIdAndStatusOrderByCreatedAtDesc(userId, TestAttemptStatus.SUBMITTED)
-            .orElseThrow(() -> new NotFoundException("You have not taken the test yet"));
-        return buildResult(session);
+        List<SeriousnessTestAttempt> submitted = attemptRepository.findSubmittedByUserIdNewestFirst(userId);
+        if (submitted.isEmpty()) {
+            throw new NotFoundException("You have not taken the test yet");
+        }
+        
+        // Find the most recent submission timestamp
+        Instant latestSubmit = submitted.get(0).getSubmittedAt();
+        
+        // Group all attempts submitted at the same time
+        List<SeriousnessTestAttempt> latestBatch = submitted.stream()
+            .filter(a -> a.getSubmittedAt().equals(latestSubmit))
+            .toList();
+
+        return buildResult(latestBatch);
     }
 
-    /**
-     * Called by the scheduler. Sittings whose silent timer ran out are scored with
-     * whatever was answered.
-     *
-     * @return how many sittings were closed
-     */
-    @Transactional
-    public int autoSubmitExpired() {
-        Instant now = Instant.now();
-        List<SeriousnessTestSession> expired = sessionRepository.findExpiredInProgress(now);
-        for (SeriousnessTestSession session : expired) {
-            finalise(session, true, now);
-            log.info("Auto-submitted expired seriousness test {} for user {}",
-                session.getId(), session.getUser().getId());
-        }
-        return expired.size();
-    }
+
 
     /**
      * Splits the question total evenly across the chosen interests, giving the
@@ -336,12 +307,12 @@ public class SeriousnessTestService {
         return paper;
     }
 
-    /** Scores every attempt in the sitting and closes it. */
-    private void finalise(SeriousnessTestSession session, boolean autoSubmitted, Instant now) {
+    /** Scores every attempt and closes it. */
+    private void finalise(List<SeriousnessTestAttempt> attempts, Instant now) {
         LocalDate retakeDate = LocalDate.now(ZoneOffset.UTC)
             .plusDays(properties.getSeriousnessTest().getRetakeLockDays());
 
-        for (SeriousnessTestAttempt attempt : attemptRepository.findWithInterestBySessionId(session.getId())) {
+        for (SeriousnessTestAttempt attempt : attempts) {
             int correct = (int) answerRepository.countByAttemptIdAndCorrectTrue(attempt.getId());
             attempt.setCorrectCount(correct);
             attempt.setScore(percent(correct, attempt.getQuestionCount()));
@@ -351,17 +322,9 @@ public class SeriousnessTestService {
             attempt.setNextRetakeDate(retakeDate);
             attemptRepository.save(attempt);
         }
-
-        session.setStatus(TestAttemptStatus.SUBMITTED);
-        session.setSubmittedAt(now);
-        session.setAutoSubmitted(autoSubmitted);
-        sessionRepository.save(session);
     }
 
-    private TestResultResponse buildResult(SeriousnessTestSession session) {
-        List<SeriousnessTestAttempt> attempts =
-            attemptRepository.findWithInterestBySessionId(session.getId());
-
+    private TestResultResponse buildResult(List<SeriousnessTestAttempt> attempts) {
         int totalCorrect = attempts.stream().mapToInt(SeriousnessTestAttempt::getCorrectCount).sum();
         int totalQuestions = attempts.stream().mapToInt(SeriousnessTestAttempt::getQuestionCount).sum();
         int overallScore = percent(totalCorrect, totalQuestions);
@@ -386,10 +349,11 @@ public class SeriousnessTestService {
             ))
             .toList();
 
+        Instant submittedAt = attempts.isEmpty() ? null : attempts.get(0).getSubmittedAt();
+
         return new TestResultResponse(
-            session.getId(),
-            session.getSubmittedAt(),
-            session.isAutoSubmitted(),
+            submittedAt,
+            false,
             overallScore,
             overallLevel,
             overallLevel.message(),
@@ -398,17 +362,21 @@ public class SeriousnessTestService {
         );
     }
 
-    private TestSessionResponse describe(SeriousnessTestSession session) {
-        List<SeriousnessTestSessionQuestion> paper =
-            sessionQuestionRepository.findPaperBySessionId(session.getId());
+    private TestSessionResponse describe(UUID userId) {
+        List<SeriousnessTestAttemptQuestion> paper = sessionQuestionRepository.findPaperByUserId(userId);
+        
+        int totalQuestions = paper.size();
 
         Map<UUID, Integer> selectedByQuestion = new HashMap<>();
-        for (SeriousnessTestAnswer answer : answerRepository.findBySessionId(session.getId())) {
-            selectedByQuestion.put(answer.getQuestion().getId(), answer.getSelectedOptionIndex());
+        List<SeriousnessTestAttempt> attempts = attemptRepository.findActiveAttemptsByUserId(userId);
+        for (SeriousnessTestAttempt attempt : attempts) {
+            for (SeriousnessTestAnswer answer : answerRepository.findByAttemptId(attempt.getId())) {
+                selectedByQuestion.put(answer.getQuestion().getId(), answer.getSelectedOptionIndex());
+            }
         }
 
         List<TestQuestionResponse> questions = new ArrayList<>(paper.size());
-        for (SeriousnessTestSessionQuestion entry : paper) {
+        for (SeriousnessTestAttemptQuestion entry : paper) {
             SeriousnessTestQuestion question = entry.getQuestion();
             questions.add(new TestQuestionResponse(
                 entry.getOrderIndex(),
@@ -416,29 +384,16 @@ public class SeriousnessTestService {
                 question.getInterest().getId(),
                 question.getInterest().getName(),
                 question.getQuestionText(),
-                // Never the correct index — scoring stays on the server.
                 List.copyOf(question.getOptions()),
                 selectedByQuestion.get(question.getId())
             ));
         }
 
         return new TestSessionResponse(
-            session.getId(),
-            session.getTotalQuestions(),
+            totalQuestions,
             selectedByQuestion.size(),
-            session.getStartedAt(),
-            session.getExpiresAt(),
             questions
         );
-    }
-
-    private SeriousnessTestSession requireOwnSession(UUID userId, UUID sessionId) {
-        SeriousnessTestSession session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Test session not found"));
-        if (!session.getUser().getId().equals(userId)) {
-            throw new ForbiddenException("That test session belongs to someone else");
-        }
-        return session;
     }
 
     private List<UserInterestSelection> longTermSelections(UUID userId) {
@@ -459,14 +414,10 @@ public class SeriousnessTestService {
 
     @Transactional
     public void emergencyReset(UUID userId) {
-        sessionRepository.findByUserIdAndStatus(userId, TestAttemptStatus.IN_PROGRESS)
+        attemptRepository.findActiveAttemptsByUserId(userId)
             .forEach(open -> {
                 open.setStatus(TestAttemptStatus.ABANDONED);
-                sessionRepository.save(open);
-                attemptRepository.findBySessionId(open.getId()).forEach(attempt -> {
-                    attempt.setStatus(TestAttemptStatus.ABANDONED);
-                    attemptRepository.save(attempt);
-                });
+                attemptRepository.save(open);
             });
     }
 }

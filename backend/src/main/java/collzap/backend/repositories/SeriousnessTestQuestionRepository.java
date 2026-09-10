@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -30,4 +31,10 @@ public interface SeriousnessTestQuestionRepository extends JpaRepository<Serious
     long countByInterestIdAndActiveTrue(UUID interestId);
 
     long countByInterestId(UUID interestId);
+
+    org.springframework.data.domain.Page<SeriousnessTestQuestion> findByInterestId(UUID interestId, org.springframework.data.domain.Pageable pageable);
+
+    @Modifying
+    @Query("delete from SeriousnessTestQuestion q where q.interest.id = :interestId")
+    void deleteByInterestId(@Param("interestId") UUID interestId);
 }

@@ -3,6 +3,8 @@ package collzap.backend.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class CollegeService {
         this.collegeRepository = collegeRepository;
     }
 
+    @Cacheable("colleges")
     @Transactional(readOnly = true)
     public List<CollegeResponse> listAll() {
         return collegeRepository.findAll().stream()
@@ -42,6 +45,7 @@ public class CollegeService {
      * Resolves the college that owns an email address. This is the gate that keeps
      * signups to recognised college domains.
      */
+    @Cacheable(value = "collegeByDomain", key = "#email.trim().toLowerCase()")
     @Transactional(readOnly = true)
     public College requireByEmail(String email) {
         String domain = extractDomain(email);
@@ -52,6 +56,7 @@ public class CollegeService {
                     .formatted(domain)));
     }
 
+    @CacheEvict(value = {"colleges", "collegeByDomain"}, allEntries = true)
     @Transactional
     public CollegeResponse create(CreateCollegeRequest request) {
         String domain = normalizeDomain(request.emailDomain());

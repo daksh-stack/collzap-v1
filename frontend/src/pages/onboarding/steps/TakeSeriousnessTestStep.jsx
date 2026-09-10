@@ -23,7 +23,7 @@ export default function TakeSeriousnessTestStep() {
 
   return (
     <div>
-      <StepHeader eyebrow="Step five" title="Sit the paper.">
+      <StepHeader eyebrow="Step six" title="Sit the paper.">
         Twenty minutes, one sitting, no going back a question. It sets the level
         band you get matched inside — so people stop getting paired with someone
         three years ahead of them.

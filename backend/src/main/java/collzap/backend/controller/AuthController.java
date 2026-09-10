@@ -9,21 +9,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 import collzap.backend.dto.AuthDtos.AccessTokenResponse;
 import collzap.backend.dto.AuthDtos.AuthResponse;
-import collzap.backend.dto.AuthDtos.OtpSentResponse;
+import collzap.backend.dto.AuthDtos.ForgotPasswordRequest;
+import collzap.backend.dto.AuthDtos.LoginRequest;
+import collzap.backend.dto.AuthDtos.OtpIssuedResponse;
 import collzap.backend.dto.AuthDtos.RefreshTokenRequest;
-import collzap.backend.dto.AuthDtos.RequestOtpRequest;
-import collzap.backend.dto.AuthDtos.VerifyOtpRequest;
+import collzap.backend.dto.AuthDtos.ResetPasswordRequest;
+import collzap.backend.dto.AuthDtos.SignupRequest;
+import collzap.backend.dto.AuthDtos.SignupResponse;
 import collzap.backend.dto.CommonDtos.MessageResponse;
+import collzap.backend.ratelimit.RateLimited;
 import collzap.backend.service.AuthService;
 import jakarta.validation.Valid;
 
 /**
- * Signup, login and token lifecycle. Everything here is reachable without a
- * token, which is why nothing on it takes a user id from the caller.
- *
- * <p>Signup and login are the same two calls: request a code for a college email,
- * then exchange the code for tokens. {@code existingAccount} on the OTP response
- * tells the client which copy to show.
+ * Signup, login, forgot-password and token lifecycle. Everything here is
+ * reachable without a token, which is why nothing on it takes a user id from
+ * the caller.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -35,17 +36,31 @@ public class AuthController {
         this.authService = authService;
     }
 
-    /** Emails a one-time code to a recognised college address. */
-    @PostMapping("/otp")
-    public OtpSentResponse requestOtp(@Valid @RequestBody RequestOtpRequest request) {
-        return authService.requestOtp(request);
+    /** Creates the account and issues tokens right away; email verification happens in onboarding. */
+    @RateLimited(name = "signup", limit = 10, windowSeconds = 3600, keyType = RateLimited.KeyType.IP)
+    @PostMapping("/signup")
+    public ResponseEntity<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.signup(request));
     }
 
-    /** Verifies the code, creating the account on first use, and issues tokens. */
-    @PostMapping("/otp/verify")
-    public ResponseEntity<AuthResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        AuthResponse response = authService.verifyOtp(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @RateLimited(name = "login", limit = 10, windowSeconds = 3600, keyType = RateLimited.KeyType.IP)
+    @PostMapping("/login")
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
+    }
+
+    /** Emails a reset code if the address has an account. */
+    @RateLimited(name = "forgot-password", limit = 5, windowSeconds = 3600, keyType = RateLimited.KeyType.IP)
+    @PostMapping("/forgot-password")
+    public OtpIssuedResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return authService.forgotPassword(request);
+    }
+
+    /** Also doubles as "set your first password" for pre-existing no-password accounts. */
+    @RateLimited(name = "reset-password", limit = 10, windowSeconds = 3600, keyType = RateLimited.KeyType.IP)
+    @PostMapping("/reset-password")
+    public AuthResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return authService.resetPassword(request);
     }
 
     /** Trades a refresh token for a fresh access token. */
