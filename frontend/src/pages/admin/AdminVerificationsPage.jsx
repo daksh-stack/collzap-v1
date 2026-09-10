@@ -54,7 +54,7 @@ export default function AdminVerificationsPage() {
       ) : rows.length === 0 ? (
         <EmptyState title="Nothing waiting" description="Every submitted document has been reviewed." />
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-[#FBF8F2]">
+        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
           {rows.map((doc) => (
             <li key={doc.documentId} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
@@ -97,7 +97,7 @@ export default function AdminVerificationsPage() {
           page={verifications.page ?? page}
           totalPages={verifications.totalPages}
           onPageChange={setPage}
-          className="mt-2 rounded-b-lg border-x border-b border-line bg-[#FBF8F2]"
+          className="mt-2 rounded-b-lg border-x border-b border-line bg-surface"
         />
       )}
 

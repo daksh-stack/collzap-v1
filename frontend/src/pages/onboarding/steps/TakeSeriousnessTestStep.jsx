@@ -31,11 +31,11 @@ export default function TakeSeriousnessTestStep() {
 
       <div className="max-w-lg">
         <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line">
-          <div className="bg-[#FBF8F2] px-5 py-4">
+          <div className="bg-surface px-5 py-4">
             <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Time</dt>
             <dd className="mt-1 font-display text-2xl text-ink tnum">20 min</dd>
           </div>
-          <div className="bg-[#FBF8F2] px-5 py-4">
+          <div className="bg-surface px-5 py-4">
             <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Retake after</dt>
             <dd className="mt-1 font-display text-2xl text-ink tnum">30 days</dd>
           </div>

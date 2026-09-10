@@ -37,7 +37,7 @@ export default function OtpVerifyPage() {
     try {
       const response = await verifyOtp(state.email, value, state.name);
       if (response.nextStep === 'READY') {
-        navigate('/', { replace: true });
+        navigate('/home', { replace: true });
       } else {
         navigate('/onboarding', { replace: true });
       }
@@ -157,7 +157,7 @@ export default function OtpVerifyPage() {
         </div>
       )}
 
-      <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tightest text-ink">
+      <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tightest text-ink">
         Six digits.
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-mute">
@@ -188,7 +188,7 @@ export default function OtpVerifyPage() {
               onPaste={handlePaste}
               onFocus={(e) => e.target.select()}
               className={cn(
-                'h-14 w-full min-w-0 rounded border bg-[#FBF8F2] text-center',
+                'h-14 w-full min-w-0 rounded border bg-surface text-center',
                 'font-display text-2xl text-ink tnum',
                 'border-line focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25',
                 'disabled:opacity-50 transition-[border-color,box-shadow] duration-150',

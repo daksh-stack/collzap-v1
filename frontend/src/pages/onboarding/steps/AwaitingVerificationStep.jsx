@@ -5,10 +5,14 @@ import Button from '../../../components/ui/Button';
 import StepHeader from './StepHeader';
 import { useModerationStore } from '../../../store/useModerationStore';
 import { useReducedMotion } from '../../../lib/motion';
+import { BRAND, useThemePalette } from '../../../lib/palette';
 
 /** A real clock face — hands that actually move, not a spinner. */
 function Clock({ reduced }) {
   const [now, setNow] = useState(() => new Date());
+  // SVG stroke props can't take Tailwind classes, so the colours come from the
+  // shared palette module and follow the theme.
+  const c = useThemePalette();
 
   useEffect(() => {
     // One tick a second is enough; under reduced motion we still show the
@@ -23,7 +27,7 @@ function Clock({ reduced }) {
 
   return (
     <svg viewBox="0 0 100 100" className="h-24 w-24" aria-hidden="true">
-      <circle cx="50" cy="50" r="46" fill="none" stroke="#DDD4C8" strokeWidth="1.5" />
+      <circle cx="50" cy="50" r="46" fill="none" stroke={c.line} strokeWidth="1.5" />
       {Array.from({ length: 12 }).map((_, i) => {
         const a = (i * 30 * Math.PI) / 180;
         const inner = i % 3 === 0 ? 36 : 40;
@@ -34,7 +38,7 @@ function Clock({ reduced }) {
             y1={50 - inner * Math.cos(a)}
             x2={50 + 43 * Math.sin(a)}
             y2={50 - 43 * Math.cos(a)}
-            stroke="#6B645C"
+            stroke={c.mute}
             strokeWidth={i % 3 === 0 ? 2 : 1}
             opacity={i % 3 === 0 ? 0.75 : 0.35}
           />
@@ -45,25 +49,25 @@ function Clock({ reduced }) {
         x1="50" y1="50"
         x2={50 + 24 * Math.sin((h * 30 * Math.PI) / 180)}
         y2={50 - 24 * Math.cos((h * 30 * Math.PI) / 180)}
-        stroke="#1A1714" strokeWidth="3" strokeLinecap="round"
+        stroke={c.ink} strokeWidth="3" strokeLinecap="round"
       />
       {/* minute */}
       <line
         x1="50" y1="50"
         x2={50 + 34 * Math.sin((m * 6 * Math.PI) / 180)}
         y2={50 - 34 * Math.cos((m * 6 * Math.PI) / 180)}
-        stroke="#1A1714" strokeWidth="2" strokeLinecap="round"
+        stroke={c.ink} strokeWidth="2" strokeLinecap="round"
       />
       {/* second — the only moving accent */}
       <line
         x1="50" y1="50"
         x2={50 + 38 * Math.sin((s * 6 * Math.PI) / 180)}
         y2={50 - 38 * Math.cos((s * 6 * Math.PI) / 180)}
-        stroke="#C45C26" strokeWidth="1"
+        stroke={BRAND.teal} strokeWidth="1.4"
         strokeLinecap="round"
         style={reduced ? undefined : { transition: 'all 0.2s cubic-bezier(0.22,1,0.36,1)' }}
       />
-      <circle cx="50" cy="50" r="2.5" fill="#1A1714" />
+      <circle cx="50" cy="50" r="2.5" fill={c.ink} />
     </svg>
   );
 }
@@ -112,18 +116,18 @@ export default function AwaitingVerificationStep() {
 
       <div className="max-w-lg">
         <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line">
-          <div className="bg-[#FBF8F2] px-5 py-4">
+          <div className="bg-surface px-5 py-4">
             <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Sent</dt>
             <dd className="mt-1 text-sm text-ink">{formatDocType(latestDoc?.documentType)}</dd>
           </div>
-          <div className="bg-[#FBF8F2] px-5 py-4">
+          <div className="bg-surface px-5 py-4">
             <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">At</dt>
             <dd className="mt-1 text-sm text-ink tnum">{formatDate(latestDoc?.createdAt)}</dd>
           </div>
         </dl>
 
         <div className="mt-10 flex flex-wrap gap-3">
-          <Button onClick={() => navigate('/')}>Look around</Button>
+          <Button onClick={() => navigate('/home')}>Look around</Button>
           <Button variant="secondary" onClick={() => navigate('/profile')}>
             Edit profile
           </Button>

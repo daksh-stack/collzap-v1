@@ -124,7 +124,7 @@ export default function AdminMatchesPage() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-line bg-[#FBF8F2]">
+          <tbody className="divide-y divide-line bg-surface">
             {loading && rows.length === 0 ? (
               <tr><td colSpan="6" className="px-4 py-12 text-center text-accent-500"><Spinner /></td></tr>
             ) : rows.length === 0 ? (
@@ -183,7 +183,7 @@ export default function AdminMatchesPage() {
                               {match.memberNames.map((name, idx) => (
                                 <li
                                   key={idx}
-                                  className="inline-flex items-center gap-2 rounded border border-line bg-[#FBF8F2] px-2.5 py-1 text-xs text-ink"
+                                  className="inline-flex items-center gap-2 rounded border border-line bg-surface px-2.5 py-1 text-xs text-ink"
                                 >
                                   {name}
                                   {match.memberIds?.[idx] && (
@@ -217,7 +217,7 @@ export default function AdminMatchesPage() {
           page={matches.page ?? page}
           totalPages={matches.totalPages}
           onPageChange={setPage}
-          className="mt-2 rounded-b-lg border-x border-b border-line bg-[#FBF8F2]"
+          className="mt-2 rounded-b-lg border-x border-b border-line bg-surface"
         />
       )}
 
@@ -265,7 +265,7 @@ export default function AdminMatchesPage() {
                 setUserIds([...new Set([...userIds, ...parts])]);
               }}
               placeholder="Paste a UUID, press Enter"
-              className="block h-11 w-full rounded border border-line bg-[#FBF8F2] px-3 font-mono text-xs text-ink placeholder:text-mute/55 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25"
+              className="block h-11 w-full rounded border border-line bg-surface px-3 font-mono text-xs text-ink placeholder:text-mute/55 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25"
             />
             <p className="mt-1.5 text-xs text-mute">Two or more. Enter, comma or paste a list.</p>
           </div>

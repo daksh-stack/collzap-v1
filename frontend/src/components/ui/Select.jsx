@@ -21,7 +21,7 @@ const Select = forwardRef(({
         id={id}
         aria-invalid={!!error}
         className={cn(
-          'block h-11 w-full rounded border border-line bg-[#FBF8F2] px-3 text-sm text-ink',
+          'block h-11 w-full rounded border border-line bg-surface px-3 text-sm text-ink',
           'focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25',
           'disabled:cursor-not-allowed disabled:opacity-50',
           'transition-[border-color,box-shadow] duration-150',

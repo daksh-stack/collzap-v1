@@ -4,7 +4,7 @@ export default function Badge({ variant = 'default', className, children, ...pro
   const variants = {
     default: 'bg-ink/[0.05] text-mute border-line',
     primary: 'bg-accent-50 text-accent-700 border-accent-200',
-    success: 'bg-good/10 text-good border-good/25',
+    success: 'bg-teal-50 text-teal-700 border-teal-200',
     warning: 'bg-wait/10 text-wait border-wait/30',
     danger: 'bg-bad/10 text-bad border-bad/25',
     info: 'bg-ink/[0.05] text-ink/70 border-line',

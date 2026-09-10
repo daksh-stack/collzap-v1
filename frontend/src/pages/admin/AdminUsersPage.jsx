@@ -94,7 +94,7 @@ export default function AdminUsersPage() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-line bg-[#FBF8F2]">
+          <tbody className="divide-y divide-line bg-surface">
             {loading && rows.length === 0 ? (
               <tr><td colSpan="6" className="px-4 py-12 text-center text-accent-500"><Spinner /></td></tr>
             ) : rows.length === 0 ? (
@@ -144,7 +144,7 @@ export default function AdminUsersPage() {
           page={users.page ?? page}
           totalPages={users.totalPages}
           onPageChange={setPage}
-          className="mt-2 rounded-b-lg border-x border-b border-line bg-[#FBF8F2]"
+          className="mt-2 rounded-b-lg border-x border-b border-line bg-surface"
         />
       )}
 
@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
         {selectedUser && (
           <div className="space-y-6">
             <div>
-              <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
+              <h2 className="font-display text-xl font-bold tracking-tight text-ink">
                 {selectedUser.name}
               </h2>
               <p className="mt-1 text-sm text-mute">{selectedUser.email}</p>
@@ -174,7 +174,7 @@ export default function AdminUsersPage() {
                 ['Year', selectedUser.yearOfStudy ? `Year ${selectedUser.yearOfStudy}` : null],
                 ['Joined', selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : null],
               ].map(([label, value]) => (
-                <div key={label} className="bg-[#FBF8F2] px-4 py-3">
+                <div key={label} className="bg-surface px-4 py-3">
                   <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">{label}</dt>
                   <dd className="mt-1 text-ink">{value || '—'}</dd>
                 </div>

@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { motion } from 'motion/react';
+import { ArrowRight, Clock3, MessageSquare, Users } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { useMatchStore } from '../../store/useMatchStore';
 import { useChatStore } from '../../store/useChatStore';
 import { useUserStore } from '../../store/useUserStore';
+import { listItemVariants, listVariants, reduceVariants, useReducedMotion } from '../../lib/motion';
 
 function relativeTime(timestamp) {
   if (!timestamp) return '';
@@ -23,6 +25,7 @@ export default function HomePage() {
   const { circle, fetchCircle } = useMatchStore();
   const { chatList, fetchChatList } = useChatStore();
   const { profile } = useUserStore();
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     fetchCircle().catch(console.error);
@@ -31,13 +34,22 @@ export default function HomePage() {
 
   const connections = circle?.connections || [];
   const waiting = circle?.waiting || [];
-  const recentChats = (Array.isArray(chatList) ? chatList : []).slice(0, 3);
+  const allChats = Array.isArray(chatList) ? chatList : [];
+  const recentChats = allChats.slice(0, 3);
   const firstName = profile?.name?.split(' ')[0];
+
+  const unread = allChats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+
+  const stats = [
+    { icon: Users, label: 'Connections', value: connections.length, to: '/matches' },
+    { icon: Clock3, label: 'In queue', value: waiting.length, to: '/matches' },
+    { icon: MessageSquare, label: 'Unread', value: unread, to: '/chat' },
+  ];
 
   return (
     <div className="space-y-14">
       <header>
-        <h1 className="font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
+        <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tightest text-ink">
           {connections.length > 0
             ? 'You have people to work with.'
             : firstName ? `Nothing on your desk yet, ${firstName}.` : 'Nothing on your desk yet.'}
@@ -49,14 +61,44 @@ export default function HomePage() {
         </p>
       </header>
 
+      {/* Three counts, straight off state the page already holds. */}
+      <motion.ul
+        variants={reduceVariants(listVariants, reduced)}
+        initial="initial"
+        animate="animate"
+        className="grid grid-cols-3 gap-3 sm:gap-4"
+      >
+        {stats.map((s) => (
+          <motion.li key={s.label} variants={reduceVariants(listItemVariants, reduced)}>
+            <button
+              onClick={() => navigate(s.to)}
+              className="group w-full rounded-lg border border-line bg-surface p-4 text-left shadow-sm transition-[box-shadow,border-color] duration-200 hover:border-accent-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper sm:p-5"
+            >
+              <s.icon
+                className="h-4 w-4 text-mute transition-colors group-hover:text-accent-600"
+                strokeWidth={1.8}
+                aria-hidden="true"
+              />
+              <p className="mt-3 font-display text-2xl font-extrabold tracking-tightest text-ink tnum sm:text-3xl">
+                {s.value}
+              </p>
+              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-mute">
+                {s.label}
+              </p>
+            </button>
+          </motion.li>
+        ))}
+      </motion.ul>
+
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
         {/* The one act */}
         <section>
           <h2 className="mb-4 font-mono text-[10px] uppercase tracking-widest text-mute">
             Start here
           </h2>
-          <div className="rounded-lg border border-line bg-[#FBF8F2] p-6">
-            <p className="font-display text-2xl font-semibold leading-snug tracking-tight text-ink">
+          <div className="relative overflow-hidden rounded-lg border border-line bg-surface p-6 shadow-sm">
+            <span className="grad-brand absolute inset-x-0 top-0 h-0.5" />
+            <p className="font-display text-2xl font-bold leading-snug tracking-tight text-ink">
               Find peers
             </p>
             <p className="mt-2 text-sm leading-relaxed text-mute">
@@ -64,6 +106,7 @@ export default function HomePage() {
             </p>
             <Button
               onClick={() => navigate('/matches')}
+              variant="gradient"
               className="mt-6 w-full"
               icon={<ArrowRight className="h-4 w-4" />}
             >
@@ -152,7 +195,7 @@ export default function HomePage() {
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
                       {chat.unreadCount > 0 && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-accent-500" />
+                        <span className="grad-brand h-2 w-2 rounded-full" />
                       )}
                       <span className="text-[10px] text-mute tnum">
                         {relativeTime(chat.lastMessageAt)}

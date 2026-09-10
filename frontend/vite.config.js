@@ -22,10 +22,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
-        // Keep three/R3F out of the entry chunk so it only downloads on /login.
         manualChunks(id) {
           if (!id.includes('node_modules')) return
-          if (/three|@react-three/.test(id)) return 'three'
           if (/react-router|react-dom|scheduler/.test(id)) return 'react'
           if (/@stomp|sockjs/.test(id)) return 'stomp'
         },

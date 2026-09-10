@@ -6,7 +6,83 @@ import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Spinner from '../../components/ui/Spinner';
 import { useUserStore } from '../../store/useUserStore';
+import { useThemeStore } from '../../store/useThemeStore';
 import { cn } from '../../lib/utils';
+
+/** Light/dark chooser. Two miniature renderings of the app, not a switch. */
+function AppearancePicker() {
+  const { theme, setTheme } = useThemeStore();
+
+  const options = [
+    {
+      value: 'light',
+      name: 'Light',
+      note: 'Cool off-white ground.',
+      shell: 'bg-[#F4F7FB] border-[#DDE6F1]',
+      rail: 'bg-[#0C1A31]',
+      card: 'bg-white border-[#DDE6F1]',
+      bar: 'bg-[#DDE6F1]',
+    },
+    {
+      value: 'dark',
+      name: 'Dark',
+      note: 'Deep navy, same layout.',
+      shell: 'bg-[#0A1428] border-[#1E3355]',
+      rail: 'bg-[#0C1A31]',
+      card: 'bg-[#101E38] border-[#1E3355]',
+      bar: 'bg-[#1E3355]',
+    },
+  ];
+
+  return (
+    <div className="grid gap-4 py-5 sm:grid-cols-2">
+      {options.map((o) => {
+        const active = theme === o.value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => setTheme(o.value)}
+            aria-pressed={active}
+            className={cn(
+              'group rounded-lg border p-3 text-left transition-all duration-200',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
+              active
+                ? 'border-accent-500 shadow-glow-accent'
+                : 'border-line hover:border-accent-300'
+            )}
+          >
+            {/* Miniature of the real shell: dark rail, light content well. */}
+            <div className={cn('flex h-24 gap-1.5 overflow-hidden rounded border p-1.5', o.shell)}>
+              <div className={cn('w-1/4 rounded-sm', o.rail)}>
+                <div className="grad-brand mx-1 mt-1.5 h-1 rounded-full" />
+                <div className="mx-1 mt-1.5 h-1 rounded-full bg-white/20" />
+                <div className="mx-1 mt-1 h-1 rounded-full bg-white/20" />
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5">
+                <div className={cn('h-6 rounded-sm border', o.card)} />
+                <div className={cn('flex-1 rounded-sm border p-1.5', o.card)}>
+                  <div className={cn('h-1 w-2/3 rounded-full', o.bar)} />
+                  <div className={cn('mt-1 h-1 w-1/2 rounded-full', o.bar)} />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-ink">{o.name}</span>
+              {active && (
+                <span className="font-mono text-[9px] uppercase tracking-widest text-accent-700">
+                  On
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-mute">{o.note}</p>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function Toggle({ id, checked, onChange, label, description }) {
   return (
@@ -25,12 +101,12 @@ function Toggle({ id, checked, onChange, label, description }) {
         className={cn(
           'relative mt-0.5 inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
-          checked ? 'border-accent-600 bg-accent-500' : 'border-line bg-ink/[0.06]'
+          checked ? 'grad-brand-cta border-transparent' : 'border-line bg-ink/[0.06]'
         )}
       >
         <span
           className={cn(
-            'pointer-events-none mt-[3px] inline-block h-4 w-4 transform rounded-full bg-[#FBF8F2] shadow transition-transform',
+            'pointer-events-none mt-[3px] inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform',
             checked ? 'translate-x-[22px]' : 'translate-x-[3px]'
           )}
         />
@@ -89,10 +165,19 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-12">
       <header>
-        <h1 className="font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
+        <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tightest text-ink">
           Settings
         </h1>
       </header>
+
+      <section>
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-widest text-mute">
+          Appearance
+        </h2>
+        <div className="border-y border-line">
+          <AppearancePicker />
+        </div>
+      </section>
 
       <section>
         <h2 className="mb-1 font-mono text-[10px] uppercase tracking-widest text-mute">

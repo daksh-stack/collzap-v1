@@ -6,7 +6,7 @@ export default function AdminGuard() {
 
   // We set isAdmin to true when admin logs in via AdminLogin
   if (!user || !user.isAdmin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   return <Outlet />;

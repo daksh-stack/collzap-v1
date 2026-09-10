@@ -2,6 +2,7 @@ import { Menu, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Avatar from '../ui/Avatar';
 import Dropdown from '../ui/Dropdown';
+import ThemeToggle from '../ui/ThemeToggle';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useUserStore } from '../../store/useUserStore';
 import { useNotificationStore } from '../../store/useNotificationStore';
@@ -27,7 +28,7 @@ export default function Topbar({ setMobileOpen }) {
   const firstName = profile?.name?.split(' ')[0];
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 flex-shrink-0 items-center border-b border-line bg-paper">
+    <header className="sticky top-0 z-10 flex h-14 flex-shrink-0 items-center border-b border-line bg-paper/85 backdrop-blur-md">
       <button
         type="button"
         aria-label="Open menu"
@@ -42,15 +43,17 @@ export default function Topbar({ setMobileOpen }) {
           {firstName ? <>Hey, <span className="text-ink">{firstName}</span></> : null}
         </p>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+
           <Link
             to="/notifications"
             aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
-            className="relative rounded p-1.5 text-mute transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+            className="relative grid h-8 w-8 place-items-center rounded text-mute transition-colors duration-150 hover:bg-accent-50 hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
-            <Bell className="h-5 w-5" strokeWidth={1.6} aria-hidden="true" />
+            <Bell className="h-[18px] w-[18px]" strokeWidth={1.7} aria-hidden="true" />
             {unreadCount > 0 && (
-              <span className="absolute right-1 top-1 block h-1.5 w-1.5 rounded-full bg-accent-500 ring-2 ring-paper" />
+              <span className="grad-brand absolute right-1.5 top-1.5 block h-2 w-2 rounded-full ring-2 ring-paper" />
             )}
           </Link>
 

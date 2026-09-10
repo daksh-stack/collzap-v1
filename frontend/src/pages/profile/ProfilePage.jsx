@@ -78,7 +78,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-5">
           <Avatar src={profile.profilePhotoUrl} name={profile.name} size="2xl" />
           <div className="min-w-0">
-            <h1 className="font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
+            <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tightest text-ink">
               {profile.name}
             </h1>
             <p className="mt-2 text-sm text-mute">{profile.email}</p>

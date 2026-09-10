@@ -21,7 +21,7 @@ const TextArea = forwardRef(({
         id={id}
         aria-invalid={!!error}
         className={cn(
-          'block w-full rounded border border-line bg-[#FBF8F2] px-3 py-2.5 text-sm text-ink',
+          'block w-full rounded border border-line bg-surface px-3 py-2.5 text-sm text-ink',
           'placeholder:text-mute/55 resize-y',
           'focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25',
           'disabled:cursor-not-allowed disabled:opacity-50',

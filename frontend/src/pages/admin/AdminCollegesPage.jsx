@@ -71,7 +71,7 @@ export default function AdminCollegesPage() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-line bg-[#FBF8F2]">
+            <tbody className="divide-y divide-line bg-surface">
               {rows.map((college) => (
                 <tr key={college.id}>
                   <td className="px-4 py-3 font-medium text-ink">{college.name}</td>

@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import ErrorBoundary from './components/ErrorBoundary';
+import { useThemeStore } from './store/useThemeStore';
 
 // Layouts & Guards
 import PublicLayout from './components/layout/PublicLayout';
@@ -14,6 +15,7 @@ import AdminGuard from './components/guards/AdminGuard';
 import Spinner from './components/ui/Spinner';
 
 // Pages (Lazy Loaded)
+const LandingPage = lazy(() => import('./pages/landing/LandingPage'));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const OtpVerifyPage = lazy(() => import('./pages/auth/OtpVerifyPage'));
 const AdminLoginPage = lazy(() => import('./pages/auth/AdminLoginPage'));
@@ -44,12 +46,18 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Global Suspense Fallback
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center">
+  <div className="flex min-h-screen items-center justify-center bg-paper text-accent-500">
     <Spinner size="lg" />
   </div>
 );
 
 function App() {
+  // The inline script in index.html already applied the class before paint;
+  // this keeps React's copy in sync if storage changed in another tab.
+  useEffect(() => {
+    useThemeStore.getState().syncTheme();
+  }, []);
+
   return (
     <ErrorBoundary>
       <Helmet>
@@ -57,6 +65,12 @@ function App() {
       </Helmet>
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          {/* Public marketing landing. AuthGuard treats "/" as public and
+              bounces signed-in users to /home (or /admin). */}
+          <Route element={<AuthGuard />}>
+            <Route path="/" element={<LandingPage />} />
+          </Route>
+
           {/* Public Routes (Login/Signup) */}
           <Route element={<AuthGuard />}>
             <Route element={<PublicLayout />}>
@@ -86,7 +100,7 @@ function App() {
           <Route element={<AuthGuard />}>
             <Route element={<OnboardingGuard />}>
               <Route element={<AppShell />}>
-                <Route path="/" element={<HomePage />} />
+                <Route path="/home" element={<HomePage />} />
                 <Route path="/chat" element={<ChatListPage />} />
                 <Route path="/chat/:roomId" element={<ChatRoomPage />} />
                 <Route path="/matches" element={<MatchesPage />} />

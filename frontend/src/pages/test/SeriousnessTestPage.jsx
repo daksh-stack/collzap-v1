@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
+import ScoreRing from '../../components/ui/ScoreRing';
+import Logo from '../../components/brand/Logo';
 import { useTestStore } from '../../store/useTestStore';
 import { cn } from '../../lib/utils';
 import { snappy, page, useReducedMotion, transition } from '../../lib/motion';
@@ -169,22 +171,31 @@ export default function SeriousnessTestPage() {
           transition={transition(page, reduced)}
           className="mx-auto max-w-2xl"
         >
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Paper taken up</p>
+          <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-mute">
+            <span className="grad-brand h-1 w-6 rounded-full" />
+            Paper taken up
+          </p>
 
-          <h1 className="mt-5 font-display text-5xl font-semibold leading-none tracking-tightest text-ink">
-            {result.overallLevel}
-          </h1>
+          <div className="mt-8 flex flex-col items-center gap-8 sm:flex-row sm:items-center sm:gap-12">
+            {result.overallScore !== undefined && result.overallScore !== null && (
+              <ScoreRing
+                value={result.overallScore}
+                label={result.overallLevel}
+                size={200}
+                className="shrink-0"
+              />
+            )}
 
-          {result.overallScore !== undefined && result.overallScore !== null && (
-            <p className="mt-3 font-display text-lg text-mute tnum">
-              {result.overallScore}
-            </p>
-          )}
-
-          {/* Copy comes from the API — no invented grade language. */}
-          {result.message && (
-            <p className="mt-6 max-w-lg text-sm leading-relaxed text-ink">{result.message}</p>
-          )}
+            <div className={result.overallScore == null ? '' : 'text-center sm:text-left'}>
+              <h1 className="text-grad font-display text-4xl font-extrabold leading-none tracking-tightest sm:text-5xl">
+                {result.overallLevel}
+              </h1>
+              {/* Copy comes from the API — no invented grade language. */}
+              {result.message && (
+                <p className="mt-5 max-w-md text-sm leading-relaxed text-mute">{result.message}</p>
+              )}
+            </div>
+          </div>
 
           {result.results?.length > 0 && (
             <dl className="mt-12 divide-y divide-line border-y border-line">
@@ -195,7 +206,7 @@ export default function SeriousnessTestPage() {
                     <span className="text-sm text-mute tnum">
                       {b.score}/{b.totalQuestions}
                     </span>
-                    <span className="font-display text-base font-semibold text-accent-700 min-w-24">
+                    <span className="min-w-24 font-display text-base font-bold text-accent-700">
                       {b.level}
                     </span>
                   </dd>
@@ -234,8 +245,8 @@ export default function SeriousnessTestPage() {
       {/* Invigilator's header */}
       <header className="border-b border-line">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-6 px-6 py-4">
-          <div className="flex items-baseline gap-3">
-            <span className="font-display text-base font-semibold tracking-tightest text-ink">CollZap</span>
+          <div className="flex items-center gap-3">
+            <Logo className="h-6" />
             <span className="hidden font-mono text-[10px] uppercase tracking-widest text-mute sm:inline">
               Assessment
             </span>
@@ -258,9 +269,9 @@ export default function SeriousnessTestPage() {
         </div>
 
         {/* progress rule */}
-        <div className="h-px w-full bg-line">
+        <div className="h-0.5 w-full bg-line">
           <motion.div
-            className="h-px bg-accent-500"
+            className="grad-brand h-0.5 rounded-full"
             animate={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
             transition={transition(snappy, reduced)}
           />
@@ -278,15 +289,16 @@ export default function SeriousnessTestPage() {
               transition={transition(page, reduced)}
             >
               <div className="mb-8 flex items-baseline gap-4">
-                <span className="font-display text-5xl leading-none text-line tnum">
+                <span className="font-display text-6xl font-extrabold leading-none tracking-tightest text-line tnum">
                   {String(currentQuestionIndex + 1).padStart(2, '0')}
                 </span>
-                <span className="font-mono text-[10px] uppercase tracking-widest text-accent-700">
+                <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-accent-700">
+                  <span className="grad-brand h-1 w-1 rounded-full" />
                   {currentQ.interestName}
                 </span>
               </div>
 
-              <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-[2.1rem]">
+              <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-ink sm:text-[2.1rem]">
                 {currentQ.questionText}
               </h1>
 
@@ -306,8 +318,10 @@ export default function SeriousnessTestPage() {
                     >
                       <span
                         className={cn(
-                          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border font-mono text-[10px] transition-colors',
-                          isOn ? 'border-accent-600 bg-accent-600 text-white' : 'border-line text-mute'
+                          'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-mono text-[10px] font-semibold transition-colors',
+                          isOn
+                            ? 'grad-brand-cta border-transparent text-white'
+                            : 'border-line text-mute group-hover:border-accent-400 group-hover:text-accent-700'
                         )}
                       >
                         {String.fromCharCode(65 + index)}
@@ -353,7 +367,7 @@ export default function SeriousnessTestPage() {
               className="px-8 text-center"
             >
               <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Next section</p>
-              <p className="mt-4 font-display text-5xl font-semibold tracking-tightest text-ink">
+              <p className="text-grad mt-4 font-display text-5xl font-extrabold tracking-tightest">
                 {divider}
               </p>
             </motion.div>

@@ -38,7 +38,7 @@ export default function ChatListPage() {
     <div className="space-y-10">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
+          <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tightest text-ink">
             Threads
           </h1>
           <p className="mt-3 text-sm text-mute">
@@ -112,7 +112,7 @@ export default function ChatListPage() {
                       {relativeTime(chat.lastMessageAt)}
                     </span>
                     {unread && (
-                      <span className="rounded-sm bg-accent-500 px-1.5 py-0.5 font-mono text-[10px] leading-none text-white tnum">
+                      <span className="grad-brand-cta rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-none text-white tnum">
                         {chat.unreadCount}
                       </span>
                     )}

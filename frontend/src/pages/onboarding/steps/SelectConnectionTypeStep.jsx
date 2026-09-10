@@ -89,21 +89,21 @@ export default function SelectConnectionTypeStep() {
                       whileTap={reduced ? undefined : { scale: 0.99 }}
                       transition={transition(snappy, reduced)}
                       className={cn(
-                        'relative rounded-lg border p-5 text-left transition-colors duration-150',
+                        'relative rounded-lg border p-5 text-left transition-[background-color,border-color,box-shadow] duration-200',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
-                        isOn ? 'border-accent-500 bg-accent-50' : 'border-line bg-[#FBF8F2] hover:border-ink/25'
+                        isOn ? 'border-accent-500 bg-accent-50 shadow-glow-accent' : 'border-line bg-surface shadow-sm hover:border-accent-300 hover:shadow-md'
                       )}
                     >
                       {isOn && (
                         <motion.span
                           layoutId={reduced ? undefined : `conn-${pt}`}
                           transition={transition(snappy, reduced)}
-                          className="absolute inset-x-0 top-0 h-0.5 rounded-t-lg bg-accent-500"
+                          className="grad-brand absolute inset-x-0 top-0 h-0.5 rounded-t-lg"
                         />
                       )}
                       <h3
                         className={cn(
-                          'font-display text-xl font-semibold tracking-tight',
+                          'font-display text-xl font-bold tracking-tight',
                           isOn ? 'text-accent-800' : 'text-ink'
                         )}
                       >

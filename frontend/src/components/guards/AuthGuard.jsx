@@ -19,7 +19,9 @@ export default function AuthGuard() {
     }
   }, [isAuthenticated, isAdmin]);
 
-  const isPublicRoute = location.pathname === '/login' ||
+  // `/` is the public marketing landing. The student app home is `/home`.
+  const isPublicRoute = location.pathname === '/' ||
+                        location.pathname === '/login' ||
                         location.pathname === '/verify-otp' ||
                         location.pathname === '/admin/login';
 
@@ -30,7 +32,7 @@ export default function AuthGuard() {
 
   if (isAuthenticated && isPublicRoute) {
     // Already signed in: send admins to their console, students to the app.
-    return <Navigate to={isAdmin ? '/admin' : '/'} replace />;
+    return <Navigate to={isAdmin ? '/admin' : '/home'} replace />;
   }
 
   // An admin session has no student onboarding state, so keep it out of the

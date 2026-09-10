@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import Logo from '../brand/Logo';
+import ThemeToggle from '../ui/ThemeToggle';
 import { useAuthStore } from '../../store/useAuthStore';
 
 const navigation = [
@@ -48,7 +50,7 @@ export default function AdminLayout() {
                 )}
               >
                 {isActive && (
-                  <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-sm bg-accent-500" />
+                  <span className="grad-brand absolute left-0 top-2 bottom-2 w-0.5 rounded-full" />
                 )}
                 {item.name}
               </Link>
@@ -68,9 +70,7 @@ export default function AdminLayout() {
           <div className="fixed inset-0 z-40 flex">
             <div className="relative flex w-full max-w-[16rem] flex-1 flex-col border-r border-line bg-paper pt-5 pb-4">
               <div className="flex items-center justify-between px-5">
-                <span className="font-display text-base font-semibold tracking-tight text-ink">
-                  CollZap
-                </span>
+                <Logo className="h-6" />
                 <button
                   type="button"
                   aria-label="Close menu"
@@ -91,11 +91,12 @@ export default function AdminLayout() {
       {/* Desktop rail */}
       <div className="hidden border-r border-line bg-paper md:fixed md:inset-y-0 md:flex md:w-52 md:flex-col">
         <div className="flex flex-1 flex-col overflow-y-auto pt-6 pb-4">
-          <div className="flex items-baseline justify-between px-5">
-            <span className="font-display text-base font-semibold tracking-tight text-ink">
-              CollZap
-            </span>
-            <span className="font-mono text-[9px] uppercase tracking-widest text-mute">Ops</span>
+          <div className="flex items-center justify-between px-5">
+            <Logo className="h-6" />
+            <div className="flex items-center gap-1">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-mute">Ops</span>
+              <ThemeToggle className="-mr-1 h-7 w-7" />
+            </div>
           </div>
           <div className="mt-7 flex flex-1 flex-col">
             <NavLinks />

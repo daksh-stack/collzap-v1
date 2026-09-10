@@ -1,0 +1,163 @@
+COLLZAP — COMPLETE FEATURE LIST
+collzap.com
+
+=================================
+1. AUTHENTICATION & VERIFICATION
+=================================
+- Welcome Carousel (3 slides + skip button)
+- Sign Up Screen (Sign Up + Login both options)
+- College Email OTP verification
+- Document Upload (Fee slip / ID card)
+- Admin manual verification (approve/reject)
+- Verification pending state (clock icon on match tab)
+- Login flow for existing users
+
+=================================
+2. PROFILE SETUP
+=================================
+- Profile photo upload
+- Name field (auto-filled, editable)
+- College name field (mandatory)
+- Year of study dropdown
+- City field
+- Story Prompt 1: One thing I want to achieve in college years
+- Story Prompt 2: I am most serious about
+- Story Prompt 3: The kind of peer I am looking for
+- Proof of work link (optional)
+- Profile completion bar
+- Profile preview screen
+- Edit profile (after setup)
+
+=================================
+3. PROJECT TYPE SELECTION
+=================================
+- Long-Term Peer card
+- Short-Term Buddy card
+- Both selectable simultaneously
+- Persistent on home screen (re-select anytime)
+
+=================================
+4. INTEREST SELECTION
+=================================
+- Long-Term: 16 interests grid (Coding, Startups, Design, Content Creation, Public Speaking, Music, Photography, Finance, Fitness, Exam Prep, Research, Gaming, Social Work, Acting, Writing, Dance)
+- Long-Term: Max 2 interests selectable
+- Short-Term: 7 activities (English Speaking, Gym Buddy, Book Club, Sports Team, Side Project, Skill Sprint, Exam Prep Partner)
+- Short-Term: Max 1 activity selectable
+- Separate lists for Long-Term and Short-Term
+- Optional sub-tag (free text — 30 chars)
+- Live counter (X of 2 selected)
+- Can't find interest — feedback link
+
+=================================
+5. SERIOUSNESS TEST (LONG-TERM ONLY)
+=================================
+- 25 questions total (combined for both interests)
+- Progress bar (Question X of 25)
+- MCQ format (4 options per question)
+- Silent background timer (auto-submit on expiry)
+- Interest divider screen between interests
+- Loading animation after last question
+- Randomized question bank
+- Retake lock (30 days)
+- Back button restarts test
+- Short-Term users skip test (self-declare level)
+
+=================================
+6. SCORE RESULT
+=================================
+- Animated circular score ring
+- Level label (Beginner / Learning / Intermediate / Expert)
+- Personalized message per level
+- Interest level tags (per interest)
+- Find My Peers button
+- Retake in 30 days link (with exact date)
+
+=================================
+7. CONNECTION TYPE SELECTION
+=================================
+- 1-on-1 card
+- Short Group card (up to 4 people)
+- Society card (Long-Term only)
+- Single selection only
+- Same type applies to all interests
+
+=================================
+8. AUTO MATCHING
+=================================
+- Matching algorithm (same college + interest + level + connection type)
+- Loading animation (Finding your people)
+- Match found — direct chat opens instantly
+- Queue message if no match
+- Auto check every 30 seconds for new matches
+- Short Group opens at 2 members
+- Members auto-added to group up to 4
+- Society auto-join instantly
+- Level tolerance (plus minus 1 level)
+
+=================================
+9. CHAT SYSTEM
+=================================
+- 1-on-1 private chat
+- Short Group chat (2 to 4 members)
+- Society community chat
+- Real-time messages (Supabase Realtime)
+- Message send and receive
+- Read receipts (single tick, double tick, blue tick)
+- Chat list on Chat tab (with preview and time)
+- Empty state message (You are now connected. Say hello!)
+- Chat history loads on open
+- Only matched users can access chatroom
+
+=================================
+10. NAVIGATION & UI
+=================================
+- Bottom navigation (Home, Circle, Chat, Profile)
+- Home tab (matches + peer type options)
+- Circle tab (all connections and match status)
+- Chat tab (all active chats list)
+- Profile tab (profile + settings)
+- Back button on all screens
+- Desktop suggestion notification
+- Feature descriptions shown only first time
+
+=================================
+11. SETTINGS
+=================================
+- Edit profile
+- Notification settings (toggle on/off)
+- Privacy and Safety (block, report, visibility)
+- Rules and Support (guidelines + contact)
+- Logout
+- Account deletion
+
+=================================
+12. ADMIN PANEL (/admin)
+=================================
+- Password protected dashboard
+- All users table (name, email, college, status)
+- Pending verifications queue
+- Approve / Reject document uploads
+- Matches table (with user names)
+- Manual match creation
+- Unmatch feature
+- Waiting queue view (with wait time)
+
+=================================
+13. TECHNICAL
+=================================
+- Supabase Realtime for live messages
+- Email OTP via Resend (otp@collzap.com)
+- Score calculation server-side
+- Skeleton loaders on all screens
+- Mobile responsive
+- College filter in matching
+- RLS security policies
+- Push notifications (match + message alerts)
+
+=================================
+CONTACT
+=================================
+Nitish Kumar — Founder & CEO
+nitishkumar@collzap.com
++91 7056749613
+collzap.com

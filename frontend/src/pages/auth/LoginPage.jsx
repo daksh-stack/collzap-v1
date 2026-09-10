@@ -50,7 +50,7 @@ export default function LoginPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={transition(page, reduced)}
     >
-      <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tightest text-ink">
+      <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tightest text-ink">
         {isSignup ? 'Get on the list.' : 'Back again.'}
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-mute">

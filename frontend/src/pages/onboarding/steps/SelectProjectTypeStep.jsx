@@ -74,11 +74,11 @@ export default function SelectProjectTypeStep() {
               transition={transition(snappy, reduced)}
               className={cn(
                 'group relative flex min-h-[13rem] flex-col justify-between rounded-lg border p-6 text-left',
-                'transition-colors duration-150',
+                'transition-[background-color,border-color,box-shadow] duration-200',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
                 selected
-                  ? 'border-accent-500 bg-accent-50'
-                  : 'border-line bg-[#FBF8F2] hover:border-ink/25'
+                  ? 'border-accent-500 bg-accent-50 shadow-glow-accent'
+                  : 'border-line bg-surface shadow-sm hover:border-accent-300 hover:shadow-md'
               )}
             >
               <div className="flex items-start justify-between gap-4">
@@ -88,7 +88,7 @@ export default function SelectProjectTypeStep() {
                 <span
                   className={cn(
                     'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border transition-colors',
-                    selected ? 'border-accent-600 bg-accent-600' : 'border-line'
+                    selected ? 'grad-brand-cta border-transparent' : 'border-line'
                   )}
                 >
                   {selected && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
@@ -98,7 +98,7 @@ export default function SelectProjectTypeStep() {
               <div>
                 <h2
                   className={cn(
-                    'font-display text-3xl font-semibold tracking-tight',
+                    'font-display text-3xl font-bold tracking-tight',
                     selected ? 'text-accent-800' : 'text-ink'
                   )}
                 >

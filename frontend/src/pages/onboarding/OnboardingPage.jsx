@@ -39,7 +39,7 @@ export default function OnboardingPage() {
 
   // READY still leaves onboarding; the guard normally catches this first.
   useEffect(() => {
-    if (step === 'READY') navigate('/', { replace: true });
+    if (step === 'READY') navigate('/home', { replace: true });
   }, [step, navigate]);
 
   if (loading && !onboarding) {
