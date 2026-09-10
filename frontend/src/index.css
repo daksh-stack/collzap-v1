@@ -2,10 +2,147 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * CollZap design tokens.
+ *
+ * Colours are stored as "R G B" channels so Tailwind's <alpha-value> works:
+ * `bg-accent-500`, `text-ink/70` and `bg-ink/[0.03]` all resolve through these.
+ * Dark mode is this file's `.dark` block and nothing else — no `dark:` classes
+ * are needed at call sites.
+ *
+ * Values were sampled from the brand artwork in /public:
+ *   wordmark navy  #072B5F   (wordmark_only.png)
+ *   gradient       #0B5CC7 → #0093D2 → #00B8BC → #06C8AD   (icon_only.png)
+ *   dark ground    #0A1428   (layout_app_icon_dark.png)
+ */
+
 @layer base {
   :root {
-    /* Paper grain, drawn once as a tiled SVG rather than an image request. */
-    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    color-scheme: light;
+
+    /* --- Brand constants (identical in both themes) --- */
+    --brand-navy: #072B5F;
+    --brand-gradient: linear-gradient(100deg, #0B5CC7 0%, #0093D2 46%, #00B8BC 74%, #06C8AD 100%);
+    --brand-gradient-deep: linear-gradient(100deg, #0B3D91 0%, #0B5CC7 40%, #0093D2 100%);
+    /*
+     * Button gradient. Deliberately stops short of the teal end: white label
+     * text needs 4.5:1, and #06C8AD only gives 2.6:1. This ramp holds 4.55:1
+     * at its lightest point. The full gradient is for large surfaces only.
+     */
+    --brand-gradient-cta: linear-gradient(100deg, #0A3F8C 0%, #0B63C9 52%, #0A7FA8 100%);
+    --brand-gradient-soft: linear-gradient(100deg, rgb(11 92 199 / 0.12) 0%, rgb(6 200 173 / 0.12) 100%);
+
+    /* --- Ground --- */
+    --c-paper: 244 247 251;
+    --c-surface: 255 255 255;
+    --c-surface-2: 238 243 249;
+    --c-ink: 10 31 68;
+    --c-mute: 74 85 104;
+    --c-line: 221 230 241;
+
+    /* --- Status --- */
+    --c-good: 8 144 130;
+    --c-wait: 176 119 15;
+    --c-bad: 192 57 43;
+
+    /* --- Accent: cobalt blue, the primary interactive ramp --- */
+    --c-accent-50: 239 246 255;
+    --c-accent-100: 220 234 253;
+    --c-accent-200: 182 212 250;
+    --c-accent-300: 127 179 243;
+    --c-accent-400: 46 138 224;
+    --c-accent-500: 11 99 201;
+    --c-accent-600: 10 82 168;
+    --c-accent-700: 10 66 135;
+    --c-accent-800: 11 53 107;
+    --c-accent-900: 8 42 84;
+    --c-accent-950: 6 26 54;
+
+    /* --- Teal: the gradient's warm end. Positive states, highlights. --- */
+    --c-teal-50: 230 251 247;
+    --c-teal-100: 196 245 236;
+    --c-teal-200: 141 235 220;
+    --c-teal-300: 78 220 200;
+    --c-teal-400: 22 201 176;
+    --c-teal-500: 6 200 173;
+    --c-teal-600: 8 144 130;
+    --c-teal-700: 10 113 104;
+    --c-teal-800: 12 90 83;
+    --c-teal-900: 12 74 69;
+    --c-teal-950: 3 43 40;
+
+    /* --- Elevation. Cool navy, never neutral black. --- */
+    --sh-hairline: 0 0 0 1px rgb(10 31 68 / 0.08);
+    --sh-sm: 0 1px 2px rgb(10 31 68 / 0.06), 0 0 0 1px rgb(10 31 68 / 0.04);
+    --sh-soft: 0 2px 10px rgb(10 31 68 / 0.06), 0 0 0 1px rgb(10 31 68 / 0.04);
+    --sh-md: 0 4px 14px rgb(10 31 68 / 0.07), 0 0 0 1px rgb(10 31 68 / 0.04);
+    --sh-lg: 0 10px 30px rgb(10 31 68 / 0.10), 0 0 0 1px rgb(10 31 68 / 0.04);
+    --sh-xl: 0 20px 50px rgb(10 31 68 / 0.13), 0 0 0 1px rgb(10 31 68 / 0.04);
+    --sh-glow-accent: 0 8px 26px rgb(11 99 201 / 0.26);
+    --sh-glow-teal: 0 8px 26px rgb(6 200 173 / 0.26);
+    --sh-rim: inset 0 1px 0 rgb(255 255 255 / 0.7);
+
+    /* Mesh wash strength, lifted in dark. */
+    --mesh-a: 0.10;
+    --mesh-b: 0.10;
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --c-paper: 10 20 40;
+    --c-surface: 16 30 56;
+    --c-surface-2: 21 40 69;
+    --c-ink: 232 240 254;
+    --c-mute: 159 179 208;
+    --c-line: 30 51 85;
+
+    --c-good: 22 201 176;
+    --c-wait: 224 168 58;
+    --c-bad: 240 112 94;
+
+    /*
+     * Re-pointed, not merely darkened: the tint end becomes deep navy-blue and
+     * the ink end becomes light blue, so `bg-accent-50` + `text-accent-700`
+     * stays legible. 500/600 remain vivid brand blue for fills.
+     */
+    --c-accent-50: 13 30 59;
+    --c-accent-100: 18 39 71;
+    --c-accent-200: 23 50 87;
+    --c-accent-300: 43 90 147;
+    --c-accent-400: 78 155 234;
+    --c-accent-500: 43 127 224;
+    --c-accent-600: 78 155 234;
+    --c-accent-700: 143 194 245;
+    --c-accent-800: 182 216 250;
+    --c-accent-900: 214 233 253;
+    --c-accent-950: 239 246 255;
+
+    --c-teal-50: 8 42 44;
+    --c-teal-100: 11 58 57;
+    --c-teal-200: 14 74 71;
+    --c-teal-300: 18 117 107;
+    --c-teal-400: 22 201 176;
+    --c-teal-500: 6 200 173;
+    --c-teal-600: 47 217 192;
+    --c-teal-700: 111 231 211;
+    --c-teal-800: 165 241 228;
+    --c-teal-900: 207 248 240;
+    --c-teal-950: 230 251 247;
+
+    /* Depth on dark comes from black shadow plus a cool blue rim light. */
+    --sh-hairline: 0 0 0 1px rgb(120 170 255 / 0.10);
+    --sh-sm: 0 1px 2px rgb(0 0 0 / 0.40), 0 0 0 1px rgb(120 170 255 / 0.07);
+    --sh-soft: 0 2px 12px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(120 170 255 / 0.07);
+    --sh-md: 0 4px 18px rgb(0 0 0 / 0.50), 0 0 0 1px rgb(120 170 255 / 0.08);
+    --sh-lg: 0 12px 34px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(120 170 255 / 0.09);
+    --sh-xl: 0 24px 56px rgb(0 0 0 / 0.60), 0 0 0 1px rgb(120 170 255 / 0.10);
+    --sh-glow-accent: 0 8px 30px rgb(43 127 224 / 0.38);
+    --sh-glow-teal: 0 8px 30px rgb(6 200 173 / 0.34);
+    --sh-rim: inset 0 1px 0 rgb(150 195 255 / 0.10);
+
+    --mesh-a: 0.18;
+    --mesh-b: 0.16;
   }
 
   html {
@@ -14,44 +151,139 @@
 
   body {
     @apply bg-paper text-ink antialiased font-sans;
-    font-feature-settings: "kern" 1, "liga" 1;
+    font-feature-settings: "kern" 1, "liga" 1, "cv11" 1;
   }
 
-  /* Display face wants optical sizing and tighter tracking at headline sizes. */
   .font-display {
     font-optical-sizing: auto;
-    font-variation-settings: "SOFT" 0, "WONK" 0;
   }
 
   ::selection {
     @apply bg-accent-200 text-ink;
   }
 
-  /* One focus treatment everywhere, in the accent. */
+  /* One focus treatment everywhere. Both tokens flip with the theme. */
   :focus-visible {
     @apply outline-none ring-2 ring-accent-500 ring-offset-2 ring-offset-paper;
+  }
+
+  /* Scrollbars follow the theme instead of punching a light hole in dark mode. */
+  * {
+    scrollbar-color: rgb(var(--c-line)) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--c-line));
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--c-mute) / 0.5);
+    background-clip: content-box;
   }
 }
 
 @layer components {
-  /* Paper surface: the default card ground. Warm, hairline-bordered, no blob radius. */
+  /* The default card ground. */
   .surface {
-    @apply bg-[#FBF8F2] border border-line rounded-lg;
+    @apply bg-surface border border-line rounded-lg;
   }
 
-  .grain::before {
+  /* Opt-in inner rim light for hero/elevated cards. */
+  .rim {
+    box-shadow: var(--sh-rim);
+  }
+
+  /* The brand gradient as a fill. Custom class names so tailwind-merge never
+     mistakes them for a bg-color utility and drops them. */
+  .grad-brand {
+    background-image: var(--brand-gradient);
+  }
+
+  .grad-brand-deep {
+    background-image: var(--brand-gradient-deep);
+  }
+
+  .grad-brand-soft {
+    background-image: var(--brand-gradient-soft);
+  }
+
+  .grad-brand-cta {
+    background-image: var(--brand-gradient-cta);
+  }
+
+  /* Gradient text. Needs an explicit fallback colour for print/forced-colors. */
+  .text-grad {
+    background-image: var(--brand-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /*
+   * Gradient border that respects border-radius. The padding-box layer paints
+   * the surface, the border-box layer shows through as the 1px edge.
+   */
+  .grad-border {
+    border: 1px solid transparent;
+    background-image:
+      linear-gradient(rgb(var(--c-surface)), rgb(var(--c-surface))),
+      var(--brand-gradient);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  /* Soft brand wash for hero sections. Host needs `relative`. */
+  .mesh::before {
     content: '';
     position: absolute;
     inset: 0;
-    background-image: var(--grain);
     pointer-events: none;
-    mix-blend-mode: multiply;
+    background:
+      radial-gradient(58% 48% at 10% 6%, rgb(11 92 199 / var(--mesh-a)), transparent 70%),
+      radial-gradient(52% 46% at 90% 20%, rgb(6 200 173 / var(--mesh-b)), transparent 70%);
   }
 
   /* Tabular figures for anything that ticks (timers, counters, scores). */
   .tnum {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
+  }
+
+  /*
+   * Keyframes live here, not in tailwind.config.js: Tailwind only emits a
+   * config keyframe when its `animate-*` utility appears in the markup, and
+   * .sheen references this animation from CSS.
+   */
+  @keyframes sheen-sweep {
+    100% { transform: translateX(100%); }
+  }
+
+  /* Skeleton sheen. Host needs `relative overflow-hidden`. */
+  .sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--c-surface) / 0.55),
+      transparent
+    );
+    animation: sheen-sweep 1.8s infinite;
   }
 }
 

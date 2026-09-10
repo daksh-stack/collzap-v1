@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Send, Check, CheckCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Spinner from '../../components/ui/Spinner';
+import Button from '../../components/ui/Button';
 import { useChatStore } from '../../store/useChatStore';
 import { webSocketService } from '../../services/websocket';
 import { snappy, useReducedMotion, transition } from '../../lib/motion';
@@ -116,7 +117,7 @@ export default function ChatRoomPage() {
   const isGroup = memberCount > 2;
 
   return (
-    <div className="flex h-[calc(100vh-9rem)] flex-col overflow-hidden rounded-lg border border-line bg-[#FBF8F2]">
+    <div className="flex h-[calc(100vh-9rem)] flex-col overflow-hidden rounded-lg border border-line bg-surface">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-3">
         <button
@@ -179,8 +180,8 @@ export default function ChatRoomPage() {
                     className={cn(
                       'rounded-lg px-3.5 py-2.5',
                       isMine
-                        ? 'bg-accent-500 text-white'
-                        : 'border border-line bg-paper text-ink'
+                        ? 'grad-brand-cta text-white shadow-sm'
+                        : 'border border-line bg-surface-2 text-ink'
                     )}
                   >
                     <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
@@ -222,16 +223,18 @@ export default function ChatRoomPage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="max-h-32 flex-1 resize-none rounded border border-line bg-paper px-3 py-2.5 text-sm text-ink placeholder:text-mute/55 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25"
+            className="max-h-32 flex-1 resize-none rounded border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-mute/55 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25"
           />
-          <button
+          <Button
             onClick={handleSend}
             disabled={!content.trim() || sending}
+            loading={sending}
+            variant="gradient"
             aria-label="Send message"
-            className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded bg-accent-500 text-white transition-colors hover:bg-accent-600 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+            className="mb-0.5 h-10 w-10 shrink-0 p-0"
           >
-            {sending ? <Spinner size="sm" className="text-current" /> : <Send className="h-4 w-4" aria-hidden="true" />}
-          </button>
+            {!sending && <Send className="h-4 w-4" aria-hidden="true" />}
+          </Button>
         </div>
         <p className="mt-1.5 text-[10px] text-mute/70">Enter sends · Shift+Enter for a new line</p>
       </div>

@@ -24,9 +24,14 @@ const Button = forwardRef(({
   const [magnet, setMagnet] = useState({ x: 0, y: 0 });
 
   const variants = {
-    primary: 'bg-accent-500 text-white hover:bg-accent-600 shadow-sm',
-    secondary: 'bg-transparent text-ink border border-line hover:border-ink/40 hover:bg-ink/[0.03]',
-    ghost: 'bg-transparent text-mute hover:text-ink hover:bg-ink/[0.04]',
+    // Solid cobalt, not the full gradient: white label text needs 4.5:1 and
+    // the gradient's teal end only reaches 2.6:1. accent-500 gives 5.0:1.
+    primary: 'bg-accent-500 text-white hover:bg-accent-600 shadow-sm hover:shadow-glow-accent',
+    // The brand gradient, trimmed to a range that keeps white text legible.
+    // For prominent CTAs — hero, "find peers", final calls to action.
+    gradient: 'grad-brand-cta text-white shadow-sm hover:shadow-glow-accent hover:brightness-[1.07]',
+    secondary: 'bg-surface text-ink border border-line hover:border-accent-400 hover:bg-accent-50 shadow-sm',
+    ghost: 'bg-transparent text-mute hover:text-ink hover:bg-ink/[0.05]',
     danger: 'bg-bad text-white hover:brightness-110 shadow-sm',
   };
   // Prompt 1 alias — pages pass variant="outline".
@@ -74,8 +79,8 @@ const Button = forwardRef(({
       transition={snappy}
       whileTap={reduced || disabled || loading ? undefined : { scale: 0.98 }}
       className={cn(
-        'inline-flex items-center justify-center rounded font-medium tracking-tight',
-        'transition-colors duration-150',
+        'inline-flex items-center justify-center rounded font-semibold tracking-tight',
+        'transition-[background-color,border-color,color,box-shadow,filter] duration-200',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
         'disabled:opacity-45 disabled:pointer-events-none',
         variants[variant],

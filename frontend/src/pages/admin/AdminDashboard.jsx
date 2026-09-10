@@ -38,9 +38,9 @@ export default function AdminDashboard() {
                 ? {
                     onClick: () => navigate(tile.link),
                     className:
-                      'bg-[#FBF8F2] px-5 py-6 text-left transition-colors hover:bg-ink/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500',
+                      'bg-surface px-5 py-6 text-left transition-colors hover:bg-ink/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500',
                   }
-                : { className: 'bg-[#FBF8F2] px-5 py-6 text-left' })}
+                : { className: 'bg-surface px-5 py-6 text-left' })}
             >
               <p className="font-mono text-[10px] uppercase tracking-widest text-mute">
                 {tile.label}
@@ -49,7 +49,7 @@ export default function AdminDashboard() {
                 <div className="mt-2 h-8 w-16 animate-pulse rounded-sm bg-line" />
               ) : (
                 <p
-                  className={`mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight ${
+                  className={`mt-2 font-display text-3xl font-bold tabular-nums tracking-tight ${
                     tile.alert && value > 0 ? 'text-accent-700' : 'text-ink'
                   }`}
                 >

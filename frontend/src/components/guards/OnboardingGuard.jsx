@@ -31,7 +31,7 @@ export default function OnboardingGuard() {
 
   if (nextStep === 'READY' && isStrictOnboardingRoute) {
     // Fully ready user trying to access onboarding
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   return <Outlet />;

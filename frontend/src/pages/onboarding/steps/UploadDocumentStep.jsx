@@ -45,9 +45,9 @@ export default function UploadDocumentStep() {
               transition={transition(snappy, reduced)}
               aria-pressed={selected}
               className={cn(
-                'rounded-lg border p-4 text-left transition-colors duration-150',
+                'rounded-lg border p-4 text-left transition-[background-color,border-color,box-shadow] duration-200',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
-                selected ? 'border-accent-500 bg-accent-50' : 'border-line bg-[#FBF8F2] hover:border-ink/25'
+                selected ? 'border-accent-500 bg-accent-50 shadow-glow-accent' : 'border-line bg-surface shadow-sm hover:border-accent-300 hover:shadow-md'
               )}
             >
               <span className={cn('block font-display text-base font-semibold tracking-tight', selected ? 'text-accent-800' : 'text-ink')}>
@@ -125,11 +125,11 @@ function DocumentPath() {
                 transition={transition(snappy, reduced)}
                 aria-pressed={selected}
                 className={cn(
-                  'rounded-lg border p-4 text-left transition-colors duration-150',
+                  'rounded-lg border p-4 text-left transition-[background-color,border-color,box-shadow] duration-200',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
                   selected
-                    ? 'border-accent-500 bg-accent-50'
-                    : 'border-line bg-[#FBF8F2] hover:border-ink/25'
+                    ? 'border-accent-500 bg-accent-50 shadow-glow-accent'
+                    : 'border-line bg-surface shadow-sm hover:border-accent-300 hover:shadow-md'
                 )}
               >
                 <span className={cn(

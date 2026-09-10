@@ -24,22 +24,24 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-          <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center">
-            <div className="mx-auto w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
-              <AlertTriangle className="w-8 h-8" />
+        <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+          <div className="w-full max-w-md rounded-lg border border-line bg-surface p-8 text-center shadow-lg">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-lg bg-bad/10 text-bad">
+              <AlertTriangle className="h-8 w-8" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Oops! Something went wrong</h1>
-            <p className="text-gray-500 mb-6">
-              We're sorry, an unexpected error occurred while loading this page. 
-              {process.env.NODE_ENV === 'development' && (
-                <span className="block mt-4 text-xs text-left bg-gray-100 p-2 rounded text-red-500 overflow-auto max-h-32">
-                  {this.state.error?.toString()}
-                </span>
+            <h1 className="mb-2 font-display text-2xl font-bold tracking-tight text-ink">
+              Something went wrong
+            </h1>
+            <div className="mb-6 text-sm text-mute">
+              <p>An unexpected error stopped this page from loading.</p>
+              {import.meta.env.DEV && this.state.error && (
+                <pre className="mt-4 max-h-32 overflow-auto rounded bg-surface-2 p-2 text-left font-mono text-[11px] text-bad">
+                  {this.state.error.toString()}
+                </pre>
               )}
-            </p>
+            </div>
             <Button onClick={this.handleReset} className="w-full">
-              Try Again
+              Try again
             </Button>
           </div>
         </div>

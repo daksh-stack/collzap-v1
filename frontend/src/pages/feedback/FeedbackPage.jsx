@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, CheckCircle2, MessageSquarePlus, Sparkles, Lightbulb } from 'lucide-react';
+import { Send, CheckCircle2, Sparkles, Lightbulb } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
@@ -78,30 +78,29 @@ export default function FeedbackPage() {
   return (
     <div className="max-w-2xl space-y-10">
       <header>
-        <div className="flex items-center gap-2 text-accent-600 font-mono text-[11px] uppercase tracking-widest">
-          <MessageSquarePlus className="h-4 w-4" />
-          <span>Student Voices</span>
-        </div>
-        <h1 className="mt-2 font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
-          Feedback & Suggestions
+        <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-mute">
+          <span className="grad-brand h-1 w-6 rounded-full" />
+          Ideas
+        </p>
+        <h1 className="mt-4 font-display text-4xl font-extrabold leading-tight tracking-tightest text-ink">
+          Something missing?
         </h1>
-        <p className="mt-3 text-sm leading-relaxed text-mute">
-          CollZap is tailored to your campus. If a domain, skill, or tool is missing from the catalog,
-          or if you have ideas to improve collaboration, let the team know.
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-mute">
+          If the interest you care about is not in the catalog, say so. Every note
+          goes to the people who decide what gets added.
         </p>
       </header>
 
       {submitted ? (
-        <Card className="border-accent-500/30 bg-[#FBF8F2] p-8 text-center sm:p-10">
+        <Card className="border-accent-500/30 bg-surface p-8 text-center sm:p-10">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent-500/10 text-accent-600">
             <CheckCircle2 className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight text-ink">
-            Note Received
+          <h2 className="mt-4 font-display text-2xl font-bold tracking-tight text-ink">
+            Noted.
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-mute max-w-md mx-auto">
-            Your suggestion was delivered to the campus administrators. We review every submission
-            to expand interest options and refine matchmaking.
+            It went straight to the people who decide what gets added to the catalog.
           </p>
 
           {lastSubmittedText && (
@@ -123,8 +122,8 @@ export default function FeedbackPage() {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Step 1: Track Selection */}
           <section className="space-y-3">
-            <label className="block font-mono text-[10px] uppercase tracking-widest text-mute">
-              1. Project Track
+            <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-mute"><span className="grad-brand h-1 w-5 rounded-full" />
+              Project track
             </label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {TRACKS.map((t) => {
@@ -135,19 +134,20 @@ export default function FeedbackPage() {
                     type="button"
                     onClick={() => setTrack(t.id)}
                     className={cn(
-                      'flex flex-col items-start rounded-lg border p-4 text-left transition-all',
+                      'flex flex-col items-start rounded-lg border p-4 text-left',
+                      'transition-[background-color,border-color,box-shadow] duration-200',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500',
                       selected
-                        ? 'border-accent-500 bg-accent-500/[0.04] shadow-sm'
-                        : 'border-line bg-[#FBF8F2] hover:border-line/80 hover:bg-ink/[0.02]'
+                        ? 'border-accent-500 bg-accent-50 shadow-glow-accent'
+                        : 'border-line bg-surface shadow-sm hover:border-accent-300 hover:shadow-md'
                     )}
                   >
-                    <div className="flex items-center justify-between w-full">
+                    <div className="flex w-full items-center justify-between">
                       <span className={cn('text-sm font-semibold', selected ? 'text-accent-700' : 'text-ink')}>
                         {t.name}
                       </span>
                       {selected && (
-                        <span className="h-2 w-2 rounded-full bg-accent-500" />
+                        <span className="grad-brand h-2 w-2 rounded-full" />
                       )}
                     </div>
                     <span className="mt-1 text-xs leading-relaxed text-mute">
@@ -161,8 +161,8 @@ export default function FeedbackPage() {
 
           {/* Step 2: Category Pill Selection */}
           <section className="space-y-3">
-            <label className="block font-mono text-[10px] uppercase tracking-widest text-mute">
-              2. What kind of suggestion?
+            <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-mute"><span className="grad-brand h-1 w-5 rounded-full" />
+              What kind
             </label>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map((c) => {
@@ -173,11 +173,12 @@ export default function FeedbackPage() {
                     type="button"
                     onClick={() => setCategory(c.id)}
                     className={cn(
-                      'rounded-full px-4 py-1.5 text-xs font-medium transition-colors',
+                      'rounded-full border px-4 py-1.5 text-xs font-semibold',
+                      'transition-[background-color,border-color,box-shadow] duration-200',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500',
                       selected
-                        ? 'bg-ink text-[#FBF8F2]'
-                        : 'border border-line bg-[#FBF8F2] text-mute hover:text-ink hover:bg-ink/[0.03]'
+                        ? 'grad-brand-cta border-transparent text-white shadow-sm'
+                        : 'border-line bg-surface text-mute hover:border-accent-300 hover:text-ink'
                     )}
                   >
                     {c.label}
@@ -195,8 +196,9 @@ export default function FeedbackPage() {
           {/* Step 3: Text Input */}
           <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <label htmlFor="suggestion-input" className="font-mono text-[10px] uppercase tracking-widest text-mute">
-                3. Your note or topic
+              <label htmlFor="suggestion-input" className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-mute">
+                <span className="grad-brand h-1 w-5 rounded-full" />
+                Your note
               </label>
               <span className={cn(
                 'font-mono text-[11px] tnum',
@@ -229,6 +231,7 @@ export default function FeedbackPage() {
             </div>
             <Button
               type="submit"
+              variant="gradient"
               loading={loading}
               disabled={!suggestion.trim()}
               icon={<Send className="h-4 w-4" />}
@@ -240,7 +243,7 @@ export default function FeedbackPage() {
       )}
 
       {/* Helpful info callout */}
-      <section className="rounded-lg border border-line bg-[#FBF8F2] p-5">
+      <section className="rounded-lg border border-line bg-surface p-5">
         <div className="flex items-start gap-3">
           <Lightbulb className="h-4 w-4 text-accent-600 shrink-0 mt-0.5" />
           <div className="space-y-1">

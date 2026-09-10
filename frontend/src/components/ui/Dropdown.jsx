@@ -53,7 +53,7 @@ export default function Dropdown({ trigger, items, align = 'right', className, l
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
             transition={transition(snappy, reduced)}
             className={cn(
-              'absolute z-20 mt-2 w-52 origin-top rounded-lg border border-line bg-[#FBF8F2] py-1 shadow-lg',
+              'absolute z-20 mt-2 w-52 origin-top rounded-lg border border-line bg-surface py-1 shadow-lg',
               align === 'right' ? 'right-0' : 'left-0'
             )}
           >

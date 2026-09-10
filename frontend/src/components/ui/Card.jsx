@@ -1,22 +1,33 @@
+import { motion } from 'motion/react';
 import { cn } from '../../lib/utils';
+import { lift, useReducedMotion } from '../../lib/motion';
 
-export function Card({ className, title, children, ...props }) {
+export function Card({ className, title, children, hoverable = false, ...props }) {
+  const reduced = useReducedMotion();
+  const Root = hoverable ? motion.div : 'div';
+  const hoverProps = hoverable ? { whileHover: lift(reduced) } : {};
+
   return (
-    <div
-      className={cn('bg-[#FBF8F2] border border-line rounded-lg', className)}
+    <Root
+      className={cn(
+        'bg-surface border border-line rounded-lg',
+        hoverable && 'transition-shadow duration-200 hover:border-accent-300 hover:shadow-lg',
+        className
+      )}
+      {...hoverProps}
       {...props}
     >
       {title ? (
         <>
           <Card.Header>
-            <h2 className="font-display text-base font-semibold text-ink tracking-tight">{title}</h2>
+            <h2 className="font-display text-base font-bold text-ink tracking-tight">{title}</h2>
           </Card.Header>
           <Card.Body>{children}</Card.Body>
         </>
       ) : (
         children
       )}
-    </div>
+    </Root>
   );
 }
 

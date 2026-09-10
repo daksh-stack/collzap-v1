@@ -41,7 +41,7 @@ export default function AdminReportsPage() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-line bg-[#FBF8F2]">
+          <tbody className="divide-y divide-line bg-surface">
             {loading && rows.length === 0 ? (
               <tr><td colSpan="4" className="px-4 py-12 text-center text-accent-500"><Spinner /></td></tr>
             ) : rows.length === 0 ? (
@@ -83,7 +83,7 @@ export default function AdminReportsPage() {
           page={reports.page ?? page}
           totalPages={reports.totalPages}
           onPageChange={setPage}
-          className="mt-2 rounded-b-lg border-x border-b border-line bg-[#FBF8F2]"
+          className="mt-2 rounded-b-lg border-x border-b border-line bg-surface"
         />
       )}
 
@@ -95,12 +95,12 @@ export default function AdminReportsPage() {
             </p>
 
             <dl className="grid grid-cols-2 gap-px overflow-hidden rounded border border-line bg-line text-sm">
-              <div className="bg-[#FBF8F2] px-4 py-3">
+              <div className="bg-surface px-4 py-3">
                 <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Reported</dt>
                 <dd className="mt-1 text-ink">{selected.reportedName}</dd>
                 <dd className="mt-0.5 break-all font-mono text-[10px] text-mute">{selected.reportedId}</dd>
               </div>
-              <div className="bg-[#FBF8F2] px-4 py-3">
+              <div className="bg-surface px-4 py-3">
                 <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Reporter</dt>
                 <dd className="mt-1 text-ink">{selected.reporterName}</dd>
                 <dd className="mt-0.5 break-all font-mono text-[10px] text-mute">{selected.reporterId}</dd>

@@ -63,7 +63,7 @@ export default function VerifyEmailStep() {
         />
 
         <div className="flex items-center gap-5">
-          <Button type="submit" size="lg" loading={loading} disabled={code.length !== LENGTH}>
+          <Button type="submit" variant="gradient" size="lg" loading={loading} disabled={code.length !== LENGTH}>
             Verify
           </Button>
           <button

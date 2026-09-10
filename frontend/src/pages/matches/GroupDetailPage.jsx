@@ -73,7 +73,7 @@ export default function GroupDetailPage() {
           <p className="font-mono text-[10px] uppercase tracking-widest text-accent-700">
             {group.projectType} · {group.connectionType}
           </p>
-          <h1 className="mt-3 font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
+          <h1 className="mt-3 font-display text-4xl font-extrabold leading-tight tracking-tightest text-ink">
             {group.interestName}
           </h1>
           <div className="mt-4 flex flex-wrap items-center gap-2">

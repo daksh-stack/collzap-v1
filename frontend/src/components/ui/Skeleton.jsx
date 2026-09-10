@@ -1,9 +1,9 @@
-import React from 'react';
+import { cn } from '../../lib/utils';
 
 export function Skeleton({ className = '', ...props }) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-gray-200 ${className}`}
+      className={cn('relative overflow-hidden rounded bg-line/70 sheen', className)}
       {...props}
     />
   );
@@ -11,12 +11,9 @@ export function Skeleton({ className = '', ...props }) {
 
 export function SkeletonText({ lines = 3, className = '' }) {
   return (
-    <div className={`space-y-2 ${className}`}>
+    <div className={cn('space-y-2', className)}>
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton 
-          key={i} 
-          className={`h-4 ${i === lines - 1 ? 'w-2/3' : 'w-full'}`} 
-        />
+        <Skeleton key={i} className={cn('h-4', i === lines - 1 ? 'w-2/3' : 'w-full')} />
       ))}
     </div>
   );
@@ -29,15 +26,15 @@ export function SkeletonAvatar({ size = 'md', className = '' }) {
     lg: 'h-12 w-12',
     xl: 'h-16 w-16',
   };
-  return <Skeleton className={`rounded-full ${sizeClasses[size]} ${className}`} />;
+  return <Skeleton className={cn(sizeClasses[size], className)} />;
 }
 
 export function SkeletonCard({ className = '' }) {
   return (
-    <div className={`rounded-xl border border-gray-200 bg-white p-6 shadow-sm ${className}`}>
+    <div className={cn('rounded-lg border border-line bg-surface p-6 shadow-sm', className)}>
       <div className="flex items-center space-x-4">
         <SkeletonAvatar size="lg" />
-        <div className="space-y-2 flex-1">
+        <div className="flex-1 space-y-2">
           <Skeleton className="h-4 w-1/3" />
           <Skeleton className="h-3 w-1/4" />
         </div>
@@ -49,15 +46,15 @@ export function SkeletonCard({ className = '' }) {
 
 export function SkeletonTable({ rows = 5, columns = 4, className = '' }) {
   return (
-    <div className={`w-full overflow-hidden rounded-xl border border-gray-200 bg-white ${className}`}>
-      <div className="bg-gray-50 px-6 py-3 border-b border-gray-200 flex space-x-4">
+    <div className={cn('w-full overflow-hidden rounded-lg border border-line bg-surface', className)}>
+      <div className="flex space-x-4 border-b border-line bg-surface-2 px-6 py-3">
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} className="h-4 flex-1" />
         ))}
       </div>
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-line">
         {Array.from({ length: rows }).map((_, r) => (
-          <div key={r} className="px-6 py-4 flex space-x-4 items-center">
+          <div key={r} className="flex items-center space-x-4 px-6 py-4">
             {Array.from({ length: columns }).map((_, c) => (
               <Skeleton key={c} className="h-4 flex-1" />
             ))}
@@ -67,3 +64,5 @@ export function SkeletonTable({ rows = 5, columns = 4, className = '' }) {
     </div>
   );
 }
+
+export default Skeleton;

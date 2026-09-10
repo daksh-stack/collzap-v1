@@ -1,26 +1,38 @@
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import Button from '../components/ui/Button';
+import Logo from '../components/brand/Logo';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
+
+  // Signed-in students land on their desk, admins on the console, visitors on
+  // the marketing page.
+  const home = !isAuthenticated ? '/' : user?.isAdmin ? '/admin' : '/home';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="mx-auto w-24 h-24 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center mb-6 shadow-sm border-4 border-white">
-          <Search className="w-10 h-10" />
-        </div>
-        <h1 className="text-9xl font-extrabold text-gray-200 tracking-widest">404</h1>
-        <div className="bg-white px-4 py-8 shadow-sm sm:rounded-lg sm:px-10 border border-gray-200 -mt-16 relative z-10 mx-4 sm:mx-0">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Page Not Found</h2>
-          <p className="text-gray-500 mb-8">
-            Sorry, we couldn't find the page you're looking for. It might have been moved or doesn't exist.
-          </p>
-          <Button onClick={() => navigate('/')} className="w-full">
-            Go back home
-          </Button>
-        </div>
+    <div className="relative mesh flex min-h-screen flex-col items-center justify-center bg-paper px-6 py-16">
+      <Helmet><title>Not found · CollZap</title></Helmet>
+
+      <div className="relative w-full max-w-md text-center">
+        <Logo className="mx-auto h-8" />
+
+        <p className="text-grad mt-10 font-display text-8xl font-extrabold leading-none tracking-tightest tnum">
+          404
+        </p>
+
+        <h1 className="mt-6 font-display text-2xl font-bold tracking-tight text-ink">
+          Nothing here.
+        </h1>
+        <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-mute">
+          That page has moved or never existed. No harm done.
+        </p>
+
+        <Button onClick={() => navigate(home)} size="lg" className="mt-8">
+          Take me back
+        </Button>
       </div>
     </div>
   );

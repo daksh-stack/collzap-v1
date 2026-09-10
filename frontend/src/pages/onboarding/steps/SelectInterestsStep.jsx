@@ -104,7 +104,7 @@ export default function SelectInterestsStep() {
 
   return (
     <div>
-      <StepHeader eyebrow="Step four" title="What are you here for?">
+      <StepHeader eyebrow="Step five" title="What are you here for?">
         Be specific. &ldquo;Machine learning&rdquo; matches you with three hundred people;
         the sub-tag is what gets you the right one.
       </StepHeader>
@@ -131,8 +131,8 @@ export default function SelectInterestsStep() {
             <div
               key={interest.id}
               className={cn(
-                'rounded-lg border transition-colors duration-150',
-                isSelected ? 'border-accent-500 bg-accent-50' : 'border-line bg-[#FBF8F2] hover:border-ink/25'
+                'rounded-lg border transition-[background-color,border-color,box-shadow] duration-200',
+                isSelected ? 'border-accent-500 bg-accent-50 shadow-glow-accent' : 'border-line bg-surface shadow-sm hover:border-accent-300 hover:shadow-md'
               )}
             >
               <button
@@ -147,7 +147,7 @@ export default function SelectInterestsStep() {
                 <span
                   className={cn(
                     'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm border transition-colors',
-                    isSelected ? 'border-accent-600 bg-accent-600' : 'border-line'
+                    isSelected ? 'grad-brand-cta border-transparent' : 'border-line'
                   )}
                 >
                   {isSelected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}

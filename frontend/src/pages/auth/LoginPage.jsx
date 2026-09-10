@@ -25,7 +25,7 @@ export default function LoginPage() {
 
     try {
       const response = await login(email, password);
-      navigate(response.nextStep === 'READY' ? '/' : '/onboarding', { replace: true });
+      navigate(response.nextStep === 'READY' ? '/home' : '/onboarding', { replace: true });
     } catch (error) {
       if (error.code === 'password_reset_required') {
         toast.error("This account doesn't have a password yet — set one now.");
@@ -42,7 +42,7 @@ export default function LoginPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={transition(page, reduced)}
     >
-      <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tightest text-ink">
+      <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tightest text-ink">
         Back again.
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-mute">
@@ -78,7 +78,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <Button type="submit" className="w-full" size="lg" loading={loading}>
+        <Button type="submit" variant="gradient" className="w-full" size="lg" loading={loading}>
           Log in
         </Button>
       </form>

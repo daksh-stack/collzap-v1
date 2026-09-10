@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
     try {
       const response = await resetPassword(email, code, newPassword);
       toast.success('Password set');
-      navigate(response.nextStep === 'READY' ? '/' : '/onboarding', { replace: true });
+      navigate(response.nextStep === 'READY' ? '/home' : '/onboarding', { replace: true });
     } catch (error) {
       toast.error(error.message || 'That code did not work');
       setCode('');
@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
 
       {stage === 'email' ? (
         <>
-          <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tightest text-ink">
+          <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tightest text-ink">
             Forgot your password?
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-mute">
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
         </>
       ) : (
         <>
-          <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tightest text-ink">
+          <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tightest text-ink">
             Set a new password.
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-mute">

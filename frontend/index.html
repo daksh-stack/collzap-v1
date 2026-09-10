@@ -4,20 +4,34 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#F4EFE6" />
+    <meta name="theme-color" content="#F4F7FB" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="description" content="Find people in your college who are actually serious about the same thing." />
-    <meta name="color-scheme" content="light" />
 
-    <meta property="og:title" content="CollZap" />
+    <meta property="og:title" content="CollZap — Same campus. Different dreams. One platform." />
     <meta property="og:description" content="Find people in your college who are actually serious about the same thing." />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/layout_horizontal.png" />
+
+    <script>
+      // Applied before first paint so a dark-mode reload never flashes light.
+      // Reads a plain string, not a Zustand persist envelope — see useThemeStore.
+      (function () {
+        try {
+          if (localStorage.getItem('collzap-theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute('content', '#0A1428');
+          }
+        } catch (e) { /* private mode: fall through to light */ }
+      })();
+      // SockJS reaches for `global`; the browser has no such binding.
+      window.global = window;
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <script>
-      window.global = window;
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <title>CollZap</title>
   </head>
   <body>

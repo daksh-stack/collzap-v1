@@ -48,7 +48,7 @@ export default function SignupPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={transition(page, reduced)}
     >
-      <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tightest text-ink">
+      <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tightest text-ink">
         Get on the list.
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-mute">
@@ -90,7 +90,7 @@ export default function SignupPage() {
           disabled={loading}
         />
 
-        <Button type="submit" className="w-full" size="lg" loading={loading}>
+        <Button type="submit" variant="gradient" className="w-full" size="lg" loading={loading}>
           Create account
         </Button>
       </form>

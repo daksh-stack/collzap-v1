@@ -76,3 +76,71 @@ export const listItemVariants = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
 };
+
+/* --- Scroll-triggered reveals (landing page, marketing sections) --- */
+
+/** Shared viewport config: fire once, a little before the element is centred. */
+export const viewportOnce = { once: true, margin: '0px 0px -12% 0px' };
+
+export const revealVariants = {
+  initial: { opacity: 0, y: 24 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+/** Parent for a staggered group. Pair children with `revealVariants`. */
+export const revealGroupVariants = {
+  initial: {},
+  animate: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
+};
+
+/**
+ * Props for a section that reveals its children on scroll.
+ * Spread onto a motion element: <motion.div {...revealGroup(reduced)}>
+ */
+export function revealGroup(reduced) {
+  return {
+    variants: reduceVariants(revealGroupVariants, reduced),
+    initial: 'initial',
+    whileInView: 'animate',
+    viewport: viewportOnce,
+  };
+}
+
+/** Props for a single element revealing on scroll. */
+export function reveal(reduced, delay = 0) {
+  if (reduced) {
+    return {
+      initial: { opacity: 0 },
+      whileInView: { opacity: 1, transition: instant },
+      viewport: viewportOnce,
+    };
+  }
+  return {
+    initial: { opacity: 0, y: 24 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: viewportOnce,
+    transition: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] },
+  };
+}
+
+/** Card hover: a small rise on a soft spring. Never applied under reduced motion. */
+export function lift(reduced, y = -4) {
+  return reduced ? undefined : { y, transition: soft };
+}
+
+/** SVG path draw-on. Pair with `pathLength` on a motion.path. */
+export const drawVariants = {
+  initial: { pathLength: 0, opacity: 0 },
+  animate: {
+    pathLength: 1,
+    opacity: 1,
+    transition: {
+      pathLength: { duration: 1.1, ease: [0.22, 1, 0.36, 1] },
+      opacity: { duration: 0.25 },
+    },
+  },
+};

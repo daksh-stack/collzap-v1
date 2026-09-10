@@ -133,7 +133,7 @@ export default function FileUpload({
               ? 'border-bad/40 bg-bad/5'
               : done
                 ? 'border-good/40 bg-good/5'
-                : 'border-line bg-[#FBF8F2] hover:border-accent-400 hover:bg-accent-50/30'
+                : 'border-line bg-surface hover:border-accent-400 hover:bg-accent-50/30'
         )}
       >
         <input

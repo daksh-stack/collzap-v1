@@ -5,7 +5,7 @@ export default function AdminPageHeader({ title, count, children }) {
   return (
     <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-ink">
           {title}
         </h1>
         {count != null && (

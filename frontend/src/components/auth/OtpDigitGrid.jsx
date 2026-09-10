@@ -90,8 +90,8 @@ export default function OtpDigitGrid({ length = 6, onChange, onComplete, disable
       className="flex gap-2"
     >
       {digits.map((digit, i) => (
+        <div key={i} className="relative min-w-0 flex-1">
         <input
-          key={i}
           ref={(el) => { inputsRef.current[i] = el; }}
           type="text"
           inputMode="numeric"
@@ -106,13 +106,21 @@ export default function OtpDigitGrid({ length = 6, onChange, onComplete, disable
           onPaste={handlePaste}
           onFocus={(e) => e.target.select()}
           className={cn(
-            'h-14 w-full min-w-0 rounded border bg-[#FBF8F2] text-center',
-            'font-display text-2xl text-ink tnum',
+            'h-14 w-full min-w-0 rounded border bg-surface text-center',
+            'font-display text-2xl font-bold text-ink tnum',
             'border-line focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25',
             'disabled:opacity-50 transition-[border-color,box-shadow] duration-150',
             digit && 'border-accent-400'
           )}
         />
+        {/* A filled box earns the brand mark under it. */}
+        {digit && (
+          <span
+            aria-hidden="true"
+            className="grad-brand pointer-events-none absolute inset-x-2.5 bottom-2 h-0.5 rounded-full"
+          />
+        )}
+        </div>
       ))}
     </motion.div>
   );

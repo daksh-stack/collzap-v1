@@ -64,7 +64,7 @@ export default function NotificationsPage() {
     <div className="space-y-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tightest text-ink">
+          <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tightest text-ink">
             Notices
           </h1>
           <p className="mt-3 text-sm text-mute">Matches, messages and verification news.</p>
@@ -107,7 +107,7 @@ export default function NotificationsPage() {
                   <span
                     className={cn(
                       'mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full',
-                      notification.read ? 'bg-transparent' : 'bg-accent-500'
+                      notification.read ? 'bg-transparent' : 'grad-brand'
                     )}
                     aria-hidden="true"
                   />

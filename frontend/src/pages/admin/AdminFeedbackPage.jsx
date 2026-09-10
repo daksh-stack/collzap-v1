@@ -25,7 +25,7 @@ export default function AdminFeedbackPage() {
       ) : rows.length === 0 ? (
         <EmptyState title="Nothing suggested" description="Nobody has asked for a new topic." />
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-[#FBF8F2]">
+        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
           {rows.map((item) => (
             <li key={item.id} className="p-5">
               <div className="flex items-baseline justify-between gap-4">
@@ -50,7 +50,7 @@ export default function AdminFeedbackPage() {
           page={interestFeedback.page ?? page}
           totalPages={interestFeedback.totalPages}
           onPageChange={setPage}
-          className="mt-2 rounded-b-lg border-x border-b border-line bg-[#FBF8F2]"
+          className="mt-2 rounded-b-lg border-x border-b border-line bg-surface"
         />
       )}
     </div>

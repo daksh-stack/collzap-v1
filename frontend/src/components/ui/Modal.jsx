@@ -90,7 +90,7 @@ export default function Modal({ open, onClose, title, children, className, layou
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={transition({ duration: 0.2 }, reduced)}
-            className="fixed inset-0 bg-ink/35 backdrop-blur-[8px]"
+            className="fixed inset-0 bg-ink/40 backdrop-blur-[8px]"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -105,7 +105,7 @@ export default function Modal({ open, onClose, title, children, className, layou
             transition={transition(snappy, reduced)}
             className={cn(
               'relative w-full flex flex-col max-h-[88vh]',
-              'bg-[#FBF8F2] border border-line rounded-lg shadow-lg',
+              'bg-surface border border-line rounded-lg shadow-lg',
               widths[size] || widths.md,
               className
             )}

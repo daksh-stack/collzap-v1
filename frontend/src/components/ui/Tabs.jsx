@@ -13,7 +13,7 @@ export default function Tabs({ tabs, active, onChange, className }) {
         <label htmlFor={`${groupId}-select`} className="sr-only">Select a tab</label>
         <select
           id={`${groupId}-select`}
-          className="block w-full rounded border border-line bg-[#FBF8F2] py-2 pl-3 pr-10 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25"
+          className="block w-full rounded border border-line bg-surface py-2 pl-3 pr-10 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25"
           value={active}
           onChange={(e) => onChange(e.target.value)}
         >
@@ -45,7 +45,7 @@ export default function Tabs({ tabs, active, onChange, className }) {
                     <motion.span
                       layoutId={`${groupId}-underline`}
                       transition={transition(snappy, reduced)}
-                      className="absolute left-0 right-0 -bottom-px h-0.5 bg-accent-500"
+                      className="grad-brand absolute left-0 right-0 -bottom-px h-0.5 rounded-full"
                     />
                   )}
                 </button>

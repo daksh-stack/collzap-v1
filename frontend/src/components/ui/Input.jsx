@@ -40,7 +40,7 @@ const Input = forwardRef(({
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
           className={cn(
-            'peer w-full rounded border bg-[#FBF8F2] text-ink',
+            'peer w-full rounded border bg-surface text-ink',
             'px-3 text-sm placeholder:text-mute/55',
             label ? 'h-14 pt-6 pb-1.5' : 'h-11 py-2',
             'border-line',

@@ -96,7 +96,7 @@ export default function AdminInterestsPage() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-line bg-[#FBF8F2]">
+          <tbody className="divide-y divide-line bg-surface">
             {loading && rows.length === 0 ? (
               <tr><td colSpan="3" className="px-4 py-12 text-center text-accent-500"><Spinner /></td></tr>
             ) : rows.length === 0 ? (

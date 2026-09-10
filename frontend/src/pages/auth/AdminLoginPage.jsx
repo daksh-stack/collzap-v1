@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Logo from '../../components/brand/Logo';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export default function AdminLoginPage() {
@@ -29,10 +30,8 @@ export default function AdminLoginPage() {
 
   return (
     <div className="w-full max-w-xs">
-      <div className="mb-8 flex items-baseline justify-between border-b border-line pb-3">
-        <span className="font-display text-base font-semibold tracking-tight text-ink">
-          CollZap
-        </span>
+      <div className="mb-8 flex items-center justify-between border-b border-line pb-3">
+        <Logo className="h-6" />
         <span className="font-mono text-[10px] uppercase tracking-widest text-mute">
           Operator
         </span>

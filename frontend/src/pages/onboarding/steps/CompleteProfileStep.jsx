@@ -89,7 +89,7 @@ export default function CompleteProfileStep() {
 
   return (
     <div>
-      <StepHeader eyebrow="Step two" title="Who's asking?">
+      <StepHeader eyebrow="Step three" title="Who's asking?">
         This is what a stranger sees before deciding whether to work with you.
         Three honest lines beat three polished ones.
       </StepHeader>
