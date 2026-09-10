@@ -81,55 +81,50 @@ export default function AdminInterestsPage() {
         </Button>
       </AdminPageHeader>
 
-      <div className="overflow-x-auto rounded-lg border border-line mt-6">
-        <table className="min-w-full divide-y divide-line text-sm">
-          <thead className="bg-ink/[0.02]">
-            <tr>
-              {['Category', 'Name', ''].map((h, i) => (
-                <th
-                  key={i}
-                  scope="col"
-                  className="px-4 py-2.5 text-left font-mono text-[10px] font-medium uppercase tracking-widest text-mute"
-                >
-                  {h || <span className="sr-only">Actions</span>}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line bg-surface">
-            {loading && rows.length === 0 ? (
-              <tr><td colSpan="3" className="px-4 py-12 text-center text-accent-500"><Spinner /></td></tr>
-            ) : rows.length === 0 ? (
-              <tr><td colSpan="3" className="px-4 py-12 text-center text-sm text-mute">No interests found.</td></tr>
-            ) : (
-              rows.map((interest) => (
-                <tr key={interest.id} className="transition-colors hover:bg-ink/[0.02]">
-                  <td className="px-4 py-3 align-top">
-                    <span className="inline-flex items-center rounded-md bg-ink/[0.04] px-2 py-1 text-xs font-medium text-ink ring-1 ring-inset ring-ink/10">
-                      {CATEGORY_LABELS[interest.category] || interest.category}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-ink">{interest.name}</td>
-                  <td className="px-4 py-3 text-right align-top">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenModal(interest)}>
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => { setInterestToDelete(interest); setDeleteConfirmText(''); }}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Two short fields and a pair of actions — a list holds that at any
+          width, where three table columns forced the name to wrap to a ribbon
+          and pushed the actions off a phone screen. */}
+      <div className="mt-6 overflow-hidden rounded-lg border border-line bg-surface text-sm">
+        {loading && rows.length === 0 ? (
+          <div className="px-4 py-12 text-center text-accent-500"><Spinner /></div>
+        ) : rows.length === 0 ? (
+          <p className="px-4 py-12 text-center text-sm text-mute">No interests found.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {rows.map((interest) => (
+              <li
+                key={interest.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-ink/[0.02]"
+              >
+                <div className="min-w-0">
+                  <span className="inline-flex items-center rounded-md bg-ink/[0.04] px-2 py-1 text-xs font-medium text-ink ring-1 ring-inset ring-ink/10">
+                    {CATEGORY_LABELS[interest.category] || interest.category}
+                  </span>
+                  <p className="mt-1.5 break-words font-medium text-ink">{interest.name}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Edit ${interest.name}`}
+                    onClick={() => handleOpenModal(interest)}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Delete ${interest.name}`}
+                    onClick={() => { setInterestToDelete(interest); setDeleteConfirmText(''); }}
+                    className="text-bad hover:bg-bad/[0.07] hover:text-bad"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingInterest ? 'Edit Interest' : 'New Interest'} size="md">
@@ -171,8 +166,8 @@ export default function AdminInterestsPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <div className="flex gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
+          <div className="flex gap-3 rounded-lg border border-bad/30 bg-bad/[0.06] p-4">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-bad" />
             <p className="text-xs leading-relaxed text-ink/80">
               This permanently deletes <span className="font-semibold text-ink">"{interestToDelete?.name}"</span> and
               every question in its bank. It's blocked if the interest still has any match groups, test attempts, or

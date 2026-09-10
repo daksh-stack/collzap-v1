@@ -26,8 +26,8 @@ export default function AdminReportsPage() {
         Read only. There is no resolve or ban endpoint — act on these out of band.
       </p>
 
-      <div className="overflow-x-auto rounded-lg border border-line">
-        <table className="min-w-full divide-y divide-line text-sm">
+      <div className="hidden overflow-x-auto rounded-lg border border-line md:block">
+        <table className="min-w-[44rem] divide-y divide-line text-sm">
           <thead className="bg-ink/[0.02]">
             <tr>
               {['Reported', 'Reporter', 'Reason', 'When'].map((h) => (
@@ -78,6 +78,41 @@ export default function AdminReportsPage() {
         </table>
       </div>
 
+      <div className="overflow-hidden rounded-lg border border-line bg-surface md:hidden">
+        {loading && rows.length === 0 ? (
+          <div className="px-4 py-12 text-center text-accent-500"><Spinner /></div>
+        ) : rows.length === 0 ? (
+          <div className="px-4 py-10">
+            <EmptyState title="No reports" description="Nobody has reported anybody." />
+          </div>
+        ) : (
+          <ul className="divide-y divide-line">
+            {rows.map((report) => (
+              <li key={report.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(report)}
+                  className="block w-full px-4 py-3.5 text-left transition-colors hover:bg-ink/[0.02] focus-visible:outline-none focus-visible:bg-ink/[0.04]"
+                >
+                  {/* Spans, not paragraphs: a <button> may only contain
+                      phrasing content. */}
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="truncate text-sm font-medium text-ink">{report.reportedName}</span>
+                    <span className="shrink-0 text-[11px] text-mute tnum">
+                      {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : '—'}
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-widest text-mute">
+                    by {report.reporterName}
+                  </span>
+                  <span className="mt-2 line-clamp-2 block text-sm text-ink">{report.reason}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {reports?.totalPages > 1 && (
         <Pagination
           page={reports.page ?? page}
@@ -94,7 +129,7 @@ export default function AdminReportsPage() {
               {selected.reason}
             </p>
 
-            <dl className="grid grid-cols-2 gap-px overflow-hidden rounded border border-line bg-line text-sm">
+            <dl className="grid gap-px overflow-hidden rounded border border-line bg-line text-sm sm:grid-cols-2">
               <div className="bg-surface px-4 py-3">
                 <dt className="font-mono text-[10px] uppercase tracking-widest text-mute">Reported</dt>
                 <dd className="mt-1 text-ink">{selected.reportedName}</dd>

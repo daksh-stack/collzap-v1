@@ -38,9 +38,9 @@ export default function AdminDashboard() {
                 ? {
                     onClick: () => navigate(tile.link),
                     className:
-                      'bg-surface px-5 py-6 text-left transition-colors hover:bg-ink/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500',
+                      'bg-surface px-4 py-5 text-left transition-colors sm:px-5 sm:py-6 hover:bg-ink/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500',
                   }
-                : { className: 'bg-surface px-5 py-6 text-left' })}
+                : { className: 'bg-surface px-4 py-5 text-left sm:px-5 sm:py-6' })}
             >
               <p className="font-mono text-[10px] uppercase tracking-widest text-mute">
                 {tile.label}

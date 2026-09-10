@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import Sidebar from './Sidebar';
-import Topbar from './Topbar';
+import AppNav from './AppNav';
 import { useUserStore } from '../../store/useUserStore';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { webSocketService } from '../../services/websocket';
@@ -10,8 +9,18 @@ import { page, useReducedMotion, transition } from '../../lib/motion';
 
 const UNREAD_POLL_MS = 30_000;
 
+/**
+ * Vertical space the floating capsule and page gutters take, published as
+ * `--app-chrome` so a full-height child (the chat room) can size itself
+ * without hard-coding a magic number that silently rots when the chrome
+ * changes. Must stay equal to the sum of PAD's top and bottom values:
+ *   mobile  pt-24 (6rem) + pb-28 (7rem)   = 13rem
+ *   desktop pt-24 (6rem) + pb-10 (2.5rem) = 8.5rem
+ */
+const CHROME_VAR = '[--app-chrome:13rem] md:[--app-chrome:8.5rem]';
+const PAD = 'pt-24 pb-28 md:pt-24 md:pb-10';
+
 export default function AppShell() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const { profile, fetchMe } = useUserStore();
   const { fetchUnreadCount } = useNotificationStore();
   const location = useLocation();
@@ -44,15 +53,16 @@ export default function AppShell() {
   const isChatRoom = /^\/chat\/[^/]+$/.test(location.pathname);
 
   return (
-    <div className="h-screen flex overflow-hidden bg-paper">
-      <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-paper">
+      <AppNav />
 
-      <div className="flex flex-col flex-1 w-0 overflow-hidden md:pl-56">
-        <Topbar setMobileOpen={setMobileOpen} />
-
+      <main
+        id="app-scroll"
+        className={`relative flex-1 overflow-y-auto focus:outline-none ${CHROME_VAR}`}
+      >
         {isPendingVerification && (
-          <div className="flex-shrink-0 border-b border-wait/30 bg-wait/[0.08]">
-            <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-2">
+          <div className="mx-auto mb-2 max-w-5xl px-5 sm:px-8">
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-wait/30 bg-wait/[0.08] px-4 py-2">
               <p className="truncate text-xs text-ink">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-wait">
                   With a human
@@ -62,7 +72,7 @@ export default function AppShell() {
               </p>
               <Link
                 to="/onboarding"
-                className="shrink-0 text-xs text-accent-700 underline decoration-accent-300 underline-offset-4 hover:text-accent-800 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                className="shrink-0 rounded-sm text-xs text-accent-700 underline decoration-accent-300 underline-offset-4 hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
               >
                 Status
               </Link>
@@ -70,28 +80,26 @@ export default function AppShell() {
           </div>
         )}
 
-        <main className="relative flex-1 overflow-y-auto focus:outline-none">
-          {isChatRoom ? (
-            // No page fade: the message list is already scrolling.
-            <div className="mx-auto max-w-5xl px-5 py-6">
+        {isChatRoom ? (
+          // No page fade: the message list is already scrolling.
+          <div className={`mx-auto max-w-5xl px-5 sm:px-8 ${PAD}`}>
+            <Outlet />
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={reduced ? { opacity: 0 } : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
+              transition={transition(page, reduced)}
+              className={`mx-auto max-w-5xl px-5 sm:px-8 ${PAD}`}
+            >
               <Outlet />
-            </div>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={location.pathname}
-                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
-                transition={transition(page, reduced)}
-                className="mx-auto max-w-5xl px-5 py-8 sm:px-8"
-              >
-                <Outlet />
-              </motion.div>
-            </AnimatePresence>
-          )}
-        </main>
-      </div>
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </main>
     </div>
   );
 }

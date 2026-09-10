@@ -56,32 +56,44 @@ export default function AdminCollegesPage() {
       ) : rows.length === 0 ? (
         <EmptyState title="No colleges yet" description="Add one so its students can sign up." />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-line">
-          <table className="min-w-full divide-y divide-line text-sm">
-            <thead className="bg-ink/[0.02]">
-              <tr>
-                {['College', 'Email domain', 'City'].map((h) => (
-                  <th
-                    key={h}
-                    scope="col"
-                    className="px-4 py-2.5 text-left font-mono text-[10px] font-medium uppercase tracking-widest text-mute"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line bg-surface">
-              {rows.map((college) => (
-                <tr key={college.id}>
-                  <td className="px-4 py-3 font-medium text-ink">{college.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-mute">{college.emailDomain}</td>
-                  <td className="px-4 py-3 text-mute">{college.city || '—'}</td>
+        <>
+          <div className="hidden overflow-x-auto rounded-lg border border-line sm:block">
+            <table className="min-w-[36rem] divide-y divide-line text-sm">
+              <thead className="bg-ink/[0.02]">
+                <tr>
+                  {['College', 'Email domain', 'City'].map((h) => (
+                    <th
+                      key={h}
+                      scope="col"
+                      className="px-4 py-2.5 text-left font-mono text-[10px] font-medium uppercase tracking-widest text-mute"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-line bg-surface">
+                {rows.map((college) => (
+                  <tr key={college.id}>
+                    <td className="px-4 py-3 font-medium text-ink">{college.name}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-mute">{college.emailDomain}</td>
+                    <td className="px-4 py-3 text-mute">{college.city || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface sm:hidden">
+            {rows.map((college) => (
+              <li key={college.id} className="px-4 py-3">
+                <p className="break-words text-sm font-medium text-ink">{college.name}</p>
+                <p className="mt-0.5 break-all font-mono text-xs text-mute">{college.emailDomain}</p>
+                {college.city && <p className="mt-0.5 text-xs text-mute">{college.city}</p>}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add a college">

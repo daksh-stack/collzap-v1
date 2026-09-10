@@ -10,9 +10,28 @@ import ScoreRing from '../../components/ui/ScoreRing';
 import ThemeToggle from '../../components/ui/ThemeToggle';
 import { cn } from '../../lib/utils';
 import { useLenis } from '../../lib/useLenis';
+import { useAuthStore } from '../../store/useAuthStore';
 import { reveal, revealGroup, revealVariants, soft, useReducedMotion } from '../../lib/motion';
 
 /* ------------------------------------------------------------------ */
+
+/**
+ * The page is reachable signed in or out, so the primary call to action has to
+ * change: pitching "Get started" at someone who already has an account is
+ * noise. Targets mirror OnboardingGuard's own rules so the CTA never lands on
+ * a route that immediately redirects.
+ */
+function usePrimaryCta() {
+  const { isAuthenticated, user, nextStep } = useAuthStore();
+
+  if (!isAuthenticated) return { to: '/signup', label: 'Get started' };
+  if (user?.isAdmin) return { to: '/admin', label: 'Open the console' };
+
+  const canAccessApp = !nextStep || nextStep === 'READY' || nextStep === 'AWAITING_VERIFICATION';
+  return canAccessApp
+    ? { to: '/home', label: 'Go to your desk' }
+    : { to: '/onboarding', label: 'Finish setting up' };
+}
 
 const STEPS = [
   {
@@ -69,6 +88,7 @@ const CONNECTIONS = [
 
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const cta = usePrimaryCta();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -117,8 +137,8 @@ function Nav() {
           <ThemeToggle
             className={cn('mr-1', !scrolled && 'text-[#A8BDD8] hover:bg-white/10 hover:text-white')}
           />
-          <Link to="/signup">
-            <Button size="sm" variant="gradient">Get started</Button>
+          <Link to={cta.to}>
+            <Button size="sm" variant="gradient">{cta.label}</Button>
           </Link>
         </nav>
       </div>
@@ -139,6 +159,7 @@ function SectionLabel({ children }) {
 
 function Hero() {
   const reduced = useReducedMotion();
+  const cta = usePrimaryCta();
 
   return (
     <section className="relative overflow-hidden bg-[#08101F] pb-24 pt-32 sm:pb-32 sm:pt-40">
@@ -182,14 +203,14 @@ function Hero() {
           {...reveal(reduced, 0.24)}
           className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
-          <Link to="/signup" className="w-full sm:w-auto">
+          <Link to={cta.to} className="w-full sm:w-auto">
             <Button
               size="lg"
               variant="gradient"
               className="w-full sm:w-auto"
               icon={<ArrowRight className="h-4 w-4" />}
             >
-              Get started
+              {cta.label}
             </Button>
           </Link>
           <a href="#how" className="w-full sm:w-auto">
@@ -422,6 +443,7 @@ function Trust() {
 
 function FinalCta() {
   const reduced = useReducedMotion();
+  const cta = usePrimaryCta();
 
   return (
     <section className="bg-paper px-6 py-20 sm:px-8 sm:py-28">
@@ -441,13 +463,13 @@ function FinalCta() {
           <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-white/85">
             Verify once. Get matched with people who mean it.
           </p>
-          <Link to="/signup" className="mt-9 inline-block">
+          <Link to={cta.to} className="mt-9 inline-block">
             <Button
               size="lg"
               className="bg-white text-[#0A3F8C] shadow-lg hover:bg-white hover:brightness-95"
               icon={<ArrowRight className="h-4 w-4" />}
             >
-              Get started
+              {cta.label}
             </Button>
           </Link>
         </div>
@@ -457,6 +479,9 @@ function FinalCta() {
 }
 
 function Footer() {
+  const { isAuthenticated } = useAuthStore();
+  const cta = usePrimaryCta();
+
   return (
     <footer className="border-t border-line bg-paper px-6 py-12 sm:px-8">
       <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
@@ -467,7 +492,9 @@ function Footer() {
           </p>
         </div>
         <div className="flex items-center gap-6 text-xs text-mute">
-          <Link to="/login" className="rounded transition-colors hover:text-ink">Sign in</Link>
+          <Link to={isAuthenticated ? cta.to : '/login'} className="rounded transition-colors hover:text-ink">
+            {isAuthenticated ? 'Open the app' : 'Sign in'}
+          </Link>
           <a href="#how" className="rounded transition-colors hover:text-ink">How it works</a>
           <span className="tnum">© {new Date().getFullYear()} CollZap</span>
         </div>

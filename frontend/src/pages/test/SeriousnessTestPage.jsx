@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import toast from 'react-hot-toast';
@@ -18,57 +18,68 @@ export default function SeriousnessTestPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [divider, setDivider] = useState(null); // interest name being announced
+  const [startError, setStartError] = useState(null);
 
   const initialized = useRef(false);
 
   // --- session bootstrap -------------------------------------------------
+  //
+  // Nothing in here may navigate on failure. OnboardingGuard sends users whose
+  // nextStep is TAKE_SERIOUSNESS_TEST straight back to /test, so a redirect out
+  // of a failed start bounces forever — one GET + one POST per cycle, against
+  // production. Failures surface as a terminal screen and stop.
+  const init = useCallback(async () => {
+    useTestStore.setState({ result: null });
+    setStartError(null);
+
+    try {
+      let active = null;
+      try {
+        active = await fetchCurrentSession();
+      } catch {
+        active = null;
+      }
+
+      // Self-heal corrupted sessions (more than 25 questions) caused by the previous race condition bug
+      if (active && active.questions && active.questions.length > 25) {
+        try {
+          await import('../../api/api').then(m => m.api.post('/test/reset'));
+          active = null; // force restart
+        } catch (e) {
+          console.error('Failed to reset corrupted session', e);
+        }
+      }
+
+      if (!active || !active.questions || active.questions.length === 0) {
+        try {
+          active = await startSession();
+        } catch (startErr) {
+          setStartError(startErr.message || 'Cannot start the paper right now.');
+          return;
+        }
+      }
+
+      // Land on the first unanswered question.
+      const firstUnanswered = active.questions.findIndex((q) => q.selectedOptionIndex === null);
+      const idx = firstUnanswered === -1 ? 0 : firstUnanswered;
+      setCurrentQuestionIndex(idx);
+      setSelectedOption(active.questions[idx].selectedOptionIndex);
+    } catch {
+      setStartError('Could not load the paper.');
+    }
+  }, [fetchCurrentSession, startSession]);
+
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    useTestStore.setState({ result: null });
-
-    const init = async () => {
-      try {
-        let active = null;
-        try {
-          active = await fetchCurrentSession();
-        } catch {
-          active = null;
-        }
-
-        // Self-heal corrupted sessions (more than 25 questions) caused by the previous race condition bug
-        if (active && active.questions && active.questions.length > 25) {
-          try {
-            await import('../../api/api').then(m => m.api.post('/test/reset'));
-            active = null; // force restart
-          } catch (e) {
-            console.error('Failed to reset corrupted session', e);
-          }
-        }
-
-        if (!active || !active.questions || active.questions.length === 0) {
-          try {
-            active = await startSession();
-          } catch (startErr) {
-            toast.error(startErr.message || 'Cannot start the paper right now');
-            navigate('/onboarding');
-            return;
-          }
-        }
-
-        // Land on the first unanswered question.
-        const firstUnanswered = active.questions.findIndex((q) => q.selectedOptionIndex === null);
-        const idx = firstUnanswered === -1 ? 0 : firstUnanswered;
-        setCurrentQuestionIndex(idx);
-        setSelectedOption(active.questions[idx].selectedOptionIndex);
-      } catch {
-        toast.error('Could not load the paper');
-        navigate('/onboarding');
-      }
-    };
-
     init();
-  }, []);
+  }, [init]);
+
+  // Retry is the only way back in — one request pair per click, never automatic.
+  const handleRetry = () => {
+    useTestStore.getState().clearStartBlocked();
+    init();
+  };
 
   // Guard against losing work to a stray tab close.
   useEffect(() => {
@@ -184,13 +195,69 @@ export default function SeriousnessTestPage() {
     );
   }
 
+  // --- cannot start ------------------------------------------------------
+  // Terminal by design. The old code redirected here, which the onboarding
+  // guard immediately undid; the only way forward now is an explicit action.
+  if (startError) {
+    return (
+      <div className="relative mesh flex min-h-screen flex-col bg-paper">
+        <header className="relative z-10 border-b border-line">
+          <div className="mx-auto w-full max-w-3xl px-6 py-4">
+            <Logo className="h-6" />
+          </div>
+        </header>
+
+        <div className="relative z-10 flex flex-1 items-center px-6 py-16">
+          <motion.div
+            initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={transition(page, reduced)}
+            className="mx-auto w-full max-w-lg"
+          >
+            <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-wait">
+              <span className="h-1 w-6 rounded-full bg-wait" />
+              Not ready
+            </p>
+
+            <h1 className="mt-5 font-display text-3xl font-extrabold leading-tight tracking-tightest text-ink sm:text-4xl">
+              The paper isn&rsquo;t set yet.
+            </h1>
+
+            {/* The API names the interest; don't paraphrase it. */}
+            <p className="mt-4 text-sm leading-relaxed text-mute">{startError}</p>
+            <p className="mt-3 text-sm leading-relaxed text-mute">
+              Nothing is wrong on your side and nothing you entered was lost. Try
+              again in a bit, or go back and look at the rest of your setup.
+            </p>
+
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Button onClick={handleRetry} loading={loading} variant="gradient" size="lg">
+                Try again
+              </Button>
+              <Button onClick={() => navigate('/onboarding')} variant="secondary" size="lg">
+                Back to setup
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   // --- loading -----------------------------------------------------------
   if (!session || !session.questions || session.questions.length === 0) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-paper">
-        <p className="font-mono text-[11px] uppercase tracking-widest text-mute">
-          Handing out the paper…
-        </p>
+      <div className="flex min-h-screen flex-col bg-paper">
+        <header className="border-b border-line">
+          <div className="mx-auto w-full max-w-3xl px-6 py-4">
+            <Logo className="h-6" />
+          </div>
+        </header>
+        <div className="flex flex-1 items-center justify-center">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-mute">
+            Handing out the paper…
+          </p>
+        </div>
       </div>
     );
   }

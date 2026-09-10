@@ -19,26 +19,31 @@ export default function AuthGuard() {
     }
   }, [isAuthenticated, isAdmin]);
 
-  // `/` is the public marketing landing; the student app home is `/home`.
-  const isPublicRoute = location.pathname === '/' ||
-                        location.pathname === '/login' ||
-                        location.pathname === '/signup' ||
-                        location.pathname === '/forgot-password' ||
-                        location.pathname === '/admin/login';
+  // The marketing landing. Open to everyone, signed in or not — being logged
+  // in is no reason to be barred from your own home page. It adapts its calls
+  // to action instead. The student app home is `/home`.
+  const isLanding = location.pathname === '/';
 
-  if (!isAuthenticated && !isPublicRoute) {
+  // Screens that only make sense signed out; a signed-in user gets moved on.
+  const isAuthOnlyRoute = location.pathname === '/login' ||
+                          location.pathname === '/signup' ||
+                          location.pathname === '/forgot-password' ||
+                          location.pathname === '/admin/login';
+
+  if (!isAuthenticated && !isLanding && !isAuthOnlyRoute) {
     // Redirect to login but save the attempted url
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (isAuthenticated && isPublicRoute) {
+  if (isAuthenticated && isAuthOnlyRoute) {
     // Already signed in: send admins to their console, students to the app.
     return <Navigate to={isAdmin ? '/admin' : '/home'} replace />;
   }
 
   // An admin session has no student onboarding state, so keep it out of the
-  // student app entirely. AdminGuard handles the reverse direction.
-  if (isAuthenticated && isAdmin && !location.pathname.startsWith('/admin')) {
+  // student app entirely. AdminGuard handles the reverse direction. The
+  // landing page is exempt — it is marketing, not app.
+  if (isAuthenticated && isAdmin && !isLanding && !location.pathname.startsWith('/admin')) {
     return <Navigate to="/admin" replace />;
   }
 

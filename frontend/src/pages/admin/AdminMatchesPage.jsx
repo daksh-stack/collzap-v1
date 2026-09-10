@@ -109,8 +109,8 @@ export default function AdminMatchesPage() {
         className="mb-6"
       />
 
-      <div className="overflow-x-auto rounded-lg border border-line">
-        <table className="min-w-full divide-y divide-line text-sm">
+      <div className="hidden overflow-x-auto rounded-lg border border-line md:block">
+        <table className="min-w-[48rem] divide-y divide-line text-sm">
           <thead className="bg-ink/[0.02]">
             <tr>
               {['Interest', 'Type', 'Level', 'Members', 'Status', ''].map((h, i) => (
@@ -210,6 +210,100 @@ export default function AdminMatchesPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Same rows, stacked, for phone width — including Unmatch, which used
+          to sit in a sixth column past the right edge of the screen. */}
+      <div className="overflow-hidden rounded-lg border border-line bg-surface md:hidden">
+        {loading && rows.length === 0 ? (
+          <div className="px-4 py-12 text-center text-accent-500"><Spinner /></div>
+        ) : rows.length === 0 ? (
+          <p className="px-4 py-12 text-center text-sm text-mute">No groups here.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {rows.map((match) => {
+              const matchId = match.matchGroupId || match.id;
+              const isOpen = expanded === matchId;
+              const members = match.memberNames || [];
+
+              return (
+                <li key={matchId} className={isOpen ? 'bg-ink/[0.03]' : ''}>
+                  <div className="px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-ink">{match.interestName}</p>
+                        <p className="truncate font-mono text-[10px] text-mute">
+                          {match.collegeName || matchId}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          match.status === 'ACTIVE' ? 'success'
+                          : match.status === 'WAITING' ? 'warning' : 'secondary'
+                        }
+                      >
+                        {match.status}
+                      </Badge>
+                    </div>
+
+                    <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-mute">
+                      {match.connectionType} · {match.projectType}
+                      <span className="tnum">
+                        {' · '}{match.memberCount ?? members.length} / {match.maxMembers || 2}
+                      </span>
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary">{match.levelBand || 'UNRANKED'}</Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-expanded={isOpen}
+                        onClick={() => setExpanded(isOpen ? null : matchId)}
+                      >
+                        {isOpen ? 'Hide members' : `Members (${members.length})`}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto text-bad hover:bg-bad/[0.07]"
+                        onClick={() => handleUnmatch(matchId, null, null)}
+                      >
+                        Unmatch
+                      </Button>
+                    </div>
+
+                    {isOpen && (
+                      members.length > 0 ? (
+                        <ul className="mt-3 flex flex-wrap gap-2">
+                          {members.map((name, idx) => (
+                            <li
+                              key={idx}
+                              className="inline-flex items-center gap-2 rounded border border-line bg-surface px-2.5 py-1 text-xs text-ink"
+                            >
+                              {name}
+                              {match.memberIds?.[idx] && (
+                                <button
+                                  aria-label={`Remove ${name}`}
+                                  onClick={() => handleUnmatch(matchId, match.memberIds[idx], name)}
+                                  className="rounded-sm text-mute transition-colors hover:text-bad focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                                >
+                                  <X className="h-3 w-3" aria-hidden="true" />
+                                </button>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-3 text-xs italic text-mute">Nobody in this group.</p>
+                      )
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {matches?.totalPages > 1 && (
