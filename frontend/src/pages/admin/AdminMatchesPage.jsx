@@ -110,7 +110,7 @@ export default function AdminMatchesPage() {
       />
 
       <div className="hidden overflow-x-auto rounded-lg border border-line md:block">
-        <table className="min-w-[48rem] divide-y divide-line text-sm">
+        <table className="w-full min-w-[48rem] divide-y divide-line text-sm">
           <thead className="bg-ink/[0.02]">
             <tr>
               {['Interest', 'Type', 'Level', 'Members', 'Status', ''].map((h, i) => (

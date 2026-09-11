@@ -27,7 +27,7 @@ export default function AdminReportsPage() {
       </p>
 
       <div className="hidden overflow-x-auto rounded-lg border border-line md:block">
-        <table className="min-w-[44rem] divide-y divide-line text-sm">
+        <table className="w-full min-w-[44rem] divide-y divide-line text-sm">
           <thead className="bg-ink/[0.02]">
             <tr>
               {['Reported', 'Reporter', 'Reason', 'When'].map((h) => (

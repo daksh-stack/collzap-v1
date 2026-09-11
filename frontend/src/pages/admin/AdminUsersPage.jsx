@@ -84,7 +84,7 @@ export default function AdminUsersPage() {
           it. `min-w` keeps the table honest so the scroller actually scrolls
           rather than crushing every column. */}
       <div className="hidden overflow-x-auto rounded-lg border border-line md:block">
-        <table className="min-w-[52rem] divide-y divide-line text-sm">
+        <table className="w-full min-w-[52rem] divide-y divide-line text-sm">
           <thead className="bg-ink/[0.02]">
             <tr>
               {['User', 'College', 'Verification', 'Account', 'Joined', ''].map((h, i) => (

@@ -58,7 +58,7 @@ export default function AdminCollegesPage() {
       ) : (
         <>
           <div className="hidden overflow-x-auto rounded-lg border border-line sm:block">
-            <table className="min-w-[36rem] divide-y divide-line text-sm">
+            <table className="w-full min-w-[36rem] divide-y divide-line text-sm">
               <thead className="bg-ink/[0.02]">
                 <tr>
                   {['College', 'Email domain', 'City'].map((h) => (
