@@ -47,8 +47,13 @@ public class SeriousnessTestAttempt extends BaseEntity {
     @Column(name = "question_count", nullable = false)
     private int questionCount;
 
-    @Column(name = "correct_count", nullable = false)
-    private int correctCount = 0;
+    /** Total points earned across this interest's questions. Null-safe default 0 until answers come in. */
+    @Column(name = "earned_points", nullable = false)
+    private int earnedPoints = 0;
+
+    /** Sum of each assigned question's max-option points — this attempt's scoring denominator. */
+    @Column(name = "max_points", nullable = false)
+    private int maxPoints;
 
     /** Percentage, 0-100. Null until submitted. */
     @Column(name = "score")
@@ -68,9 +73,10 @@ public class SeriousnessTestAttempt extends BaseEntity {
     @Column(name = "next_retake_date")
     private LocalDate nextRetakeDate;
 
-    public SeriousnessTestAttempt(User user, Interest interest, int questionCount) {
+    public SeriousnessTestAttempt(User user, Interest interest, int questionCount, int maxPoints) {
         this.user = user;
         this.interest = interest;
         this.questionCount = questionCount;
+        this.maxPoints = maxPoints;
     }
 }

@@ -185,10 +185,10 @@ export const useAdminStore = create((set) => ({
     }
   },
 
-  createQuestion: async (questionText, options, correctOptionIndex, interestId) => {
+  createQuestion: async (questionText, options, interestId) => {
     set({ loading: true, error: null });
     try {
-      const payload = { questionText, options, correctOptionIndex, interestId };
+      const payload = { questionText, options, interestId };
       const response = await api.post('/admin/questions', payload);
       set({ loading: false });
       return response;
@@ -198,10 +198,10 @@ export const useAdminStore = create((set) => ({
     }
   },
 
-  updateQuestion: async (id, questionText, options, correctOptionIndex, interestId) => {
+  updateQuestion: async (id, questionText, options, interestId) => {
     set({ loading: true, error: null });
     try {
-      const payload = { questionText, options, correctOptionIndex, interestId };
+      const payload = { questionText, options, interestId };
       const response = await api.post(`/admin/questions/${id}`, payload);
       set({ loading: false });
       return response;

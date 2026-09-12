@@ -17,7 +17,8 @@ public interface SeriousnessTestAnswerRepository extends JpaRepository<Seriousne
 
     List<SeriousnessTestAnswer> findByAttemptId(UUID attemptId);
 
-    long countByAttemptIdAndCorrectTrue(UUID attemptId);
+    @Query("select coalesce(sum(a.pointsEarned), 0) from SeriousnessTestAnswer a where a.attempt.id = :attemptId")
+    int sumPointsEarnedByAttemptId(@Param("attemptId") UUID attemptId);
 
 
 

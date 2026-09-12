@@ -37,18 +37,19 @@ public class SeriousnessTestAnswer extends BaseEntity {
     @Column(name = "selected_option_index", nullable = false)
     private int selectedOptionIndex;
 
-    @Column(name = "is_correct", nullable = false)
-    private boolean correct;
+    /** The chosen option's point value, captured at answer time so a later edit to the question can't retroactively regrade it. */
+    @Column(name = "points_earned", nullable = false)
+    private int pointsEarned;
 
     public SeriousnessTestAnswer(
         SeriousnessTestAttempt attempt,
         SeriousnessTestQuestion question,
         int selectedOptionIndex,
-        boolean correct
+        int pointsEarned
     ) {
         this.attempt = attempt;
         this.question = question;
         this.selectedOptionIndex = selectedOptionIndex;
-        this.correct = correct;
+        this.pointsEarned = pointsEarned;
     }
 }

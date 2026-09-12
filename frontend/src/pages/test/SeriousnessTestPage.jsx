@@ -176,7 +176,7 @@ export default function SeriousnessTestPage() {
                   <dt className="text-sm text-ink">{b.interestName}</dt>
                   <dd className="flex items-baseline gap-5 text-right">
                     <span className="text-sm text-mute tnum">
-                      {b.score}/{b.totalQuestions}
+                      {b.earnedPoints}/{b.maxPoints}
                     </span>
                     <span className="min-w-24 font-display text-base font-bold text-accent-700">
                       {b.level}

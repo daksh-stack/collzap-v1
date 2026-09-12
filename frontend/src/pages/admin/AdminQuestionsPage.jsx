@@ -19,11 +19,17 @@ export default function AdminQuestionsPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
+  const emptyOptions = () => [
+    { text: '', points: 0 },
+    { text: '', points: 0 },
+    { text: '', points: 0 },
+    { text: '', points: 0 },
+  ];
+
   const [formData, setFormData] = useState({
     interestId: '',
     questionText: '',
-    options: ['', '', '', ''],
-    correctOptionIndex: 0
+    options: emptyOptions()
   });
 
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -49,16 +55,14 @@ export default function AdminQuestionsPage() {
       setFormData({
         interestId: q.interestId,
         questionText: q.questionText,
-        options: [...q.options],
-        correctOptionIndex: q.correctOptionIndex
+        options: q.options.map(o => ({ ...o }))
       });
     } else {
       setEditingQuestion(null);
       setFormData({
         interestId: activeInterest === 'ALL' ? (interests[0]?.id || '') : activeInterest,
         questionText: '',
-        options: ['', '', '', ''],
-        correctOptionIndex: 0
+        options: emptyOptions()
       });
     }
     setIsModalOpen(true);
@@ -67,25 +71,19 @@ export default function AdminQuestionsPage() {
   const handleSave = async () => {
     if (!formData.questionText.trim()) return toast.error('Question text required');
     if (!formData.interestId) return toast.error('Interest required');
-    if (formData.options.some(opt => !opt.trim())) return toast.error('All 4 options required');
+    if (formData.options.some(opt => !opt.text.trim())) return toast.error('All 4 options required');
+    if (!formData.options.some(opt => Number(opt.points) > 0)) {
+      return toast.error('At least one option must carry points');
+    }
+
+    const options = formData.options.map(opt => ({ text: opt.text.trim(), points: Number(opt.points) }));
 
     try {
       if (editingQuestion) {
-        await updateQuestion(
-          editingQuestion.id,
-          formData.questionText,
-          formData.options,
-          formData.correctOptionIndex,
-          formData.interestId
-        );
+        await updateQuestion(editingQuestion.id, formData.questionText, options, formData.interestId);
         toast.success('Question updated');
       } else {
-        await createQuestion(
-          formData.questionText,
-          formData.options,
-          formData.correctOptionIndex,
-          formData.interestId
-        );
+        await createQuestion(formData.questionText, options, formData.interestId);
         toast.success('Question added');
       }
       setIsModalOpen(false);
@@ -174,22 +172,19 @@ export default function AdminQuestionsPage() {
           throw new Error(`expected exactly 4 options, got ${rawOptions.length}`);
         }
 
-        const optionTexts = rawOptions.map(opt => String(typeof opt === 'string' ? opt : opt?.text || '').trim());
-        if (optionTexts.some(t => !t)) throw new Error('one or more options have empty text');
-
-        let correctOptionIndex;
-        if (rawOptions.every(opt => opt && typeof opt === 'object' && typeof opt.points === 'number')) {
-          correctOptionIndex = rawOptions.reduce(
-            (maxIdx, opt, idx, arr) => (opt.points > arr[maxIdx].points ? idx : maxIdx),
-            0
-          );
-        } else if (typeof item.correctOptionIndex === 'number') {
-          correctOptionIndex = item.correctOptionIndex;
-        } else {
-          throw new Error('cannot determine correct option (no "points" on options and no "correctOptionIndex")');
+        const options = rawOptions.map(opt => ({
+          text: String(typeof opt === 'string' ? opt : opt?.text || '').trim(),
+          points: Number(opt?.points),
+        }));
+        if (options.some(o => !o.text)) throw new Error('one or more options have empty text');
+        if (options.some(o => !Number.isFinite(o.points) || o.points < 0)) {
+          throw new Error('every option needs a non-negative numeric "points" value');
+        }
+        if (!options.some(o => o.points > 0)) {
+          throw new Error('at least one option must carry points');
         }
 
-        await createQuestion(questionText, optionTexts, correctOptionIndex, interest.id);
+        await createQuestion(questionText, options, interest.id);
         successCount++;
       } catch (err) {
         errors.push(`${label}: ${err.message}`);
@@ -295,11 +290,9 @@ export default function AdminQuestionsPage() {
 
                 <ul className="mt-3 space-y-1">
                   {q.options.map((opt, idx) => (
-                    <li
-                      key={idx}
-                      className={`text-xs ${idx === q.correctOptionIndex ? 'font-semibold text-accent-600' : 'text-mute'}`}
-                    >
-                      {String.fromCharCode(65 + idx)}. {opt}
+                    <li key={idx} className="text-xs text-mute">
+                      {String.fromCharCode(65 + idx)}. {opt.text}
+                      <span className="ml-1.5 font-mono text-[10px] text-accent-600">· {opt.points} pt{opt.points === 1 ? '' : 's'}</span>
                     </li>
                   ))}
                 </ul>
@@ -346,28 +339,35 @@ export default function AdminQuestionsPage() {
             <label className="block text-xs font-medium text-ink">Options</label>
             {[0, 1, 2, 3].map(idx => (
               <div key={idx} className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="correctOption"
-                  checked={formData.correctOptionIndex === idx}
-                  onChange={() => setFormData(prev => ({ ...prev, correctOptionIndex: idx }))}
-                  className="h-4 w-4 text-accent-600 focus:ring-accent-500 border-line"
-                />
                 <span className="font-mono text-xs text-mute w-4">{String.fromCharCode(65 + idx)}</span>
                 <Input
                   className="flex-1"
                   placeholder={`Option ${idx + 1}`}
-                  value={formData.options[idx]}
+                  value={formData.options[idx].text}
                   onChange={(e) => {
                     const newOpts = [...formData.options];
-                    newOpts[idx] = e.target.value;
+                    newOpts[idx] = { ...newOpts[idx], text: e.target.value };
                     setFormData(prev => ({ ...prev, options: newOpts }));
                   }}
                   required
                 />
+                <Input
+                  type="number"
+                  min="0"
+                  className="w-20 shrink-0"
+                  placeholder="Points"
+                  value={formData.options[idx].points}
+                  onChange={(e) => {
+                    const newOpts = [...formData.options];
+                    newOpts[idx] = { ...newOpts[idx], points: e.target.value };
+                    setFormData(prev => ({ ...prev, options: newOpts }));
+                  }}
+                />
               </div>
             ))}
-            <p className="text-[10px] text-mute mt-1">Select the radio button next to the correct answer.</p>
+            <p className="text-[10px] text-mute mt-1">
+              Every option scores its own points — there's no single correct answer. At least one option must carry points above zero.
+            </p>
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
@@ -386,8 +386,8 @@ export default function AdminQuestionsPage() {
             <p className="mt-2 text-xs leading-relaxed text-ink/80">
               Paste a JSON array of questions. Each item requires an <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">interest</code> name
               (matched case-insensitively — if no interest with that name exists yet, one is created automatically, using <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">type</code> ("Long-Term"/"Short-Term") for its category, defaulting to Long-Term), a <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">question</code> string, and exactly 4
-              <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">options</code>. Each option must have <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">text</code> and <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">points</code>.
-              The option with the highest points will be automatically set as the correct answer.
+              <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">options</code>. Each option must have <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">text</code> and a numeric <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-[10px] text-ink border border-line">points</code> value —
+              there is no single correct answer; every option's points count toward the test-taker's total score, and at least one option per question must carry points above zero.
             </p>
           </div>
 

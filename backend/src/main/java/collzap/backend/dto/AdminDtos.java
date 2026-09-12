@@ -11,6 +11,9 @@ import collzap.backend.enums.ProjectType;
 import collzap.backend.enums.SeriousnessLevel;
 import collzap.backend.enums.Status;
 import collzap.backend.enums.VerificationStatus;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -130,17 +133,25 @@ public final class AdminDtos {
     ) {
     }
 
+    /** One MCQ option carrying its own point value — used both to author and to read back a question. */
+    public record QuestionOptionDto(
+        @NotBlank(message = "Option text is required")
+        String text,
+
+        @Min(value = 0, message = "Points cannot be negative")
+        int points
+    ) {
+    }
+
     public record QuestionRequest(
-        @jakarta.validation.constraints.NotBlank(message = "Question text is required")
+        @NotBlank(message = "Question text is required")
         String questionText,
-        
+
         @NotEmpty(message = "Exactly 4 options required")
         @Size(min = 4, max = 4, message = "Exactly 4 options required")
-        List<String> options,
-        
-        @NotNull(message = "Correct option index required")
-        Integer correctOptionIndex,
-        
+        @Valid
+        List<QuestionOptionDto> options,
+
         @NotNull(message = "Interest ID required")
         UUID interestId
     ) {
@@ -149,8 +160,7 @@ public final class AdminDtos {
     public record AdminQuestionResponse(
         UUID id,
         String questionText,
-        List<String> options,
-        int correctOptionIndex,
+        List<QuestionOptionDto> options,
         UUID interestId,
         String interestName
     ) {

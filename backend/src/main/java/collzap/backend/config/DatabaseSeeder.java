@@ -16,6 +16,7 @@ import collzap.backend.enums.InterestCategory;
 import collzap.backend.models.AdminUser;
 import collzap.backend.models.College;
 import collzap.backend.models.Interest;
+import collzap.backend.models.QuestionOption;
 import collzap.backend.models.SeriousnessTestQuestion;
 import collzap.backend.repositories.AdminUserRepository;
 import collzap.backend.repositories.CollegeRepository;
@@ -162,8 +163,12 @@ public class DatabaseSeeder implements CommandLineRunner {
                 questionRepository.save(new SeriousnessTestQuestion(
                     interest,
                     "Dummy question " + i + " for " + interest.getName() + "?",
-                    List.of("Option A", "Option B", "Option C", "Option D"),
-                    0
+                    List.of(
+                        new QuestionOption("Option A", 1),
+                        new QuestionOption("Option B", 2),
+                        new QuestionOption("Option C", 3),
+                        new QuestionOption("Option D", 4)
+                    )
                 ));
             }
             seededInterests++;

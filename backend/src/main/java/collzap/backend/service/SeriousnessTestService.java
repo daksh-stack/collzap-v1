@@ -125,7 +125,7 @@ public class SeriousnessTestService {
         LocalDate lockedUntil = null;
         for (UserInterestSelection selection : selections) {
             SeriousnessTestAttempt attempt = latestSubmitted(userId, selection.getInterest().getId()).orElse(null);
-            if (attempt != null && attempt.getCorrectCount() > 0 && attempt.getNextRetakeDate() != null && attempt.getNextRetakeDate().isAfter(today)) {
+            if (attempt != null && attempt.getEarnedPoints() > 0 && attempt.getNextRetakeDate() != null && attempt.getNextRetakeDate().isAfter(today)) {
                 if (lockedUntil == null || attempt.getNextRetakeDate().isAfter(lockedUntil)) {
                     lockedUntil = attempt.getNextRetakeDate();
                 }
@@ -172,10 +172,12 @@ public class SeriousnessTestService {
 
         int orderIndex = 0;
         for (Map.Entry<Interest, List<SeriousnessTestQuestion>> entry : paper.entrySet()) {
+            int maxPoints = entry.getValue().stream().mapToInt(SeriousnessTestQuestion::maxPoints).sum();
             SeriousnessTestAttempt attempt = attemptRepository.save(new SeriousnessTestAttempt(
                 user,
                 entry.getKey(),
-                entry.getValue().size()
+                entry.getValue().size(),
+                maxPoints
             ));
             for (SeriousnessTestQuestion question : entry.getValue()) {
                 sessionQuestionRepository.save(
@@ -212,12 +214,12 @@ public class SeriousnessTestService {
         }
 
         SeriousnessTestAttempt attempt = paperEntry.getAttempt();
-        boolean correct = selected == question.getCorrectOptionIndex();
+        int points = question.getOptions().get(selected).points();
         SeriousnessTestAnswer answer = answerRepository
             .findByAttemptIdAndQuestionId(attempt.getId(), question.getId())
-            .orElseGet(() -> new SeriousnessTestAnswer(attempt, question, selected, correct));
+            .orElseGet(() -> new SeriousnessTestAnswer(attempt, question, selected, points));
         answer.setSelectedOptionIndex(selected);
-        answer.setCorrect(correct);
+        answer.setPointsEarned(points);
         try {
             answerRepository.saveAndFlush(answer);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
@@ -226,7 +228,7 @@ public class SeriousnessTestService {
             answer = answerRepository.findByAttemptIdAndQuestionId(attempt.getId(), question.getId())
                 .orElseThrow(() -> new ConflictException("Answer was saved by another request but cannot be found"));
             answer.setSelectedOptionIndex(selected);
-            answer.setCorrect(correct);
+            answer.setPointsEarned(points);
             answerRepository.saveAndFlush(answer);
         }
 
@@ -313,9 +315,9 @@ public class SeriousnessTestService {
             .plusDays(properties.getSeriousnessTest().getRetakeLockDays());
 
         for (SeriousnessTestAttempt attempt : attempts) {
-            int correct = (int) answerRepository.countByAttemptIdAndCorrectTrue(attempt.getId());
-            attempt.setCorrectCount(correct);
-            attempt.setScore(percent(correct, attempt.getQuestionCount()));
+            int earned = answerRepository.sumPointsEarnedByAttemptId(attempt.getId());
+            attempt.setEarnedPoints(earned);
+            attempt.setScore(percent(earned, attempt.getMaxPoints()));
             attempt.setLevel(SeriousnessLevel.fromScore(attempt.getScore()));
             attempt.setStatus(TestAttemptStatus.SUBMITTED);
             attempt.setSubmittedAt(now);
@@ -325,9 +327,9 @@ public class SeriousnessTestService {
     }
 
     private TestResultResponse buildResult(List<SeriousnessTestAttempt> attempts) {
-        int totalCorrect = attempts.stream().mapToInt(SeriousnessTestAttempt::getCorrectCount).sum();
-        int totalQuestions = attempts.stream().mapToInt(SeriousnessTestAttempt::getQuestionCount).sum();
-        int overallScore = percent(totalCorrect, totalQuestions);
+        int totalEarned = attempts.stream().mapToInt(SeriousnessTestAttempt::getEarnedPoints).sum();
+        int totalMax = attempts.stream().mapToInt(SeriousnessTestAttempt::getMaxPoints).sum();
+        int overallScore = percent(totalEarned, totalMax);
         SeriousnessLevel overallLevel = SeriousnessLevel.fromScore(overallScore);
 
         LocalDate nextRetake = attempts.stream()
@@ -341,7 +343,8 @@ public class SeriousnessTestService {
                 attempt.getInterest().getId(),
                 attempt.getInterest().getName(),
                 attempt.getQuestionCount(),
-                attempt.getCorrectCount(),
+                attempt.getEarnedPoints(),
+                attempt.getMaxPoints(),
                 attempt.getScore() == null ? 0 : attempt.getScore(),
                 attempt.getLevel(),
                 attempt.getLevel() == null ? null : attempt.getLevel().message(),
@@ -384,7 +387,7 @@ public class SeriousnessTestService {
                 question.getInterest().getId(),
                 question.getInterest().getName(),
                 question.getQuestionText(),
-                List.copyOf(question.getOptions()),
+                question.getOptions().stream().map(collzap.backend.models.QuestionOption::text).toList(),
                 selectedByQuestion.get(question.getId())
             ));
         }

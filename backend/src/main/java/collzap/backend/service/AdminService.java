@@ -30,6 +30,7 @@ import collzap.backend.enums.DocumentStatus;
 import collzap.backend.enums.MatchGroupStatus;
 import collzap.backend.enums.Status;
 import collzap.backend.enums.VerificationStatus;
+import collzap.backend.exception.BadRequestException;
 import collzap.backend.exception.NotFoundException;
 import collzap.backend.models.AdminUser;
 import collzap.backend.models.Interest;
@@ -281,8 +282,7 @@ public class AdminService {
         return PageResponse.from(page, q -> new collzap.backend.dto.AdminDtos.AdminQuestionResponse(
             q.getId(),
             q.getQuestionText(),
-            q.getOptions(),
-            q.getCorrectOptionIndex(),
+            toOptionDtos(q.getOptions()),
             q.getInterest().getId(),
             q.getInterest().getName()
         ));
@@ -366,20 +366,19 @@ public class AdminService {
     public collzap.backend.dto.AdminDtos.AdminQuestionResponse createQuestion(collzap.backend.dto.AdminDtos.QuestionRequest request) {
         Interest interest = interestRepository.findById(request.interestId())
             .orElseThrow(() -> new NotFoundException("Interest not found"));
-        
+
+        List<collzap.backend.models.QuestionOption> options = toOptions(request.options());
         collzap.backend.models.SeriousnessTestQuestion question = new collzap.backend.models.SeriousnessTestQuestion(
             interest,
             request.questionText().trim(),
-            request.options(),
-            request.correctOptionIndex()
+            options
         );
         question = questionRepository.save(question);
-        
+
         return new collzap.backend.dto.AdminDtos.AdminQuestionResponse(
             question.getId(),
             question.getQuestionText(),
-            question.getOptions(),
-            question.getCorrectOptionIndex(),
+            toOptionDtos(question.getOptions()),
             interest.getId(),
             interest.getName()
         );
@@ -389,25 +388,44 @@ public class AdminService {
     public collzap.backend.dto.AdminDtos.AdminQuestionResponse updateQuestion(UUID id, collzap.backend.dto.AdminDtos.QuestionRequest request) {
         collzap.backend.models.SeriousnessTestQuestion question = questionRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Question not found"));
-            
+
         Interest interest = interestRepository.findById(request.interestId())
             .orElseThrow(() -> new NotFoundException("Interest not found"));
-            
+
         question.setQuestionText(request.questionText().trim());
-        question.setOptions(request.options());
-        question.setCorrectOptionIndex(request.correctOptionIndex());
+        question.setOptions(toOptions(request.options()));
         question.setInterest(interest);
-        
+
         question = questionRepository.save(question);
-        
+
         return new collzap.backend.dto.AdminDtos.AdminQuestionResponse(
             question.getId(),
             question.getQuestionText(),
-            question.getOptions(),
-            question.getCorrectOptionIndex(),
+            toOptionDtos(question.getOptions()),
             interest.getId(),
             interest.getName()
         );
+    }
+
+    /** Rejects a question none of whose options carry any points — it could never contribute to a score. */
+    private static List<collzap.backend.models.QuestionOption> toOptions(
+        List<collzap.backend.dto.AdminDtos.QuestionOptionDto> options
+    ) {
+        int maxPoints = options.stream().mapToInt(collzap.backend.dto.AdminDtos.QuestionOptionDto::points).max().orElse(0);
+        if (maxPoints <= 0) {
+            throw new BadRequestException("At least one option must carry points");
+        }
+        return options.stream()
+            .map(o -> new collzap.backend.models.QuestionOption(o.text().trim(), o.points()))
+            .toList();
+    }
+
+    private static List<collzap.backend.dto.AdminDtos.QuestionOptionDto> toOptionDtos(
+        List<collzap.backend.models.QuestionOption> options
+    ) {
+        return options.stream()
+            .map(o -> new collzap.backend.dto.AdminDtos.QuestionOptionDto(o.text(), o.points()))
+            .toList();
     }
 
     @Transactional
