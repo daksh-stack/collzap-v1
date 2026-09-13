@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import collzap.backend.enums.ChatRoomType;
+import collzap.backend.enums.ProjectType;
 import collzap.backend.enums.ReceiptStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -49,6 +50,7 @@ public final class ChatDtos {
         ChatRoomType type,
         String title,
         String interestName,
+        ProjectType projectType,
         int memberCount,
         String lastMessagePreview,
         Instant lastMessageAt,
@@ -63,6 +65,7 @@ public final class ChatDtos {
         ChatRoomType type,
         String title,
         String interestName,
+        ProjectType projectType,
         List<MatchDtos.MemberSummary> members,
         /** Shown when the room has no messages yet. */
         String emptyStateMessage

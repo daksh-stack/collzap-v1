@@ -20,12 +20,15 @@ import collzap.backend.dto.InterestDtos.ProjectTypesResponse;
 import collzap.backend.dto.InterestDtos.SelectConnectionTypeRequest;
 import collzap.backend.dto.InterestDtos.SelectInterestsRequest;
 import collzap.backend.dto.InterestDtos.SelectProjectTypesRequest;
+import collzap.backend.dto.InterestDtos.SetShortTermInterestRequest;
 import collzap.backend.dto.InterestDtos.UserInterestResponse;
 import collzap.backend.dto.UserDtos.ConnectionTypeSelectionResponse;
+import collzap.backend.enums.ConnectionType;
 import collzap.backend.enums.InterestCategory;
 import collzap.backend.enums.ProjectType;
 import collzap.backend.enums.SeriousnessLevel;
 import collzap.backend.exception.BadRequestException;
+import collzap.backend.exception.ConflictException;
 import collzap.backend.exception.NotFoundException;
 import collzap.backend.models.ConnectionTypeSelection;
 import collzap.backend.models.Interest;
@@ -98,10 +101,16 @@ public class InterestService {
      */
     @Transactional
     public ProjectTypesResponse selectProjectTypes(UUID userId, SelectProjectTypesRequest request) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         Set<ProjectType> requested = EnumSet.copyOf(request.projectTypes());
 
         List<UserProjectTypeSelection> existing = projectTypeRepository.findByUserId(userId);
+        boolean hadLongTerm = existing.stream()
+            .anyMatch(selection -> selection.getProjectType() == ProjectType.LONG_TERM);
+        if (hadLongTerm && !requested.contains(ProjectType.LONG_TERM)) {
+            throw new ConflictException("Long-term matching is set once and can't be removed");
+        }
+
         for (UserProjectTypeSelection selection : existing) {
             if (!requested.contains(selection.getProjectType())) {
                 selectionRepository.deleteByUserIdAndProjectType(userId, selection.getProjectType());
@@ -139,13 +148,17 @@ public class InterestService {
      */
     @Transactional
     public List<UserInterestResponse> selectInterests(UUID userId, SelectInterestsRequest request) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         ProjectType projectType = request.projectType();
 
         if (!projectTypeRepository.existsByUserIdAndProjectType(userId, projectType)) {
             throw new BadRequestException(
                 "Select %s as a project type before choosing its interests"
                     .formatted(label(projectType)));
+        }
+        if (projectType == ProjectType.LONG_TERM
+            && selectionRepository.countByUserIdAndProjectType(userId, ProjectType.LONG_TERM) > 0) {
+            throw new ConflictException("Long-term interests are set once and can't be changed");
         }
 
         int max = projectType.maxInterestSelections();
@@ -190,6 +203,53 @@ public class InterestService {
         return interests(userId);
     }
 
+    /**
+     * One-shot Short-Term setup or swap, usable at any time (not just onboarding).
+     * Unlike {@link #selectProjectTypes} + {@link #selectInterests} as two separate
+     * calls, this does everything — enabling the project type on first use,
+     * setting the connection type if none exists yet, and replacing the interest —
+     * in one transaction, so a caller polling onboarding state never observes a
+     * half-done intermediate state between the two writes.
+     */
+    @Transactional
+    public List<UserInterestResponse> setShortTermInterest(UUID userId, SetShortTermInterestRequest request) {
+        User user = userService.requireSelf(userId);
+
+        if (!projectTypeRepository.existsByUserIdAndProjectType(userId, ProjectType.SHORT_TERM)) {
+            projectTypeRepository.save(new UserProjectTypeSelection(user, ProjectType.SHORT_TERM));
+        }
+
+        ConnectionType connectionType = request.connectionType();
+        java.util.Optional<ConnectionTypeSelection> existingConnection =
+            connectionTypeRepository.findByUserIdAndProjectType(userId, ProjectType.SHORT_TERM);
+        if (existingConnection.isEmpty()) {
+            if (connectionType == null) {
+                throw new BadRequestException("Pick a connection type");
+            }
+            connectionTypeRepository.save(
+                new ConnectionTypeSelection(user, ProjectType.SHORT_TERM, connectionType));
+        } else if (connectionType != null) {
+            existingConnection.get().setConnectionType(connectionType);
+            connectionTypeRepository.save(existingConnection.get());
+        }
+
+        Interest interest = interestRepository.findById(request.interestId())
+            .orElseThrow(() -> new NotFoundException("Interest not found"));
+        if (!interest.isActive()) {
+            throw new BadRequestException("%s is no longer available".formatted(interest.getName()));
+        }
+        if (interest.getCategory() != InterestCategory.SHORT_TERM) {
+            throw new BadRequestException("%s is not a Short-Term option".formatted(interest.getName()));
+        }
+
+        selectionRepository.deleteByUserIdAndProjectType(userId, ProjectType.SHORT_TERM);
+        selectionRepository.flush();
+        selectionRepository.save(new UserInterestSelection(
+            user, interest, ProjectType.SHORT_TERM, UserService.trimToNull(request.subTag())));
+
+        return interests(userId);
+    }
+
     @Transactional(readOnly = true)
     public List<ConnectionTypeSelectionResponse> connectionTypes(UUID userId) {
         return connectionTypeRepository.findByUserId(userId).stream()
@@ -204,12 +264,16 @@ public class InterestService {
      */
     @Transactional
     public ConnectionTypeSelectionResponse selectConnectionType(UUID userId, SelectConnectionTypeRequest request) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         ProjectType projectType = request.projectType();
 
         if (!projectTypeRepository.existsByUserIdAndProjectType(userId, projectType)) {
             throw new BadRequestException(
                 "Select %s as a project type first".formatted(label(projectType)));
+        }
+        if (projectType == ProjectType.LONG_TERM
+            && connectionTypeRepository.findByUserIdAndProjectType(userId, ProjectType.LONG_TERM).isPresent()) {
+            throw new ConflictException("Long-term matching is set once and can't be changed");
         }
         if (!request.connectionType().isAvailableFor(projectType)) {
             throw new BadRequestException(
@@ -228,7 +292,7 @@ public class InterestService {
     /** The "can't find your interest?" link on the selection screen. */
     @Transactional
     public void submitFeedback(UUID userId, InterestFeedbackRequest request) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         feedbackRepository.save(new InterestFeedback(
             user,
             request.projectType(),

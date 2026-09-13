@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import toast from 'react-hot-toast';
-import { Check } from 'lucide-react';
+import { Check, MessageSquarePlus } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 import Tabs from '../../../components/ui/Tabs';
 import Input from '../../../components/ui/Input';
@@ -13,27 +13,40 @@ import { cn } from '../../../lib/utils';
 import { snappy, useReducedMotion, transition } from '../../../lib/motion';
 
 export default function SelectInterestsStep() {
-  const { catalog, fetchCatalog, projectTypes, fetchProjectTypes, selectInterests, submitFeedback, loading } = useInterestStore();
+  const {
+    catalog, fetchCatalog, projectTypes, fetchProjectTypes,
+    myInterests, fetchMyInterests, selectInterests, submitFeedback, loading,
+  } = useInterestStore();
 
   const [activeTab, setActiveTab] = useState('');
   const [selections, setSelections] = useState({}); // { LONG_TERM: [{interestId, subTag}], SHORT_TERM: [] }
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
+  const [myInterestsLoaded, setMyInterestsLoaded] = useState(false);
   const reduced = useReducedMotion();
 
   useEffect(() => {
     fetchCatalog().catch(console.error);
     fetchProjectTypes().catch(console.error);
+    fetchMyInterests().catch(console.error).finally(() => setMyInterestsLoaded(true));
   }, []);
 
+  // Seeded from whatever is already saved — not always blank. This step can be
+  // re-entered after onboarding (e.g. adding Long-Term later, or via the back
+  // button) with one project type already fully set up; starting that tab
+  // blank would let an accidental visit silently wipe a working selection.
   useEffect(() => {
-    if (projectTypes && projectTypes.size > 0 && !activeTab) {
+    if (projectTypes && projectTypes.size > 0 && myInterestsLoaded && !activeTab) {
       setActiveTab(Array.from(projectTypes)[0]);
       const initial = {};
-      projectTypes.forEach((pt) => { initial[pt] = []; });
+      projectTypes.forEach((pt) => {
+        initial[pt] = myInterests
+          .filter((i) => i.projectType === pt)
+          .map((i) => ({ interestId: i.interestId, subTag: i.subTag }));
+      });
       setSelections(initial);
     }
-  }, [projectTypes]);
+  }, [projectTypes, myInterestsLoaded]);
 
   if (!catalog || !activeTab) return null;
 
@@ -179,13 +192,21 @@ export default function SelectInterestsStep() {
         })}
       </div>
 
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
-        <button
-          onClick={() => setFeedbackOpen(true)}
-          className="text-sm text-mute hover:text-ink transition-colors rounded-sm underline underline-offset-4 decoration-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
-        >
-          Yours isn't listed?
-        </button>
+      <button
+        type="button"
+        onClick={() => setFeedbackOpen(true)}
+        className="mt-6 flex w-full items-center gap-3 rounded-lg border border-dashed border-line bg-surface-2 px-4 py-3.5 text-left transition-colors hover:border-accent-400 hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-accent-700">
+          <MessageSquarePlus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+        </span>
+        <span>
+          <span className="block text-sm font-medium text-ink">Not seeing yours here?</span>
+          <span className="block text-xs text-mute">Suggest it — we add topics when enough people ask.</span>
+        </span>
+      </button>
+
+      <div className="mt-10 flex justify-end border-t border-line pt-6">
         <Button onClick={handleSubmit} size="lg" loading={loading} disabled={currentSelections.length === 0}>
           {isLastTab ? 'Continue' : 'Next category'}
         </Button>

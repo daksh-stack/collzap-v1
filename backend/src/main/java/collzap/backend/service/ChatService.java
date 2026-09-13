@@ -128,6 +128,7 @@ public class ChatService {
                 room.getType(),
                 titleFor(room, members, userId),
                 group.getInterest().getName(),
+                group.getProjectType(),
                 members.size(),
                 latest == null ? null : preview(latest, userId),
                 latest == null ? group.getOpenedAt() : latest.getSentAt(),
@@ -158,6 +159,7 @@ public class ChatService {
             room.getType(),
             titleFor(room, members, userId),
             group.getInterest().getName(),
+            group.getProjectType(),
             summarise(group, members, userId),
             empty ? EMPTY_STATE : null
         );
@@ -202,7 +204,7 @@ public class ChatService {
             throw new BadRequestException("Message cannot be empty");
         }
 
-        User sender = userService.require(userId);
+        User sender = userService.requireSelf(userId);
         Instant now = Instant.now();
         ChatMessage message = chatMessageRepository.save(new ChatMessage(room, sender, content, now));
 

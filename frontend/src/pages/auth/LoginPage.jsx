@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
@@ -42,6 +43,13 @@ export default function LoginPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={transition(page, reduced)}
     >
+      <Helmet>
+        <title>Log in · CollZap</title>
+        <meta name="description" content="Log in to CollZap to reconnect with your matched peers and pick up where you left off." />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://collzap.com/login" />
+      </Helmet>
+
       <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tightest text-ink">
         Back again.
       </h1>

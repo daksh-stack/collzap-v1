@@ -66,7 +66,7 @@ public class VerificationService {
 
     @Transactional(readOnly = true)
     public VerificationStatusResponse status(UUID userId) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         List<VerificationDocumentResponse> documents = documentRepository
             .findByUserIdOrderByCreatedAtDesc(userId).stream()
             .map(VerificationService::toResponse)
@@ -82,7 +82,7 @@ public class VerificationService {
 
     @Transactional
     public VerificationDocumentResponse upload(UUID userId, UploadDocumentRequest request) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         if (!canUpload(user.getVerificationStatus())) {
             throw new ConflictException(
                 user.getVerificationStatus() == VerificationStatus.APPROVED
@@ -109,7 +109,7 @@ public class VerificationService {
     /** Sends an OTP to a college email, resolving which college it belongs to. */
     @Transactional
     public CollegeEmailOtpSentResponse requestCollegeEmailOtp(UUID userId, RequestCollegeEmailOtpRequest request) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         if (!canUpload(user.getVerificationStatus())) {
             throw new ConflictException(
                 user.getVerificationStatus() == VerificationStatus.APPROVED
@@ -125,7 +125,7 @@ public class VerificationService {
     /** Confirms the college email OTP — approves instantly, no admin review. */
     @Transactional
     public VerificationStatusResponse confirmCollegeEmailOtp(UUID userId, ConfirmCollegeEmailOtpRequest request) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         if (!canUpload(user.getVerificationStatus())) {
             throw new ConflictException("A verification is already in progress or complete");
         }

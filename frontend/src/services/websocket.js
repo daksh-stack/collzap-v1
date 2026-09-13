@@ -1,5 +1,3 @@
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
 import { useNotificationStore } from '../store/useNotificationStore';
@@ -16,10 +14,24 @@ class WebSocketService {
     this.notificationsSub = null;
     this.wantNotifications = false;
     this.connectFailures = 0;
+    this.connecting = false;
   }
 
-  connect() {
+  // Stomp/SockJS are dynamically imported here rather than at the top of the
+  // file — this is the only place they're used, and this whole module is
+  // reached eagerly through App.jsx -> AuthGuard -> useAuthStore, which wraps
+  // every route including the anonymous landing page. A static import would
+  // put both libraries (~70KB, 22KB gzip) on that page's critical path for
+  // visitors who never open chat.
+  async connect() {
     if (this.client && (this.client.connected || this.client.active)) {
+      return;
+    }
+    // Guards the window between here and `this.client` actually being set,
+    // which is now async (the dynamic import below) — without this, two
+    // overlapping connect() calls (e.g. a double-mounted effect) could both
+    // pass the check above and each construct their own Client.
+    if (this.connecting) {
       return;
     }
 
@@ -31,6 +43,23 @@ class WebSocketService {
 
     // SockJS fallback URL
     const socketUrl = WS_BASE;
+
+    this.connecting = true;
+    let Client, SockJS;
+    try {
+      [{ Client }, { default: SockJS }] = await Promise.all([
+        import('@stomp/stompjs'),
+        import('sockjs-client'),
+      ]);
+    } finally {
+      this.connecting = false;
+    }
+
+    // Another call may have already connected while we were waiting on the
+    // dynamic import above.
+    if (this.client && (this.client.connected || this.client.active)) {
+      return;
+    }
 
     this.client = new Client({
       // Create a custom WebSocket factory to use SockJS

@@ -46,7 +46,7 @@ public class ModerationService {
 
     @Transactional
     public void block(UUID userId, UUID targetId) {
-        User reporter = userService.require(userId);
+        User reporter = userService.requireSelf(userId);
         User reported = requireOther(userId, targetId);
 
         if (blockReportRepository.existsByReporterIdAndReportedIdAndActionType(
@@ -67,7 +67,7 @@ public class ModerationService {
 
     @Transactional
     public void unblock(UUID userId, UUID targetId) {
-        userService.require(userId);
+        userService.requireSelf(userId);
         if (!blockReportRepository.existsByReporterIdAndReportedIdAndActionType(
             userId, targetId, ModerationAction.BLOCK)) {
             throw new BadRequestException("That user is not blocked");
@@ -94,7 +94,7 @@ public class ModerationService {
      */
     @Transactional
     public void report(UUID userId, ReportRequest request) {
-        User reporter = userService.require(userId);
+        User reporter = userService.requireSelf(userId);
         User reported = requireOther(userId, request.userId());
         blockReportRepository.save(
             new BlockReport(reporter, reported, ModerationAction.REPORT, request.reason().trim()));

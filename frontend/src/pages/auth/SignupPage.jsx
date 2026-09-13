@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
@@ -48,6 +49,13 @@ export default function SignupPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={transition(page, reduced)}
     >
+      <Helmet>
+        <title>Sign up · CollZap</title>
+        <meta name="description" content="Join CollZap and find verified students at your college who share your interests and goals." />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://collzap.com/signup" />
+      </Helmet>
+
       <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tightest text-ink">
         Get on the list.
       </h1>

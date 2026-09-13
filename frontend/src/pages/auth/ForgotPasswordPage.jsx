@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -70,6 +71,12 @@ export default function ForgotPasswordPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={transition(page, reduced)}
     >
+      <Helmet>
+        <title>Reset your password · CollZap</title>
+        <meta name="description" content="Reset your CollZap account password." />
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
+
       <button
         onClick={() => (stage === 'reset' ? setStage('email') : navigate('/login'))}
         className="mb-8 inline-flex items-center text-sm text-mute hover:text-ink transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"

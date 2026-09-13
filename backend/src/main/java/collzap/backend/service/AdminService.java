@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,7 @@ import collzap.backend.dto.AdminDtos.AdminReportRow;
 import collzap.backend.dto.AdminDtos.AdminStatsResponse;
 import collzap.backend.dto.AdminDtos.AdminUserRow;
 import collzap.backend.dto.AdminDtos.CreateMatchRequest;
+import collzap.backend.dto.AdminDtos.DeleteUserRequest;
 import collzap.backend.dto.AdminDtos.InterestFeedbackRow;
 import collzap.backend.dto.AdminDtos.PendingVerificationRow;
 import collzap.backend.dto.AdminDtos.UnmatchRequest;
@@ -61,7 +64,10 @@ import collzap.backend.dto.InterestDtos.UpdateInterestRequest;
 @Service
 public class AdminService {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminService.class);
+
     private final UserRepository userRepository;
+    private final UserService userService;
     private final VerificationDocumentRepository verificationDocumentRepository;
     private final MatchGroupRepository matchGroupRepository;
     private final MatchMemberRepository matchMemberRepository;
@@ -80,6 +86,7 @@ public class AdminService {
 
     public AdminService(
         UserRepository userRepository,
+        UserService userService,
         VerificationDocumentRepository verificationDocumentRepository,
         MatchGroupRepository matchGroupRepository,
         MatchMemberRepository matchMemberRepository,
@@ -97,6 +104,7 @@ public class AdminService {
         UserInterestSelectionRepository userInterestSelectionRepository
     ) {
         this.userRepository = userRepository;
+        this.userService = userService;
         this.verificationDocumentRepository = verificationDocumentRepository;
         this.matchGroupRepository = matchGroupRepository;
         this.matchMemberRepository = matchMemberRepository;
@@ -150,6 +158,31 @@ public class AdminService {
         User user = userRepository.findWithCollegeById(userId)
             .orElseThrow(() -> new NotFoundException("User not found"));
         return UserService.toResponse(user);
+    }
+
+    /**
+     * Permanent, irreversible hard delete — everything the user ever created
+     * (matches, chats, messages, verification documents, notifications, auth
+     * tokens...) goes with them. Delegates to the same cascade the self-service
+     * "delete my account" flow uses, so there is exactly one place that has to
+     * get the foreign-key ordering right. The reason is required and logged
+     * (not stored against the now-deleted user) as the audit trail for why an
+     * operator did this.
+     */
+    @Transactional
+    public void deleteUser(UUID userId, UUID adminId, DeleteUserRequest request) {
+        AdminUser operator = adminUserRepository.findById(adminId)
+            .orElseThrow(() -> new NotFoundException("Operator account not found"));
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+
+        log.warn(
+            "Admin '{}' deleting user {} ({}). Reason: {}",
+            operator.getUsername(), userId, user.getEmail(), request.reason()
+        );
+
+        matchingService.leaveAllGroups(userId);
+        userService.deleteAccount(userId);
     }
 
     /** Documents awaiting manual review, oldest first so nobody is left waiting. */

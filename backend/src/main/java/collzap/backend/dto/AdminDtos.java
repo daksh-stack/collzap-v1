@@ -33,6 +33,14 @@ public final class AdminDtos {
     ) {
     }
 
+    /** A reason is mandatory — this is a hard delete, not a soft ban, and it's logged. */
+    public record DeleteUserRequest(
+        @NotBlank(message = "A reason is required")
+        @Size(max = 500, message = "Keep it under 500 characters")
+        String reason
+    ) {
+    }
+
     public record AdminUserRow(
         UUID id,
         String name,

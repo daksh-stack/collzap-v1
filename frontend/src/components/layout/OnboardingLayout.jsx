@@ -21,13 +21,14 @@ const STEPS = [
 ];
 
 export default function OnboardingLayout() {
-  // OnboardingPage renders off the user store's onboarding.step, so the
-  // stepper must read the same source or the two disagree.
-  const { onboarding } = useUserStore();
+  // OnboardingPage renders off the user store's onboarding.step (or a local
+  // "back" override on top of it), so the stepper must read the same source
+  // or the two disagree.
+  const { onboarding, viewStepOverride } = useUserStore();
   const reduced = useReducedMotion();
   useLenis(true);
 
-  const step = onboarding?.step;
+  const step = viewStepOverride || onboarding?.step;
   const resolved = step === 'VERIFICATION_REJECTED' ? 'UPLOAD_DOCUMENT' : step;
   const currentIndex = STEPS.findIndex((s) => s.id === resolved);
   const rejected = step === 'VERIFICATION_REJECTED';

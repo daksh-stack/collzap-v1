@@ -29,7 +29,6 @@ import collzap.backend.enums.OtpPurpose;
 import collzap.backend.enums.Status;
 import collzap.backend.exception.BadRequestException;
 import collzap.backend.exception.ForbiddenException;
-import collzap.backend.exception.NotFoundException;
 import collzap.backend.exception.PasswordResetRequiredException;
 import collzap.backend.exception.UnauthorizedException;
 import collzap.backend.models.AdminUser;
@@ -57,6 +56,7 @@ public class AuthService {
     private final OtpService otpService;
     private final JwtService jwtService;
     private final OnboardingService onboardingService;
+    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final CollzapProperties properties;
     private final SecureRandom random = new SecureRandom();
@@ -68,6 +68,7 @@ public class AuthService {
         OtpService otpService,
         JwtService jwtService,
         OnboardingService onboardingService,
+        UserService userService,
         PasswordEncoder passwordEncoder,
         CollzapProperties properties
     ) {
@@ -77,6 +78,7 @@ public class AuthService {
         this.otpService = otpService;
         this.jwtService = jwtService;
         this.onboardingService = onboardingService;
+        this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.properties = properties;
     }
@@ -161,8 +163,7 @@ public class AuthService {
 
     @Transactional
     public OnboardingStateResponse verifyEmail(UUID userId, String code) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("User not found"));
+        User user = userService.requireSelf(userId);
         otpService.verify(user.getEmail(), code, OtpPurpose.SIGNUP);
         user.setEmailVerified(true);
         userRepository.save(user);
@@ -171,8 +172,7 @@ public class AuthService {
 
     @Transactional
     public OtpIssuedResponse resendVerifyEmail(UUID userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("User not found"));
+        User user = userService.requireSelf(userId);
         if (user.isEmailVerified()) {
             throw new BadRequestException("Your email is already verified");
         }

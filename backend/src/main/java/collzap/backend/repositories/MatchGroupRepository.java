@@ -72,6 +72,8 @@ public interface MatchGroupRepository extends JpaRepository<MatchGroup, UUID> {
 
     long countByInterestId(UUID interestId);
 
+    long countByCollegeId(UUID collegeId);
+
     /** Admin matches table, newest first. */
     @Query(
         value = """

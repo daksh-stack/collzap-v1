@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -30,6 +31,11 @@ export default function AdminLoginPage() {
 
   return (
     <div className="w-full max-w-xs">
+      <Helmet>
+        <title>Admin · CollZap</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+
       <div className="mb-8 flex items-center justify-between border-b border-line pb-3">
         <Logo className="h-6" />
         <span className="font-mono text-[10px] uppercase tracking-widest text-mute">

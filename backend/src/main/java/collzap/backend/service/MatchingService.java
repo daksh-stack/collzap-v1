@@ -112,7 +112,7 @@ public class MatchingService {
      */
     @Transactional
     public FindMatchesResponse findMatches(UUID userId) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         if (user.getVerificationStatus() != VerificationStatus.APPROVED) {
             throw new ForbiddenException(
                 "Your college verification is still being reviewed. We will open matching as soon as it clears.");

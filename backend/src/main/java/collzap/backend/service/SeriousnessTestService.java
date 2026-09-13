@@ -89,7 +89,7 @@ public class SeriousnessTestService {
 
     @Transactional(readOnly = true)
     public TestEligibilityResponse eligibility(UUID userId) {
-        userService.require(userId);
+        userService.requireSelf(userId);
         List<SeriousnessTestAttempt> activeAttempts = attemptRepository
             .findActiveAttemptsByUserId(userId);
 
@@ -154,7 +154,7 @@ public class SeriousnessTestService {
      */
     @Transactional
     public TestSessionResponse start(UUID userId) {
-        User user = userService.require(userId);
+        User user = userService.requireSelf(userId);
         TestEligibilityResponse eligibility = eligibility(userId);
         if (!eligibility.eligible()) {
             throw new ConflictException(eligibility.reason());

@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 import collzap.backend.dto.InterestDtos.ProjectTypesResponse;
 import collzap.backend.dto.InterestDtos.SelectConnectionTypeRequest;
 import collzap.backend.dto.InterestDtos.SelectProjectTypesRequest;
+import collzap.backend.dto.InterestDtos.SetShortTermInterestRequest;
+import collzap.backend.dto.InterestDtos.UserInterestResponse;
 import collzap.backend.dto.UserDtos.ConnectionTypeSelectionResponse;
 import collzap.backend.security.AuthPrincipal;
 import collzap.backend.service.InterestService;
@@ -63,5 +65,20 @@ public class SelectionController {
         @Valid @RequestBody SelectConnectionTypeRequest request
     ) {
         return interestService.selectConnectionType(me.userId(), request);
+    }
+
+    /**
+     * Short-Term Buddy's persistent "pick a new one" entry point — usable at any
+     * time, not just onboarding. One request does the whole setup or swap
+     * (enabling the project type on first use, the connection type if none is
+     * saved yet, and the interest itself) so the app never observes a half-done
+     * state between separate writes.
+     */
+    @PutMapping("/short-term-interest")
+    public List<UserInterestResponse> setShortTermInterest(
+        @AuthenticationPrincipal AuthPrincipal me,
+        @Valid @RequestBody SetShortTermInterestRequest request
+    ) {
+        return interestService.setShortTermInterest(me.userId(), request);
     }
 }

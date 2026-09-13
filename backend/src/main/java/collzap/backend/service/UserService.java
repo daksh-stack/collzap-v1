@@ -20,6 +20,7 @@ import collzap.backend.enums.SeriousnessLevel;
 import collzap.backend.enums.Status;
 import collzap.backend.exception.ForbiddenException;
 import collzap.backend.exception.NotFoundException;
+import collzap.backend.exception.UnauthorizedException;
 import collzap.backend.models.ChatMessage;
 import collzap.backend.models.College;
 import collzap.backend.models.DeviceToken;
@@ -109,6 +110,11 @@ public class UserService {
         this.otpCodeRepository = otpCodeRepository;
     }
 
+    /**
+     * Looks up an arbitrary user by id — for resolving someone OTHER than the
+     * caller (an admin viewing a student, a peer profile's target). A 404/403
+     * here is about that other account's state, not the caller's own session.
+     */
     @Transactional(readOnly = true)
     public User require(UUID userId) {
         User user = userRepository.findWithCollegeById(userId)
@@ -119,9 +125,27 @@ public class UserService {
         return user;
     }
 
+    /**
+     * Resolves the authenticated caller's own account. Unlike {@link #require},
+     * a missing or deleted row here means the JWT no longer corresponds to a
+     * real session — thrown as 401, not 404/403, so the frontend's existing
+     * refresh-then-logout flow kicks in automatically (a refresh attempt then
+     * fails too, since an admin hard-delete also removes the refresh token
+     * row) instead of leaving the caller stuck on a dead page. Use this
+     * wherever {@code userId} comes straight from the authenticated principal.
+     */
+    @Transactional(readOnly = true)
+    public User requireSelf(UUID userId) {
+        User user = userRepository.findWithCollegeById(userId).orElse(null);
+        if (user == null || user.getAccountStatus() == Status.DELETED) {
+            throw new UnauthorizedException("Your account no longer exists. Please sign in again.");
+        }
+        return user;
+    }
+
     @Transactional(readOnly = true)
     public UserResponse me(UUID userId) {
-        return toResponse(require(userId));
+        return toResponse(requireSelf(userId));
     }
 
     /**
@@ -131,7 +155,7 @@ public class UserService {
      */
     @Transactional
     public UserResponse updateProfile(UUID userId, UpdateProfileRequest request) {
-        User user = require(userId);
+        User user = requireSelf(userId);
         College college = collegeService.getById(request.collegeId());
 
         user.setCollege(college);
@@ -150,7 +174,7 @@ public class UserService {
 
     @Transactional
     public UserResponse updatePhoto(UUID userId, UpdatePhotoRequest request) {
-        User user = require(userId);
+        User user = requireSelf(userId);
         user.setProfilePhotoUrl(request.profilePhotoUrl().trim());
         user.setProfileCompleted(user.profileCompletionPercent() == 100);
         return toResponse(userRepository.save(user));
@@ -158,13 +182,13 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public SettingsResponse settings(UUID userId) {
-        User user = require(userId);
+        User user = requireSelf(userId);
         return new SettingsResponse(user.isNotificationsEnabled(), user.isProfileVisible());
     }
 
     @Transactional
     public SettingsResponse updateSettings(UUID userId, UpdateSettingsRequest request) {
-        User user = require(userId);
+        User user = requireSelf(userId);
         if (request.notificationsEnabled() != null) {
             user.setNotificationsEnabled(request.notificationsEnabled());
         }
@@ -182,7 +206,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public PeerProfileResponse peerProfile(UUID viewerId, UUID targetId) {
         if (viewerId.equals(targetId)) {
-            return toPeerProfile(require(targetId));
+            return toPeerProfile(requireSelf(targetId));
         }
         if (!sharesGroup(viewerId, targetId)) {
             throw new ForbiddenException("You can only view profiles of peers you are connected with");
@@ -196,7 +220,7 @@ public class UserService {
 
     @Transactional
     public void registerDevice(UUID userId, RegisterDeviceRequest request) {
-        User user = require(userId);
+        User user = requireSelf(userId);
         String token = request.token().trim();
         deviceTokenRepository.findByToken(token).ifPresentOrElse(
             existing -> {
