@@ -74,6 +74,9 @@ public class ChatSocketController {
         String reason = error instanceof ApiException apiException
             ? apiException.getMessage()
             : "Could not deliver that message";
+        int status = error instanceof ApiException apiException
+            ? apiException.getStatus().value()
+            : 500;
         if (!(error instanceof ApiException)) {
             log.error("WebSocket frame failed", error);
         }
@@ -83,10 +86,16 @@ public class ChatSocketController {
         messagingTemplate.convertAndSendToUser(
             accessor.getUser().getName(),
             "/queue/errors",
-            new SocketError(reason)
+            new SocketError(reason, status)
         );
     }
 
-    private record SocketError(String message) {
+    /**
+     * {@code status} mirrors the REST API's HTTP status (401 in particular) so the
+     * client can react the same way it does to a failed REST call — e.g. a deleted
+     * account's frame fails with 401 and the client logs it out, instead of the
+     * error silently vanishing into a frame with no status to key off of.
+     */
+    private record SocketError(String message, int status) {
     }
 }

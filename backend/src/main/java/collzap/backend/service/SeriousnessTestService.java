@@ -189,6 +189,7 @@ public class SeriousnessTestService {
 
     @Transactional(readOnly = true)
     public TestSessionResponse currentSession(UUID userId) {
+        userService.requireSelf(userId);
         List<SeriousnessTestAttempt> attempts = attemptRepository.findActiveAttemptsByUserId(userId);
         if (attempts.isEmpty()) {
             throw new NotFoundException("No test in progress");
@@ -198,6 +199,7 @@ public class SeriousnessTestService {
 
     @Transactional
     public AnswerAcceptedResponse answer(UUID userId, SubmitAnswerRequest request) {
+        userService.requireSelf(userId);
         List<SeriousnessTestAttempt> attempts = attemptRepository.findActiveAttemptsByUserId(userId);
         if (attempts.isEmpty()) {
             throw new ConflictException("No test in progress");
@@ -245,6 +247,7 @@ public class SeriousnessTestService {
 
     @Transactional
     public TestResultResponse submit(UUID userId) {
+        userService.requireSelf(userId);
         List<SeriousnessTestAttempt> attempts = attemptRepository.findActiveAttemptsByUserId(userId);
         if (attempts.isEmpty()) {
             throw new ConflictException("This test was abandoned. Start a new one.");
@@ -261,6 +264,7 @@ public class SeriousnessTestService {
 
     @Transactional(readOnly = true)
     public TestResultResponse latestResult(UUID userId) {
+        userService.requireSelf(userId);
         List<SeriousnessTestAttempt> submitted = attemptRepository.findSubmittedByUserIdNewestFirst(userId);
         if (submitted.isEmpty()) {
             throw new NotFoundException("You have not taken the test yet");
@@ -417,6 +421,7 @@ public class SeriousnessTestService {
 
     @Transactional
     public void emergencyReset(UUID userId) {
+        userService.requireSelf(userId);
         attemptRepository.findActiveAttemptsByUserId(userId)
             .forEach(open -> {
                 open.setStatus(TestAttemptStatus.ABANDONED);

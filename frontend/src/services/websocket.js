@@ -96,6 +96,24 @@ class WebSocketService {
 
       this.client.subscribe('/user/queue/errors', (message) => {
         if (DEV) console.warn('WebSocket error frame from server:', message.body);
+        let parsed = null;
+        try {
+          parsed = JSON.parse(message.body);
+        } catch {
+          // Non-JSON error frame — nothing more to act on.
+        }
+        // A 401 here means the account behind this socket no longer exists
+        // (e.g. an admin deleted it mid-chat) — the JWT itself is still
+        // validly signed, so the socket stayed connected, but every DB-backed
+        // lookup will now fail forever. Force the same logout the REST
+        // interceptor already does for a 401, instead of leaving the tab
+        // silently unusable.
+        if (parsed?.status === 401) {
+          this.disconnect();
+          useAuthStore.getState().logout().finally(() => {
+            window.location.assign('/login');
+          });
+        }
       });
     };
 
