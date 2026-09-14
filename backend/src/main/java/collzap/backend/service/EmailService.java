@@ -30,6 +30,18 @@ public class EmailService {
         this.restClient = restClientBuilder.build();
     }
 
+    /**
+     * {@code @Async} lives on these public entry points, not on the private
+     * {@link #send} helper they delegate to — Spring's async proxy only
+     * intercepts calls that come in through the bean's proxy, and these are
+     * the methods callers (OtpService, VerificationService) actually invoke
+     * from inside their own {@code @Transactional} methods. Putting it on
+     * {@code send} instead was a self-invocation bug: a call from a method in
+     * this same class bypasses the proxy entirely, so it ran synchronously
+     * and held the caller's DB connection open for the live HTTP round-trip
+     * to Resend.
+     */
+    @Async
     public void sendOtp(String to, String code, Duration ttl) {
         long minutes = Math.max(1, ttl.toMinutes());
         String subject = "Your Collzap verification code";
@@ -48,6 +60,7 @@ public class EmailService {
         send(to, subject, html);
     }
 
+    @Async
     public void sendVerificationApproved(String to, String name) {
         send(to, "You are verified on Collzap", """
             <div style="font-family:system-ui,sans-serif;max-width:480px">
@@ -57,6 +70,7 @@ public class EmailService {
             """.formatted(escape(name)));
     }
 
+    @Async
     public void sendVerificationRejected(String to, String name, String reason) {
         send(to, "Action needed on your Collzap verification", """
             <div style="font-family:system-ui,sans-serif;max-width:480px">
@@ -71,8 +85,7 @@ public class EmailService {
      * Fire-and-forget: a failing mail provider must not fail the caller's
      * transaction. Failures are logged for follow-up.
      */
-    @Async
-    public void send(String to, String subject, String html) {
+    private void send(String to, String subject, String html) {
         String apiKey = properties.getMail().getResendApiKey();
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("No Resend API key configured; email to {} not sent. Subject: {}", to, subject);

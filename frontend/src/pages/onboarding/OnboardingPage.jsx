@@ -39,6 +39,38 @@ const BACK_TARGET = {
   SELECT_CONNECTION_TYPE: 'SELECT_INTERESTS',
 };
 
+/**
+ * BACK_TARGET assumes a from-scratch, single-project-type pass. Both hops
+ * stop being safe once a second project type is involved — whether picked
+ * together or added later via HomePage's "add Long-Term" flow — because the
+ * setup no longer matches what the target step expects:
+ *
+ * - SELECT_INTERESTS -> SELECT_PROJECT_TYPE: that step only ever expects to
+ *   run once, before any project type exists (see its own comment), and
+ *   submits a single replacement type. Safe when this is still the only
+ *   project type on the account (nothing else to lose); with a second one
+ *   already there, resubmitting a single type there deletes that other
+ *   type's interests and connection type outright
+ *   (InterestService.selectProjectTypes replaces the whole set).
+ * - SELECT_CONNECTION_TYPE -> SELECT_INTERESTS: Long-Term's interests are
+ *   locked the moment they're first saved (required before the test can even
+ *   start), so whenever Long-Term is one of the project types, by the time
+ *   this step is reachable its tab is guaranteed to fail with "Long-term
+ *   interests are set once and can't be changed" the moment Continue is
+ *   pressed on it — same "no take-backs" reasoning the test itself already
+ *   gets.
+ */
+function backTargetFor(step, onboarding) {
+  const projectTypes = onboarding?.projectTypes || [];
+  if (step === 'SELECT_INTERESTS' && projectTypes.length > 1) {
+    return undefined;
+  }
+  if (step === 'SELECT_CONNECTION_TYPE' && projectTypes.includes('LONG_TERM')) {
+    return undefined;
+  }
+  return BACK_TARGET[step];
+}
+
 export default function OnboardingPage() {
   const { onboarding, fetchOnboarding, viewStepOverride, setViewStepOverride } = useUserStore();
   const navigate = useNavigate();
@@ -111,7 +143,7 @@ export default function OnboardingPage() {
     );
   }
 
-  const backTarget = BACK_TARGET[step];
+  const backTarget = backTargetFor(step, onboarding);
 
   return (
     <AnimatePresence mode="wait">

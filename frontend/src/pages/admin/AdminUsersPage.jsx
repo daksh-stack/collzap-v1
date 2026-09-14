@@ -250,6 +250,7 @@ export default function AdminUsersPage() {
               {[
                 ['College', selectedUser.collegeName],
                 ['City', selectedUser.city],
+                ['Course', selectedUser.course],
                 ['Year', selectedUser.yearOfStudy ? `Year ${selectedUser.yearOfStudy}` : null],
                 ['Joined', selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : null],
               ].map(([label, value]) => (

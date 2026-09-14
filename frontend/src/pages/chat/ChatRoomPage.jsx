@@ -124,7 +124,12 @@ export default function ChatRoomPage() {
 
   const roomTitle = room.title || room.interestName || 'Chat';
   const memberCount = room.members?.length || 0;
-  const isGroup = memberCount > 2;
+  // Sender-name labels distinguish speakers whenever more than one other
+  // person could be in the thread — that's any non-1-on-1 room type, not
+  // just one that currently happens to have more than 2 members. A
+  // SHORT_GROUP/SOCIETY room sitting at its 2-member floor (before it grows
+  // toward capacity) is still a group room, and its messages need names.
+  const isGroup = room.type !== 'ONE_ON_ONE';
 
   // Messages are chronological — pages prepend history, sends and socket
   // messages append — so the last element is the one to reply to.

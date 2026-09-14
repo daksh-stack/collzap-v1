@@ -163,6 +163,7 @@ public class UserService {
         user.setProfilePhotoUrl(trimToNull(request.profilePhotoUrl()));
         user.setYearOfStudy(request.yearOfStudy());
         user.setCity(trimToNull(request.city()));
+        user.setCourse(trimToNull(request.course()));
         user.setStoryPrompt1(trimToNull(request.storyPrompt1()));
         user.setStoryPrompt2(trimToNull(request.storyPrompt2()));
         user.setStoryPrompt3(trimToNull(request.storyPrompt3()));
@@ -335,6 +336,7 @@ public class UserService {
             user.getCollege() == null ? null : user.getCollege().getName(),
             user.getYearOfStudy(),
             user.getCity(),
+            user.getCourse(),
             user.getStoryPrompt1(),
             user.getStoryPrompt2(),
             user.getStoryPrompt3(),
@@ -353,6 +355,7 @@ public class UserService {
             user.getProfilePhotoUrl(),
             user.getYearOfStudy(),
             user.getCity(),
+            user.getCourse(),
             user.getStoryPrompt1(),
             user.getStoryPrompt2(),
             user.getStoryPrompt3(),

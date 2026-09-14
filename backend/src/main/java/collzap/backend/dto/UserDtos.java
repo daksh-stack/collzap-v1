@@ -31,6 +31,7 @@ public final class UserDtos {
         String profilePhotoUrl,
         Integer yearOfStudy,
         String city,
+        String course,
         String storyPrompt1,
         String storyPrompt2,
         String storyPrompt3,
@@ -68,6 +69,9 @@ public final class UserDtos {
         @Size(max = 120)
         String city,
 
+        @Size(max = 120)
+        String course,
+
         @Size(max = 500, message = "Keep it under 500 characters")
         String storyPrompt1,
 
@@ -98,6 +102,7 @@ public final class UserDtos {
         String collegeName,
         Integer yearOfStudy,
         String city,
+        String course,
         String storyPrompt1,
         String storyPrompt2,
         String storyPrompt3,

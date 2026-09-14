@@ -24,6 +24,7 @@ export default function CompleteProfileStep() {
     profilePhotoUrl: '',
     yearOfStudy: '1',
     city: '',
+    course: '',
     storyPrompt1: '',
     storyPrompt2: '',
     storyPrompt3: '',
@@ -44,6 +45,7 @@ export default function CompleteProfileStep() {
         profilePhotoUrl: profile.profilePhotoUrl || '',
         yearOfStudy: profile.yearOfStudy?.toString() || '1',
         city: profile.city || '',
+        course: profile.course || '',
         storyPrompt1: profile.storyPrompt1 || '',
         storyPrompt2: profile.storyPrompt2 || '',
         storyPrompt3: profile.storyPrompt3 || '',
@@ -59,8 +61,8 @@ export default function CompleteProfileStep() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name.trim() || !formData.city.trim()) {
-      toast.error('Name and city are required');
+    if (!formData.name.trim() || !formData.city.trim() || !formData.course.trim()) {
+      toast.error('Name, city and course are required');
       return;
     }
 
@@ -105,6 +107,7 @@ export default function CompleteProfileStep() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input label="Full name" name="name" value={formData.name} onChange={handleChange} disabled={loading} required />
           <Input label="City" name="city" value={formData.city} onChange={handleChange} disabled={loading} required />
+          <Input label="Course" name="course" placeholder="e.g. B.Tech CSE" value={formData.course} onChange={handleChange} disabled={loading} required />
           <Select
             label="Year"
             name="yearOfStudy"

@@ -109,6 +109,7 @@ export default function PeerProfilePage() {
           <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-mute">
             {profile.collegeName}
             {profile.yearOfStudy ? ` · Year ${profile.yearOfStudy}` : ''}
+            {profile.course ? ` · ${profile.course}` : ''}
             {profile.city ? ` · ${profile.city}` : ''}
           </p>
         </div>

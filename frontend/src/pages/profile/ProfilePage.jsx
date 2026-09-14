@@ -37,6 +37,7 @@ export default function ProfilePage() {
         profilePhotoUrl: profile.profilePhotoUrl || '',
         yearOfStudy: profile.yearOfStudy?.toString() || '1',
         city: profile.city || '',
+        course: profile.course || '',
         storyPrompt1: profile.storyPrompt1 || '',
         storyPrompt2: profile.storyPrompt2 || '',
         storyPrompt3: profile.storyPrompt3 || '',
@@ -156,6 +157,10 @@ export default function ProfilePage() {
                   <dt className="text-mute">City</dt>
                   <dd className="text-right text-ink">{profile.city || '—'}</dd>
                 </div>
+                <div className="flex justify-between gap-4 py-3">
+                  <dt className="text-mute">Course</dt>
+                  <dd className="text-right text-ink">{profile.course || '—'}</dd>
+                </div>
               </dl>
             </section>
 
@@ -217,6 +222,13 @@ export default function ProfilePage() {
               label="City"
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              required
+            />
+            <Input
+              label="Course"
+              placeholder="e.g. B.Tech CSE"
+              value={formData.course}
+              onChange={(e) => setFormData({ ...formData, course: e.target.value })}
               required
             />
             <Select

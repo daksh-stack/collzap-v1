@@ -71,6 +71,10 @@ public class User extends BaseEntity {
     @Column(name = "city")
     private String city;
 
+    /** e.g. "B.Tech CSE", "BSc Physics" — free text, not tied to a college's course catalogue. */
+    @Column(name = "course")
+    private String course;
+
     /** One thing I want to achieve in college years. */
     @Column(name = "story_prompt_1", columnDefinition = "text")
     private String storyPrompt1;
@@ -138,16 +142,17 @@ public class User extends BaseEntity {
 
     /**
      * Mandatory profile fields per the setup screen: photo, name, college, year,
-     * city and all three story prompts. The proof-of-work link stays optional.
+     * city, course and all three story prompts. The proof-of-work link stays optional.
      */
     public int profileCompletionPercent() {
-        int total = 8;
+        int total = 9;
         int filled = 0;
         if (isNotBlank(profilePhotoUrl)) filled++;
         if (isNotBlank(name)) filled++;
         if (college != null) filled++;
         if (yearOfStudy != null) filled++;
         if (isNotBlank(city)) filled++;
+        if (isNotBlank(course)) filled++;
         if (isNotBlank(storyPrompt1)) filled++;
         if (isNotBlank(storyPrompt2)) filled++;
         if (isNotBlank(storyPrompt3)) filled++;
