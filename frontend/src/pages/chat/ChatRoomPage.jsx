@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { ArrowLeft, Send, Check, CheckCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
 import { useChatStore } from '../../store/useChatStore';
 import { webSocketService } from '../../services/websocket';
+import { getSmartReplies } from '../../lib/smartReplies';
 import { snappy, useReducedMotion, transition } from '../../lib/motion';
 import { cn } from '../../lib/utils';
 
@@ -64,18 +65,27 @@ export default function ChatRoomPage() {
     initialRenderRef.current = false;
   }, [roomMessages.length, joins.length]);
 
-  const handleSend = async () => {
-    if (!content.trim() || sending) return;
+  // One send path for typed messages and tapped suggestions alike, so both get
+  // the same guard, the same error toast and the same rate-limit behaviour.
+  const sendText = async (text) => {
+    const trimmed = text.trim();
+    if (!trimmed || sending) return false;
     try {
       setSending(true);
       // REST send. The socket echo is deduped by the store.
-      await sendMessage(roomId, content.trim());
-      setContent('');
+      await sendMessage(roomId, trimmed);
+      return true;
     } catch (error) {
       toast.error(error.message || 'That did not send');
+      return false;
     } finally {
       setSending(false);
     }
+  };
+
+  const handleSend = async () => {
+    // Clear only on success, so a failed send never eats what was typed.
+    if (await sendText(content)) setContent('');
   };
 
   const handleKeyDown = (e) => {
@@ -115,6 +125,16 @@ export default function ChatRoomPage() {
   const roomTitle = room.title || room.interestName || 'Chat';
   const memberCount = room.members?.length || 0;
   const isGroup = memberCount > 2;
+
+  // Messages are chronological — pages prepend history, sends and socket
+  // messages append — so the last element is the one to reply to.
+  const suggestions = getSmartReplies({
+    lastMessage: roomMessages[roomMessages.length - 1] || null,
+    room,
+  });
+  // Out of the way once you start typing, and hidden mid-send: sends are not
+  // optimistic, so until the server answers, their message is still "last".
+  const showSuggestions = suggestions.length > 0 && !content.trim() && !sending;
 
   return (
     <div className="flex h-[calc(100dvh-var(--app-chrome,9rem))] flex-col overflow-hidden rounded-lg border border-line bg-surface">
@@ -214,6 +234,36 @@ export default function ChatRoomPage() {
 
       {/* Composer */}
       <div className="shrink-0 border-t border-line px-4 py-3">
+        {/* Smart replies. One tap sends, as on LinkedIn. On a phone the row
+            scrolls sideways rather than wrapping, so it never pushes the
+            composer up; from `sm` there is room to wrap and centre. */}
+        <AnimatePresence initial={false}>
+          {showSuggestions && (
+            <motion.div
+              key="smart-replies"
+              role="group"
+              aria-label="Suggested replies"
+              initial={reduced ? { opacity: 0 } : { opacity: 0, y: 6 }}
+              animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              exit={reduced ? { opacity: 0 } : { opacity: 0, y: 6 }}
+              transition={transition(snappy, reduced)}
+              className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] sm:flex-wrap sm:justify-center sm:overflow-visible"
+            >
+              {suggestions.map((reply) => (
+                <button
+                  key={reply}
+                  type="button"
+                  onClick={() => sendText(reply)}
+                  disabled={sending}
+                  className="shrink-0 whitespace-nowrap rounded-full border border-accent-500 bg-surface px-4 py-1.5 text-sm font-semibold text-accent-700 transition-colors hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-50"
+                >
+                  {reply}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="flex items-end gap-2">
           <label htmlFor="chat-input" className="sr-only">Message</label>
           <textarea
