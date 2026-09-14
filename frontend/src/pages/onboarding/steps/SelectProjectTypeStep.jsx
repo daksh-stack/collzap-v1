@@ -12,13 +12,13 @@ const TILES = [
   {
     id: 'LONG_TERM',
     title: 'Long Peer',
-    body: 'Something you are still working on next semester. Slower to match, harder to leave. This is a one-time choice — set once, not changeable later.',
+    body: 'A permanent, one-time choice for next semester that is hard to get into, hard to leave, and cannot be changed later.',
     meta: 'Months',
   },
   {
     id: 'SHORT_TERM',
     title: 'Short Peer',
-    body: 'Hackathon, one paper, one deadline. Match fast, ship, move on. You can pick a new one any time from your home page.',
+    body: 'A temporary project with quick deadlines that you can finish, leave, or change anytime from your homepage.',
     meta: 'Weeks',
   },
 ];

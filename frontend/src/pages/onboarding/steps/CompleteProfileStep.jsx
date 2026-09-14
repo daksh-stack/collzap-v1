@@ -10,9 +10,9 @@ import { useUserStore } from '../../../store/useUserStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 
 const PROMPTS = [
-  { name: 'storyPrompt1', label: 'What are you actually into?', placeholder: 'Not the resume version.' },
-  { name: 'storyPrompt2', label: "What's open on your laptop right now?", placeholder: 'A repo, a paper, a half-dead side project…' },
-  { name: 'storyPrompt3', label: 'One thing people find out about you late', placeholder: 'Anything. Keep it short.' },
+  { name: 'storyPrompt1', label: 'One thing you want to achieve in college years.', placeholder: 'Not the resume version.' },
+  { name: 'storyPrompt2', label: "I am most serious about ...", placeholder: 'Right about your latest commitments ....' },
+  { name: 'storyPrompt3', label: 'The kind of peer i am looking for ...', placeholder: 'Anything. Keep it short.' },
 ];
 
 export default function CompleteProfileStep() {
