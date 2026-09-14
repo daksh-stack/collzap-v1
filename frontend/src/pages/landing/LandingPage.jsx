@@ -23,10 +23,24 @@ import StickyCta from './sections/StickyCta';
 export default function LandingPage() {
   useLenis(true);
 
+  /*
+   * `overflow-x-hidden` below is deliberate, not a patch over a broken layout.
+   * The page uses rotated decoration — the stamps, and the sticky notes — and a
+   * CSS transform still contributes to the *scrollable overflow area* even
+   * though it contributes nothing to layout. Without it, a rotated element
+   * hanging a few pixels past the right edge gives the whole document a
+   * horizontal scrollbar, which on a phone shows as a strip of bare page
+   * beside every section.
+   *
+   * Safe here: the element has `min-h-screen`, not a fixed height, so it never
+   * becomes its own scroll container, and neither `Nav` nor `StickyCta` is
+   * affected — `position: fixed` ignores an ancestor's overflow unless that
+   * ancestor has a transform, and this one has none.
+   */
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen overflow-x-hidden bg-paper">
       <Helmet>
-        <title>CollZap — Same campus. Different dreams. One platform.</title>
+        <title>CollZap — Same campus | Different dreams | One platform</title>
         <meta
           name="description"
           content="CollZap helps students discover like-minded peers for friendships, projects, startups, learning, and growth inside their campus. Verified students only."

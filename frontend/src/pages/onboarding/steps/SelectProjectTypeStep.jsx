@@ -11,13 +11,13 @@ import { snappy, useReducedMotion, transition } from '../../../lib/motion';
 const TILES = [
   {
     id: 'LONG_TERM',
-    title: 'Long haul',
+    title: 'Long Peer',
     body: 'Something you are still working on next semester. Slower to match, harder to leave.',
     meta: 'Months',
   },
   {
     id: 'SHORT_TERM',
-    title: 'Short burst',
+    title: 'Short Peer',
     body: 'Hackathon, one paper, one deadline. Match fast, ship, move on.',
     meta: 'Weeks',
   },
@@ -44,7 +44,7 @@ export default function SelectProjectTypeStep() {
 
   const handleSubmit = async () => {
     if (selectedTypes.size === 0) {
-      toast.error('Pick at least one');
+      toast.error('Pick only one');
       return;
     }
     try {
@@ -57,7 +57,7 @@ export default function SelectProjectTypeStep() {
   return (
     <div>
       <StepHeader eyebrow="Step four" title="How long are you in for?">
-        Pick one or both. This decides who you get put in front of — nothing else
+        Pick one. This decides who you get put in front of — nothing else
         about your profile matters as much.
       </StepHeader>
 

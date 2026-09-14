@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import ConnectionField from '../../../components/brand/ConnectionField';
 import Button from '../../../components/ui/Button';
 import { reveal, useReducedMotion } from '../../../lib/motion';
-import IdBadge from '../IdBadge';
+import IdBadge from '../../../components/brand/IdBadge';
 import { usePrimaryCta } from '../shared';
 
 // The four promises, verbatim.
@@ -40,7 +40,7 @@ export default function Hero() {
               {...reveal(reduced)}
               className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#8FC2F5]"
             >
-              Same campus. Different dreams. One platform.
+              Same campus | Different dreams | One platform
             </motion.p>
 
             <motion.h1

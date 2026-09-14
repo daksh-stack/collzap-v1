@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { Menu, X } from 'lucide-react';
+import { ChevronRight, Menu, X } from 'lucide-react';
 import Logo from '../../../components/brand/Logo';
 import Button from '../../../components/ui/Button';
 import ThemeToggle from '../../../components/ui/ThemeToggle';
@@ -36,6 +36,13 @@ export default function Nav() {
   const solid = scrolled || menuOpen;
   const link = solid ? 'text-mute hover:text-ink' : 'text-[#A8BDD8] hover:text-white';
 
+  // On a phone the header is just a logo and two bare glyphs, which reads as
+  // unfinished. Giving them a real surface makes them look like the buttons
+  // they are — and 40px is a proper touch target.
+  const iconBtn = solid
+    ? 'border border-line bg-surface text-mute hover:text-ink'
+    : 'border border-white/15 bg-white/[0.07] text-[#A8BDD8] hover:bg-white/[0.12] hover:text-white';
+
   return (
     <header
       className={cn(
@@ -65,7 +72,11 @@ export default function Nav() {
           ))}
 
           <ThemeToggle
-            className={cn('mx-1', !solid && 'text-[#A8BDD8] hover:bg-white/10 hover:text-white')}
+            className={cn(
+              'ml-1 h-10 w-10 rounded-lg lg:ml-2 lg:h-9 lg:w-9',
+              iconBtn,
+              solid && 'hover:bg-accent-50 hover:text-accent-700'
+            )}
           />
 
           <Link
@@ -88,8 +99,9 @@ export default function Nav() {
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((o) => !o)}
             className={cn(
-              'grid h-9 w-9 place-items-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 lg:hidden',
-              link
+              'ml-2 grid h-10 w-10 place-items-center rounded-lg transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 lg:hidden',
+              iconBtn
             )}
           >
             {menuOpen
@@ -108,19 +120,20 @@ export default function Nav() {
             transition={transition(snappy, reduced)}
             className="overflow-hidden border-t border-line bg-paper lg:hidden"
           >
-            <ul className="mx-auto max-w-6xl px-6 py-3 sm:px-8">
+            <ul className="mx-auto max-w-6xl divide-y divide-line px-6 pb-4 sm:px-8">
               {NAV_LINKS.map((item) => (
                 <li key={item.href}>
                   <a
                     href={item.href}
                     onClick={() => setMenuOpen(false)}
-                    className="block rounded px-2 py-3 text-sm font-medium text-mute transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                    className="flex items-center justify-between rounded py-4 text-base font-medium text-ink transition-colors hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                   >
                     {item.label}
+                    <ChevronRight className="h-4 w-4 shrink-0 text-mute" aria-hidden="true" />
                   </a>
                 </li>
               ))}
-              <li className="flex items-center gap-3 border-t border-line pb-2 pt-3 sm:hidden">
+              <li className="flex items-center gap-3 pt-4 sm:hidden">
                 <Link
                   to="/login"
                   onClick={() => setMenuOpen(false)}
