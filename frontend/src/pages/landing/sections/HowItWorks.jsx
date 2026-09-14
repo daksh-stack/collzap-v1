@@ -10,7 +10,7 @@ import {
   viewportOnce,
 } from '../../../lib/motion';
 import SectionLabel from '../SectionLabel';
-import Stamp from '../Stamp';
+import Stamp from '../../../components/ui/Stamp';
 import { INTEREST_CHIPS } from '../shared';
 
 // The three levels shown on the landing. The in-app assessment is finer

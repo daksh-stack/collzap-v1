@@ -3,7 +3,7 @@ import { Check } from 'lucide-react';
 import Badge from '../../../components/ui/Badge';
 import { reveal, revealGroup, revealVariants, useReducedMotion } from '../../../lib/motion';
 import SectionLabel from '../SectionLabel';
-import Stamp from '../Stamp';
+import Stamp from '../../../components/ui/Stamp';
 
 // Each pair is: what exists today, and what it becomes here.
 const PAIRS = [

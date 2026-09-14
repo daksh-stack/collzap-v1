@@ -11,13 +11,13 @@ import { snappy, useReducedMotion, transition } from '../../../lib/motion';
 const TILES = [
   {
     id: 'LONG_TERM',
-    title: 'Long haul',
+    title: 'Long Peer',
     body: 'Something you are still working on next semester. Slower to match, harder to leave. This is a one-time choice — set once, not changeable later.',
     meta: 'Months',
   },
   {
     id: 'SHORT_TERM',
-    title: 'Short burst',
+    title: 'Short Peer',
     body: 'Hackathon, one paper, one deadline. Match fast, ship, move on. You can pick a new one any time from your home page.',
     meta: 'Weeks',
   },
