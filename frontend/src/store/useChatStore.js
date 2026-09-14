@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api } from '../api/api';
+import { useAuthStore } from './useAuthStore';
 
 export const useChatStore = create((set, get) => ({
   chatList: [],
@@ -90,13 +91,25 @@ export const useChatStore = create((set, get) => ({
       
       set((state) => {
         const roomMessages = state.messages[roomId] || [];
-        const isAlreadyPresent = roomMessages.some(m => 
+        const alreadyPresentIndex = roomMessages.findIndex(m =>
           (m.id && response.id && m.id === response.id) ||
           (m.clientMessageId && cid && m.clientMessageId === cid)
         );
 
-        if (isAlreadyPresent) {
-          return { sending: false };
+        // The room's own WebSocket broadcast (mine always false — it's built
+        // viewer-neutral so every subscriber gets the same payload) can beat
+        // this REST response back to the client, since it's sent server-side
+        // before the HTTP response is even written. If that already inserted
+        // this message, replace it with this authoritative response (real
+        // `mine`, receipt tick) instead of leaving the broadcast's copy in
+        // place until a reload re-fetches it correctly.
+        if (alreadyPresentIndex !== -1) {
+          const next = [...roomMessages];
+          next[alreadyPresentIndex] = response;
+          return {
+            messages: { ...state.messages, [roomId]: next },
+            sending: false
+          };
         }
 
         return {
@@ -134,24 +147,39 @@ export const useChatStore = create((set, get) => ({
   // Local actions to be called from the WebSocket subscriber
   addIncomingMessage: (roomId, message) => {
     if (!message) return;
+
+    // The socket broadcast is built viewer-neutral (same payload for every
+    // subscriber), so its `mine` is always false — including for the
+    // sender's own subscription. Recompute it against the actual logged-in
+    // user so a message that arrives here (rather than via sendMessage's
+    // REST response) still lands on the right side instead of the left.
+    const myId = useAuthStore.getState().user?.id;
+    const normalized = myId && message.senderId === myId ? { ...message, mine: true } : message;
+
     set((state) => {
       const roomMessages = state.messages[roomId] || [];
-      
+
       // Strict deduplication against optimistic or previously received messages
-      const isDuplicate = roomMessages.some(m => 
-        (m.id && message.id && m.id === message.id) ||
-        (m.clientMessageId && message.clientMessageId && m.clientMessageId === message.clientMessageId) ||
-        (m.content === message.content && m.senderId === message.senderId && Math.abs(new Date(m.sentAt) - new Date(message.sentAt)) < 2000)
+      const duplicateIndex = roomMessages.findIndex(m =>
+        (m.id && normalized.id && m.id === normalized.id) ||
+        (m.clientMessageId && normalized.clientMessageId && m.clientMessageId === normalized.clientMessageId) ||
+        (m.content === normalized.content && m.senderId === normalized.senderId && Math.abs(new Date(m.sentAt) - new Date(normalized.sentAt)) < 2000)
       );
 
-      if (isDuplicate) {
-        return state;
+      if (duplicateIndex !== -1) {
+        // If sendMessage's REST response already landed here, it's the
+        // authoritative copy (real receipt tick, `mine`) — this viewer-neutral
+        // broadcast only fills in anything it might be missing, never
+        // overwrites it with the broadcast's blank tick/receiptStatus.
+        const next = [...roomMessages];
+        next[duplicateIndex] = { ...normalized, ...next[duplicateIndex] };
+        return { messages: { ...state.messages, [roomId]: next } };
       }
 
       return {
         messages: {
           ...state.messages,
-          [roomId]: [...roomMessages, message]
+          [roomId]: [...roomMessages, normalized]
         }
       };
     });

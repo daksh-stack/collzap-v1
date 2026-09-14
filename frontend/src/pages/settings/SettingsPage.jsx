@@ -203,7 +203,7 @@ export default function SettingsPage() {
 
       <section>
         <h2 className="mb-1 font-mono text-[10px] uppercase tracking-widest text-mute">
-          Feedback & Ideas
+          Help & Ideas
         </h2>
         <div className="flex items-start justify-between gap-6 border-y border-line py-5">
           <div>
@@ -213,7 +213,7 @@ export default function SettingsPage() {
             </p>
           </div>
           <Button variant="secondary" size="sm" className="shrink-0" onClick={() => navigate('/feedback')}>
-            Give feedback
+            Get help
           </Button>
         </div>
       </section>
