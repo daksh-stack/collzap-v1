@@ -87,6 +87,20 @@ public class AdminController {
         return adminService.user(userId);
     }
 
+    /**
+     * Permanent hard delete — everything the user ever created goes with them.
+     * A reason is required; it's logged against the operator, not stored on the
+     * (now-deleted) user.
+     */
+    @PostMapping("/users/{userId}/delete")
+    public MessageResponse deleteUser(
+            @AuthenticationPrincipal AuthPrincipal operator,
+            @PathVariable UUID userId,
+            @Valid @RequestBody collzap.backend.dto.AdminDtos.DeleteUserRequest request) {
+        adminService.deleteUser(userId, operator.userId(), request);
+        return MessageResponse.of("User deleted");
+    }
+
     /** The verification queue, oldest first. */
     @GetMapping("/verifications")
     public PageResponse<PendingVerificationRow> pendingVerifications(
@@ -155,6 +169,19 @@ public class AdminController {
     @PostMapping("/colleges")
     public ResponseEntity<CollegeResponse> createCollege(@Valid @RequestBody CreateCollegeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(collegeService.create(request));
+    }
+
+    @PostMapping("/colleges/{id}")
+    public CollegeResponse updateCollege(
+            @PathVariable UUID id,
+            @Valid @RequestBody collzap.backend.dto.CollegeDtos.UpdateCollegeRequest request) {
+        return collegeService.update(id, request);
+    }
+
+    @PostMapping("/colleges/{id}/delete")
+    public MessageResponse deleteCollege(@PathVariable UUID id) {
+        collegeService.delete(id);
+        return MessageResponse.of("College deleted");
     }
 
     @GetMapping("/interests")

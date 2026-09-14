@@ -58,4 +58,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findWithCollegeById(@Param("id") UUID id);
 
     long countByVerificationStatus(VerificationStatus status);
+
+    long countByCollegeId(UUID collegeId);
 }

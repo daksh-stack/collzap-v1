@@ -48,6 +48,33 @@ export const useInterestStore = create((set, get) => ({
     }
   },
 
+  /**
+   * The repeatable "pick a new Short-Term interest" action — usable at any
+   * time, not just onboarding. One request handles first-time setup (enabling
+   * the project type, saving the connection type) and later swaps (just
+   * replacing the interest) alike; `connectionType` only matters the first
+   * time. Does not touch any existing match/chat for the old interest — the
+   * caller is expected to run `findMatches()` afterward to queue the new one.
+   */
+  setShortTermInterest: async (interestId, subTag, connectionType) => {
+    set({ loading: true, error: null });
+    try {
+      const payload = { interestId, subTag: subTag || null, connectionType: connectionType || null };
+      const myInterests = await api.put('/short-term-interest', payload);
+      set((state) => ({
+        myInterests,
+        projectTypes: new Set(state.projectTypes).add('SHORT_TERM'),
+        loading: false,
+      }));
+      useUserStore.getState().fetchOnboarding();
+      get().fetchConnectionTypes().catch(console.error);
+      return myInterests;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
   submitFeedback: async (projectType, suggestion) => {
     set({ loading: true, error: null });
     try {

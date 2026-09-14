@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, ExternalLink } from 'lucide-react';
+import { Search, ExternalLink, AlertTriangle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -7,6 +8,7 @@ import Modal from '../../components/ui/Modal';
 import Tabs from '../../components/ui/Tabs';
 import Spinner from '../../components/ui/Spinner';
 import Pagination from '../../components/ui/Pagination';
+import TextArea from '../../components/ui/TextArea';
 import { useAdminStore } from '../../store/useAdminStore';
 import AdminPageHeader from './AdminPageHeader';
 
@@ -20,12 +22,17 @@ const verificationBadge = (status) => {
 };
 
 export default function AdminUsersPage() {
-  const { users, fetchUsers, fetchUser, loading } = useAdminStore();
+  const { users, fetchUsers, fetchUser, deleteUser, loading } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('ALL');
   const [page, setPage] = useState(0);
   const [selectedUser, setSelectedUser] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   // Search/status/page all go to the server — the store already supports it.
   // Filter changes reset the page inline so this stays a single fetch.
@@ -49,6 +56,34 @@ export default function AdminUsersPage() {
       console.error('Failed to fetch user detail', error);
     } finally {
       setLoadingDetail(false);
+    }
+  };
+
+  const handleOpenDelete = () => {
+    setDeleteReason('');
+    setDeleteConfirmText('');
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteReason.trim()) {
+      toast.error('A reason is required');
+      return;
+    }
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
+
+    setDeleting(true);
+    try {
+      await deleteUser(selectedUser.id, deleteReason.trim());
+      toast.success('User deleted');
+      setDeleteModalOpen(false);
+      setSelectedUser(null);
+      const status = activeTab === 'ALL' ? null : activeTab;
+      fetchUsers(searchTerm || null, status, page);
+    } catch (error) {
+      toast.error(error.message || 'Could not delete that user');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -246,8 +281,66 @@ export default function AdminUsersPage() {
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
               </a>
             )}
+
+            <div className="flex justify-end border-t border-line pt-5">
+              <Button variant="danger" size="sm" onClick={handleOpenDelete}>
+                Delete user
+              </Button>
+            </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={deleteModalOpen}
+        onClose={() => { if (!deleting) setDeleteModalOpen(false); }}
+        title="Delete user"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex gap-3 rounded-lg border border-bad/30 bg-bad/[0.06] p-4">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-bad" />
+            <p className="text-xs leading-relaxed text-ink/80">
+              This permanently deletes <span className="font-semibold text-ink">{selectedUser?.name}</span> and
+              everything tied to their account — matches, chats and messages, verification documents,
+              notifications, and login sessions. This cannot be undone.
+            </p>
+          </div>
+
+          <TextArea
+            label="Reason for deletion"
+            value={deleteReason}
+            onChange={(e) => setDeleteReason(e.target.value)}
+            placeholder="Why is this account being deleted?"
+            rows={3}
+            autoFocus
+          />
+
+          <Input
+            label={'Type "DELETE" to confirm'}
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder="DELETE"
+          />
+
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteUser}
+              loading={deleting}
+              disabled={!deleteReason.trim() || deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
+            >
+              Delete permanently
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

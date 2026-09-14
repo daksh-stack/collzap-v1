@@ -25,7 +25,6 @@ export function usePrimaryCta() {
  * never drift apart. Each `href` must match an `id` on a section element.
  */
 export const NAV_LINKS = [
-  { href: '#problem', label: 'The problem' },
   { href: '#who', label: "Who it's for" },
   { href: '#why', label: 'Why CollZap' },
   { href: '#how', label: 'How it works' },

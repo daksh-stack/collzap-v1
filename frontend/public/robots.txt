@@ -1,0 +1,13 @@
+User-agent: *
+Disallow: /admin
+Disallow: /home
+Disallow: /chat
+Disallow: /matches
+Disallow: /profile
+Disallow: /feedback
+Disallow: /settings
+Disallow: /notifications
+Disallow: /onboarding
+Disallow: /test
+
+Sitemap: https://collzap.com/sitemap.xml

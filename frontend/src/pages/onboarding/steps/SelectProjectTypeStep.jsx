@@ -12,43 +12,38 @@ const TILES = [
   {
     id: 'LONG_TERM',
     title: 'Long Peer',
-    body: 'Something you are still working on next semester. Slower to match, harder to leave.',
+    body: 'Something you are still working on next semester. Slower to match, harder to leave. This is a one-time choice — set once, not changeable later.',
     meta: 'Months',
   },
   {
     id: 'SHORT_TERM',
     title: 'Short Peer',
-    body: 'Hackathon, one paper, one deadline. Match fast, ship, move on.',
+    body: 'Hackathon, one paper, one deadline. Match fast, ship, move on. You can pick a new one any time from your home page.',
     meta: 'Weeks',
   },
 ];
 
+// This step only ever renders when the user has picked nothing yet — once a
+// project type exists, OnboardingService.resolveStep() never routes back
+// here. Long-Term can be added later from the home page (routes back through
+// onboarding just for that); Short-Term has its own repeatable home-page flow
+// entirely. So the choice here is strictly single: which one to start with.
 export default function SelectProjectTypeStep() {
-  const { projectTypes: storeProjectTypes, selectProjectTypes, loading, fetchProjectTypes } = useInterestStore();
-  const [selectedTypes, setSelectedTypes] = useState(new Set());
+  const { selectProjectTypes, loading, fetchProjectTypes } = useInterestStore();
+  const [selectedType, setSelectedType] = useState(null);
   const reduced = useReducedMotion();
 
   useEffect(() => {
     fetchProjectTypes().catch(console.error);
-    if (storeProjectTypes && storeProjectTypes.size > 0) {
-      setSelectedTypes(new Set(storeProjectTypes));
-    }
   }, []);
 
-  const toggleType = (type) => {
-    const next = new Set(selectedTypes);
-    if (next.has(type)) next.delete(type);
-    else next.add(type);
-    setSelectedTypes(next);
-  };
-
   const handleSubmit = async () => {
-    if (selectedTypes.size === 0) {
-      toast.error('Pick only one');
+    if (!selectedType) {
+      toast.error('Pick one to start');
       return;
     }
     try {
-      await selectProjectTypes(selectedTypes);
+      await selectProjectTypes(new Set([selectedType]));
     } catch (error) {
       toast.error(error.message || 'Could not save that');
     }
@@ -57,18 +52,17 @@ export default function SelectProjectTypeStep() {
   return (
     <div>
       <StepHeader eyebrow="Step four" title="How long are you in for?">
-        Pick one. This decides who you get put in front of — nothing else
-        about your profile matters as much.
+        Pick one to start with — you can add the other later.
       </StepHeader>
 
       <div className="grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
         {TILES.map((tile) => {
-          const selected = selectedTypes.has(tile.id);
+          const selected = selectedType === tile.id;
           return (
             <motion.button
               key={tile.id}
               type="button"
-              onClick={() => toggleType(tile.id)}
+              onClick={() => setSelectedType(tile.id)}
               aria-pressed={selected}
               whileTap={reduced ? undefined : { scale: 0.99 }}
               transition={transition(snappy, reduced)}
@@ -115,7 +109,7 @@ export default function SelectProjectTypeStep() {
         onClick={handleSubmit}
         size="lg"
         loading={loading}
-        disabled={selectedTypes.size === 0}
+        disabled={!selectedType}
         className="mt-10"
       >
         Continue

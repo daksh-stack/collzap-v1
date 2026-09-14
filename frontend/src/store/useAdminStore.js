@@ -56,6 +56,19 @@ export const useAdminStore = create((set) => ({
     }
   },
 
+  /** Permanent hard delete — everything the user ever created goes with them. */
+  deleteUser: async (userId, reason) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/admin/users/${userId}/delete`, { reason });
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
   fetchPendingVerifications: async (page = 0) => {
     set({ loading: true, error: null });
     try {
@@ -163,6 +176,31 @@ export const useAdminStore = create((set) => ({
     try {
       const payload = city ? { name, emailDomain, city } : { name, emailDomain };
       const response = await api.post('/admin/colleges', payload);
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  updateCollege: async (id, name, emailDomain, city = null) => {
+    set({ loading: true, error: null });
+    try {
+      const payload = city ? { name, emailDomain, city } : { name, emailDomain };
+      const response = await api.post(`/admin/colleges/${id}`, payload);
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  deleteCollege: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/admin/colleges/${id}/delete`);
       set({ loading: false });
       return response;
     } catch (error) {

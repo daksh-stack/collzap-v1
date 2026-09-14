@@ -45,6 +45,26 @@ export default function LandingPage() {
           name="description"
           content="CollZap helps students discover like-minded peers for friendships, projects, startups, learning, and growth inside their campus. Verified students only."
         />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://collzap.com/" />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@graph': [
+              {
+                '@type': 'Organization',
+                name: 'CollZap',
+                url: 'https://collzap.com/',
+                logo: 'https://collzap.com/favicon.svg',
+              },
+              {
+                '@type': 'WebSite',
+                name: 'CollZap',
+                url: 'https://collzap.com/',
+              },
+            ],
+          })}
+        </script>
       </Helmet>
 
       <Nav />

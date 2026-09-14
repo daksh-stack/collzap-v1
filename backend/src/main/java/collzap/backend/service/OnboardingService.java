@@ -14,14 +14,12 @@ import collzap.backend.dto.UserDtos.OnboardingStateResponse;
 import collzap.backend.enums.OnboardingStep;
 import collzap.backend.enums.ProjectType;
 import collzap.backend.enums.VerificationStatus;
-import collzap.backend.exception.NotFoundException;
 import collzap.backend.models.ConnectionTypeSelection;
 import collzap.backend.models.User;
 import collzap.backend.models.UserInterestSelection;
 import collzap.backend.repositories.ConnectionTypeSelectionRepository;
 import collzap.backend.repositories.UserInterestSelectionRepository;
 import collzap.backend.repositories.UserProjectTypeSelectionRepository;
-import collzap.backend.repositories.UserRepository;
 
 /**
  * Works out which screen the app should show next. Verification runs alongside
@@ -35,27 +33,32 @@ public class OnboardingService {
     private final UserProjectTypeSelectionRepository projectTypeRepository;
     private final UserInterestSelectionRepository interestSelectionRepository;
     private final ConnectionTypeSelectionRepository connectionTypeRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final SeriousnessLevelLookup levelLookup;
 
     public OnboardingService(
         UserProjectTypeSelectionRepository projectTypeRepository,
         UserInterestSelectionRepository interestSelectionRepository,
         ConnectionTypeSelectionRepository connectionTypeRepository,
-        UserRepository userRepository,
+        UserService userService,
         SeriousnessLevelLookup levelLookup
     ) {
         this.projectTypeRepository = projectTypeRepository;
         this.interestSelectionRepository = interestSelectionRepository;
         this.connectionTypeRepository = connectionTypeRepository;
-        this.userRepository = userRepository;
+        this.userService = userService;
         this.levelLookup = levelLookup;
     }
 
+    /**
+     * A missing/deleted user here means the JWT this request came in on no
+     * longer maps to a real account (e.g. an admin deleted them mid-session) —
+     * {@code requireSelf} surfaces that as 401 so the frontend's existing
+     * refresh-then-logout flow cleans it up automatically.
+     */
     @Transactional(readOnly = true)
     public OnboardingStateResponse describe(UUID userId) {
-        return describe(userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("User not found")));
+        return describe(userService.requireSelf(userId));
     }
 
     @Transactional(readOnly = true)

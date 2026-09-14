@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, MessageSquare } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import EmptyState from '../../components/ui/EmptyState';
+import Tabs from '../../components/ui/Tabs';
 import { useChatStore } from '../../store/useChatStore';
 
 function relativeTime(timestamp) {
@@ -21,6 +22,7 @@ export default function ChatListPage() {
   const navigate = useNavigate();
   const { chatList, fetchChatList, loading } = useChatStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [mode, setMode] = useState('LONG_TERM');
 
   useEffect(() => {
     fetchChatList().catch(console.error);
@@ -29,6 +31,7 @@ export default function ChatListPage() {
   const safeChatList = Array.isArray(chatList) ? chatList : [];
 
   const filteredChats = safeChatList.filter((chat) => {
+    if (chat.projectType !== mode) return false;
     const term = searchTerm.toLowerCase();
     return (chat.title || '').toLowerCase().includes(term)
       || (chat.interestName || '').toLowerCase().includes(term);
@@ -58,6 +61,15 @@ export default function ChatListPage() {
         )}
       </header>
 
+      <Tabs
+        tabs={[
+          { key: 'LONG_TERM', label: 'Long haul' },
+          { key: 'SHORT_TERM', label: 'Short burst' },
+        ]}
+        active={mode}
+        onChange={setMode}
+      />
+
       {loading && safeChatList.length === 0 ? (
         <ul className="divide-y divide-line border-y border-line">
           {[1, 2, 3].map((i) => (
@@ -74,7 +86,7 @@ export default function ChatListPage() {
           description={
             searchTerm
               ? 'Try fewer letters.'
-              : 'Rooms appear the moment a match lands.'
+              : `No ${mode === 'LONG_TERM' ? 'long-haul' : 'short-burst'} rooms yet. They appear the moment a match lands.`
           }
           actionLabel={!searchTerm ? 'Find peers' : null}
           onAction={!searchTerm ? () => navigate('/matches') : null}

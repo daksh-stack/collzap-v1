@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, Clock3, MessageSquare, Users } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
+import ShortTermInterestModal from './ShortTermInterestModal';
 import { useMatchStore } from '../../store/useMatchStore';
 import { useChatStore } from '../../store/useChatStore';
 import { useUserStore } from '../../store/useUserStore';
+import { useInterestStore } from '../../store/useInterestStore';
 import { listItemVariants, listVariants, reduceVariants, useReducedMotion } from '../../lib/motion';
 
 function relativeTime(timestamp) {
@@ -25,12 +28,37 @@ export default function HomePage() {
   const { circle, fetchCircle } = useMatchStore();
   const { chatList, fetchChatList } = useChatStore();
   const { profile } = useUserStore();
+  const { projectTypes, myInterests, fetchProjectTypes, fetchMyInterests, selectProjectTypes } = useInterestStore();
   const reduced = useReducedMotion();
+  const [shortTermModalOpen, setShortTermModalOpen] = useState(false);
+  const [addingLongTerm, setAddingLongTerm] = useState(false);
 
   useEffect(() => {
     fetchCircle().catch(console.error);
     fetchChatList().catch(console.error);
+    fetchProjectTypes().catch(console.error);
+    fetchMyInterests().catch(console.error);
   }, []);
+
+  const hasLongTerm = projectTypes.has('LONG_TERM');
+  const currentShortTerm = myInterests.find((i) => i.projectType === 'SHORT_TERM');
+
+  const handleAddLongTerm = async () => {
+    if (!window.confirm(
+      "Set up long-term matching? This can only be done once — the interests, the assessment, " +
+      "and the format you pick can't be changed afterward."
+    )) {
+      return;
+    }
+    setAddingLongTerm(true);
+    try {
+      await selectProjectTypes(new Set([...projectTypes, 'LONG_TERM']));
+      navigate('/onboarding');
+    } catch (error) {
+      toast.error(error.message || 'Could not start that');
+      setAddingLongTerm(false);
+    }
+  };
 
   const connections = circle?.connections || [];
   const waiting = circle?.waiting || [];
@@ -120,6 +148,43 @@ export default function HomePage() {
               {waiting.length === 1 ? 'interest is' : 'interests are'} still in the queue.
             </p>
           )}
+
+          <div className="mt-4 space-y-3">
+            {!hasLongTerm && (
+              <div className="rounded-lg border border-line bg-surface p-4 shadow-sm">
+                <p className="text-sm font-medium text-ink">Long-term matching</p>
+                <p className="mt-1 text-xs leading-relaxed text-mute">
+                  Slower, deeper, with a seriousness test. Set once — can't be changed later.
+                </p>
+                <Button
+                  onClick={handleAddLongTerm}
+                  variant="secondary"
+                  size="sm"
+                  loading={addingLongTerm}
+                  className="mt-3 w-full"
+                >
+                  Set up long-term
+                </Button>
+              </div>
+            )}
+
+            <div className="rounded-lg border border-line bg-surface p-4 shadow-sm">
+              <p className="text-sm font-medium text-ink">Short-term interest</p>
+              <p className="mt-1 text-xs leading-relaxed text-mute">
+                {currentShortTerm
+                  ? `Currently: ${currentShortTerm.interestName}. Pick a new one any time — your current chat stays put.`
+                  : 'A quick, short-burst interest. Change it whenever you want.'}
+              </p>
+              <Button
+                onClick={() => setShortTermModalOpen(true)}
+                variant="secondary"
+                size="sm"
+                className="mt-3 w-full"
+              >
+                {currentShortTerm ? 'Choose a different one' : 'Choose a short-term interest'}
+              </Button>
+            </div>
+          </div>
         </section>
 
         {/* Live connections */}
@@ -208,6 +273,8 @@ export default function HomePage() {
           )}
         </section>
       </div>
+
+      <ShortTermInterestModal open={shortTermModalOpen} onClose={() => setShortTermModalOpen(false)} />
     </div>
   );
 }

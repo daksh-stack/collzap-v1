@@ -10,19 +10,30 @@ import org.springframework.transaction.annotation.Transactional;
 
 import collzap.backend.dto.CollegeDtos.CollegeResponse;
 import collzap.backend.dto.CollegeDtos.CreateCollegeRequest;
+import collzap.backend.dto.CollegeDtos.UpdateCollegeRequest;
 import collzap.backend.exception.BadRequestException;
 import collzap.backend.exception.ConflictException;
 import collzap.backend.exception.NotFoundException;
 import collzap.backend.models.College;
 import collzap.backend.repositories.CollegeRepository;
+import collzap.backend.repositories.MatchGroupRepository;
+import collzap.backend.repositories.UserRepository;
 
 @Service
 public class CollegeService {
 
     private final CollegeRepository collegeRepository;
+    private final UserRepository userRepository;
+    private final MatchGroupRepository matchGroupRepository;
 
-    public CollegeService(CollegeRepository collegeRepository) {
+    public CollegeService(
+        CollegeRepository collegeRepository,
+        UserRepository userRepository,
+        MatchGroupRepository matchGroupRepository
+    ) {
         this.collegeRepository = collegeRepository;
+        this.userRepository = userRepository;
+        this.matchGroupRepository = matchGroupRepository;
     }
 
     @Cacheable("colleges")
@@ -68,6 +79,51 @@ public class CollegeService {
         }
         College college = new College(request.name().trim(), domain, trimToNull(request.city()));
         return toResponse(collegeRepository.save(college));
+    }
+
+    @CacheEvict(value = {"colleges", "collegeByDomain"}, allEntries = true)
+    @Transactional
+    public CollegeResponse update(UUID id, UpdateCollegeRequest request) {
+        College college = getById(id);
+        String domain = normalizeDomain(request.emailDomain());
+        String name = request.name().trim();
+
+        if (!domain.equalsIgnoreCase(college.getEmailDomain())
+            && collegeRepository.existsByEmailDomainIgnoreCase(domain)) {
+            throw new ConflictException("A college with that email domain already exists");
+        }
+        if (!name.equalsIgnoreCase(college.getName())
+            && collegeRepository.findByNameIgnoreCase(name).isPresent()) {
+            throw new ConflictException("A college with that name already exists");
+        }
+
+        college.setName(name);
+        college.setEmailDomain(domain);
+        college.setCity(trimToNull(request.city()));
+        return toResponse(collegeRepository.save(college));
+    }
+
+    /**
+     * Blocked outright if any student or match group already references this
+     * college — those aren't safe to cascade silently, same rule as deleting an
+     * interest. A mistakenly-added college with nobody enrolled yet can go
+     * straight through.
+     */
+    @CacheEvict(value = {"colleges", "collegeByDomain"}, allEntries = true)
+    @Transactional
+    public void delete(UUID id) {
+        College college = getById(id);
+        long userCount = userRepository.countByCollegeId(id);
+        long matchCount = matchGroupRepository.countByCollegeId(id);
+        if (userCount > 0 || matchCount > 0) {
+            List<String> reasons = new java.util.ArrayList<>();
+            if (userCount > 0) reasons.add(userCount + " student(s)");
+            if (matchCount > 0) reasons.add(matchCount + " match group(s)");
+            throw new ConflictException(
+                "Cannot delete \"" + college.getName() + "\": " + String.join(", ", reasons) + " still reference it"
+            );
+        }
+        collegeRepository.delete(college);
     }
 
     static String extractDomain(String email) {

@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import { api } from '../api/api';
 import { useAuthStore } from './useAuthStore';
 
+// Landing on an onboarding-guarded route fires `fetchOnboarding()` from more
+// than one place at once (AuthGuard's bootstrap effect and OnboardingPage's
+// own mount effect both call it on the same navigation) — module-level, not
+// per-store-instance, since there is only ever one store. De-duping in-flight
+// calls means that's one real network request instead of two racing ones.
+let onboardingFetchInFlight = null;
+
 export const useUserStore = create((set) => ({
   profile: null,
   onboarding: null,
@@ -9,6 +16,18 @@ export const useUserStore = create((set) => ({
   peerProfile: null,
   loading: false,
   error: null,
+
+  /**
+   * There is no stored "current step" server-side — `onboarding.step` is always
+   * recomputed fresh from the user's real data. So "back" is purely a display
+   * override: OnboardingPage and OnboardingLayout both read this ahead of
+   * `onboarding.step` when it's set. It's cleared the moment a fresh
+   * `fetchOnboarding()` lands, which only ever happens right after the
+   * revisited step's own "Continue" action saves successfully — real forward
+   * progress always wins over a manual back.
+   */
+  viewStepOverride: null,
+  setViewStepOverride: (step) => set({ viewStepOverride: step }),
 
   fetchMe: async () => {
     set({ loading: true, error: null });
@@ -29,21 +48,29 @@ export const useUserStore = create((set) => ({
   },
 
   fetchOnboarding: async () => {
+    if (onboardingFetchInFlight) return onboardingFetchInFlight;
+
     set({ loading: true, error: null });
-    try {
-      const onboarding = await api.get('/me/onboarding');
-      set({ onboarding, loading: false });
-      
-      // Keep auth store's nextStep in sync so guards work correctly
-      if (useAuthStore.getState().isAuthenticated) {
-          useAuthStore.setState({ nextStep: onboarding.step });
+    onboardingFetchInFlight = (async () => {
+      try {
+        const onboarding = await api.get('/me/onboarding');
+        set({ onboarding, loading: false, viewStepOverride: null });
+
+        // Keep auth store's nextStep in sync so guards work correctly
+        if (useAuthStore.getState().isAuthenticated) {
+            useAuthStore.setState({ nextStep: onboarding.step });
+        }
+
+        return onboarding;
+      } catch (error) {
+        set({ error: error.message, loading: false });
+        throw error;
+      } finally {
+        onboardingFetchInFlight = null;
       }
-      
-      return onboarding;
-    } catch (error) {
-      set({ error: error.message, loading: false });
-      throw error;
-    }
+    })();
+
+    return onboardingFetchInFlight;
   },
 
   updateProfile: async (data) => {

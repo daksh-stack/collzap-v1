@@ -14,7 +14,11 @@ export default function NotFoundPage() {
 
   return (
     <div className="relative mesh flex min-h-screen flex-col items-center justify-center bg-paper px-6 py-16">
-      <Helmet><title>Not found · CollZap</title></Helmet>
+      <Helmet>
+        <title>Not found · CollZap</title>
+        <meta name="description" content="The page you're looking for doesn't exist or has moved." />
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
 
       <div className="relative w-full max-w-md text-center">
         <Logo className="mx-auto h-8" />

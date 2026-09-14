@@ -96,6 +96,23 @@ public final class InterestDtos {
     ) {
     }
 
+    /**
+     * One-shot setup or swap of the user's single Short-Term interest — usable at
+     * any time, not just onboarding. {@code connectionType} is required only the
+     * first time (no Short-Term connection type saved yet); a later swap may omit
+     * it to keep whatever is already set, or include it to change that too.
+     */
+    public record SetShortTermInterestRequest(
+        @NotNull(message = "Interest is required")
+        UUID interestId,
+
+        @Size(max = 30, message = "Sub-tag must be at most 30 characters")
+        String subTag,
+
+        ConnectionType connectionType
+    ) {
+    }
+
     public record InterestFeedbackRequest(
         @NotNull(message = "Project type is required")
         ProjectType projectType,

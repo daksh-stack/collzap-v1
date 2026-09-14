@@ -66,6 +66,9 @@ function App() {
     <ErrorBoundary>
       <Helmet>
         <title>CollZap | Connect with your peers</title>
+        {/* Default-private: every route is noindex unless its own page-level
+            Helmet (the public marketing pages) explicitly overrides this. */}
+        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <Suspense fallback={<PageLoader />}>
         <Routes>

@@ -36,6 +36,20 @@ public final class CollegeDtos {
     ) {
     }
 
+    public record UpdateCollegeRequest(
+        @NotBlank(message = "College name is required")
+        @Size(max = 200)
+        String name,
+
+        @NotBlank(message = "Email domain is required")
+        @Size(max = 200)
+        String emailDomain,
+
+        @Size(max = 120)
+        String city
+    ) {
+    }
+
     public record UploadDocumentRequest(
         @NotNull(message = "Document type is required")
         DocumentType documentType,
