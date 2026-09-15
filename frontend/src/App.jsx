@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useThemeStore } from './store/useThemeStore';
+import LandingPage from './pages/landing/LandingPage';
 
 // Layouts & Guards
 import PublicLayout from './components/layout/PublicLayout';
@@ -15,7 +16,13 @@ import AdminGuard from './components/guards/AdminGuard';
 import Spinner from './components/ui/Spinner';
 
 // Pages (Lazy Loaded)
-const LandingPage = lazy(() => import('./pages/landing/LandingPage'));
+// LandingPage is imported eagerly above, not lazily — it's the one route
+// Google actually needs to index, and its <Helmet> robots override
+// (index,follow) must be present in the very first render alongside this
+// file's own default (noindex,nofollow) Helmet. A lazy chunk load opens a
+// window, between first paint and the chunk resolving, where only the
+// noindex default exists — Google's live-render check can (and did) snapshot
+// the page during exactly that window and reject indexing.
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const SignupPage = lazy(() => import('./pages/auth/SignupPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
