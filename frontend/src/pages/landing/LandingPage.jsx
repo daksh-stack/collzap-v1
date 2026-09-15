@@ -45,7 +45,7 @@ export default function LandingPage() {
           name="description"
           content="CollZap helps students discover like-minded peers for friendships, projects, startups, learning, and growth inside their campus. Verified students only."
         />
-        <meta name="robots" content="index, follow" />
+        {/* robots meta is owned solely by App.jsx — see its comment for why */}
         <link rel="canonical" href="https://collzap.com/" />
         <script type="application/ld+json">
           {JSON.stringify({

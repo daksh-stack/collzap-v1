@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
       <Helmet>
         <title>Reset your password · CollZap</title>
         <meta name="description" content="Reset your CollZap account password." />
-        <meta name="robots" content="noindex, follow" />
+        {/* robots meta is owned solely by App.jsx — see its comment for why */}
       </Helmet>
 
       <button

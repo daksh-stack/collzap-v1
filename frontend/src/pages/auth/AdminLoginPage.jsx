@@ -33,7 +33,7 @@ export default function AdminLoginPage() {
     <div className="w-full max-w-xs">
       <Helmet>
         <title>Admin · CollZap</title>
-        <meta name="robots" content="noindex, nofollow" />
+        {/* robots meta is owned solely by App.jsx — see its comment for why */}
       </Helmet>
 
       <div className="mb-8 flex items-center justify-between border-b border-line pb-3">

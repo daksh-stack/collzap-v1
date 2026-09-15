@@ -17,7 +17,7 @@ export default function NotFoundPage() {
       <Helmet>
         <title>Not found · CollZap</title>
         <meta name="description" content="The page you're looking for doesn't exist or has moved." />
-        <meta name="robots" content="noindex, follow" />
+        {/* robots meta is owned solely by App.jsx — see its comment for why */}
       </Helmet>
 
       <div className="relative w-full max-w-md text-center">

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useThemeStore } from './store/useThemeStore';
@@ -62,7 +62,27 @@ const PageLoader = () => (
   </div>
 );
 
+// The one and only place `<meta name="robots">` is ever rendered. It used to
+// be split across this file's own default and each public page's Helmet
+// override, on the assumption that react-helmet-async would dedupe same-name
+// meta tags and let the page-level one win. In practice both tags land in
+// the DOM simultaneously (confirmed via Google Search Console's live test:
+// "noindex" and "index, follow" both present), and Google's own rule for
+// conflicting robots directives is to apply the most restrictive one — so
+// the noindex always won, and the homepage silently failed indexing.
+// Computing it once, here, from the path guarantees exactly one tag exists.
+const INDEXABLE_PATHS = new Set(['/', '/login', '/signup']);
+const NOINDEX_FOLLOW_PATHS = new Set(['/forgot-password']);
+
+function robotsFor(pathname) {
+  if (INDEXABLE_PATHS.has(pathname)) return 'index, follow';
+  if (NOINDEX_FOLLOW_PATHS.has(pathname)) return 'noindex, follow';
+  return 'noindex, nofollow';
+}
+
 function App() {
+  const location = useLocation();
+
   // The inline script in index.html already applied the class before paint;
   // this keeps React's copy in sync if storage changed in another tab.
   useEffect(() => {
@@ -73,9 +93,7 @@ function App() {
     <ErrorBoundary>
       <Helmet>
         <title>CollZap | Connect with your peers</title>
-        {/* Default-private: every route is noindex unless its own page-level
-            Helmet (the public marketing pages) explicitly overrides this. */}
-        <meta name="robots" content="noindex, nofollow" />
+        <meta name="robots" content={robotsFor(location.pathname)} />
       </Helmet>
       <Suspense fallback={<PageLoader />}>
         <Routes>

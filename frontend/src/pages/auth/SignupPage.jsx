@@ -52,7 +52,7 @@ export default function SignupPage() {
       <Helmet>
         <title>Sign up · CollZap</title>
         <meta name="description" content="Join CollZap and find verified students at your college who share your interests and goals." />
-        <meta name="robots" content="index, follow" />
+        {/* robots meta is owned solely by App.jsx — see its comment for why */}
         <link rel="canonical" href="https://collzap.com/signup" />
       </Helmet>
 

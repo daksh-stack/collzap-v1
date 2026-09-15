@@ -46,7 +46,7 @@ export default function LoginPage() {
       <Helmet>
         <title>Log in · CollZap</title>
         <meta name="description" content="Log in to CollZap to reconnect with your matched peers and pick up where you left off." />
-        <meta name="robots" content="index, follow" />
+        {/* robots meta is owned solely by App.jsx — see its comment for why */}
         <link rel="canonical" href="https://collzap.com/login" />
       </Helmet>
 
