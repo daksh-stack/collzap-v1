@@ -1,6 +1,14 @@
 {
   "trailingSlash": false,
-  "rewrites": [{ "source": "/(.*)", "destination": "/app.html" }],
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/about", "destination": "/about/index.html" },
+    { "source": "/faq", "destination": "/faq/index.html" },
+    { "source": "/login", "destination": "/login/index.html" },
+    { "source": "/signup", "destination": "/signup/index.html" },
+    { "source": "/forgot-password", "destination": "/forgot-password/index.html" },
+    { "source": "/(.*)", "destination": "/app.html" }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",

@@ -158,3 +158,21 @@ for (const { path, must } of ROUTES) {
 const sitemapPaths = ROUTES.filter((r) => r.sitemap).map((r) => r.path);
 await writeFile(resolve(DIST, 'sitemap.xml'), buildSitemap(sitemapPaths), 'utf8');
 console.log(`sitemap.xml  -> ${sitemapPaths.length} URLs`);
+
+// Every prerendered route needs an explicit rewrite to its own file, ahead of
+// the SPA catch-all. Relying on Vercel checking the filesystem before rewrites
+// would work, but `vite preview` demonstrates that not every static host does —
+// under it the catch-all shadowed /login and served the landing page instead.
+// Rather than trust the ordering, the rewrite is explicit, and this asserts the
+// two lists never drift.
+const vercelConfig = JSON.parse(await readFile(resolve(ROOT, 'vercel.json'), 'utf8'));
+const rewriteSources = new Set((vercelConfig.rewrites || []).map((r) => r.source));
+const missing = ROUTES.map((r) => r.path).filter((p) => !rewriteSources.has(p));
+
+if (missing.length > 0) {
+  throw new Error(
+    `vercel.json is missing an explicit rewrite for prerendered route(s): ${missing.join(', ')}. ` +
+      'Without it the catch-all rewrite serves the SPA shell (or the landing page) for that URL.'
+  );
+}
+console.log(`vercel.json  -> ${ROUTES.length} route rewrites verified`);
