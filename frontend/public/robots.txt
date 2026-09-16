@@ -9,5 +9,8 @@ Disallow: /settings
 Disallow: /notifications
 Disallow: /onboarding
 Disallow: /test
+# The SPA fallback shell served for every non-prerendered route. Directly
+# fetchable, but it is an empty shell with no content to index.
+Disallow: /app.html
 
 Sitemap: https://collzap.com/sitemap.xml

@@ -16,13 +16,17 @@ import AdminGuard from './components/guards/AdminGuard';
 import Spinner from './components/ui/Spinner';
 
 // Pages (Lazy Loaded)
-// LandingPage is imported eagerly above, not lazily — it's the one route
-// Google actually needs to index, and its <Helmet> robots override
-// (index,follow) must be present in the very first render alongside this
-// file's own default (noindex,nofollow) Helmet. A lazy chunk load opens a
-// window, between first paint and the chunk resolving, where only the
-// noindex default exists — Google's live-render check can (and did) snapshot
-// the page during exactly that window and reject indexing.
+//
+// LandingPage is the exception, imported eagerly at the top of this file. The
+// original reason was a race — a lazy chunk left a window where only the
+// noindex default Helmet existed, and Google's live render snapshotted exactly
+// that window — which no longer applies now that robotsFor() below emits a
+// single tag synchronously. It stays eager because it is the marketing entry
+// point and ships prerendered: making it lazy would put a chunk round-trip
+// between the prerendered paint and React taking over on the busiest public
+// route.
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const FaqPage = lazy(() => import('./pages/FaqPage'));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const SignupPage = lazy(() => import('./pages/auth/SignupPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
@@ -71,7 +75,7 @@ const PageLoader = () => (
 // conflicting robots directives is to apply the most restrictive one — so
 // the noindex always won, and the homepage silently failed indexing.
 // Computing it once, here, from the path guarantees exactly one tag exists.
-const INDEXABLE_PATHS = new Set(['/', '/login', '/signup']);
+const INDEXABLE_PATHS = new Set(['/', '/about', '/faq', '/login', '/signup']);
 const NOINDEX_FOLLOW_PATHS = new Set(['/forgot-password']);
 
 function robotsFor(pathname) {
@@ -91,8 +95,13 @@ function App() {
 
   return (
     <ErrorBoundary>
+      {/* No <title> here on purpose. React 19 hoists every <title> in the tree
+          into <head> without deduping, so a generic one at this level stacks a
+          second (and, with index.html's, a third) title tag onto every public
+          page — Google reads the first it finds, which was not the page's own.
+          Each public route sets its own title; authenticated routes fall back
+          to index.html's, and they're noindex anyway. */}
       <Helmet>
-        <title>CollZap | Connect with your peers</title>
         <meta name="robots" content={robotsFor(location.pathname)} />
       </Helmet>
       <Suspense fallback={<PageLoader />}>
@@ -102,6 +111,12 @@ function App() {
           <Route element={<AuthGuard />}>
             <Route path="/" element={<LandingPage />} />
           </Route>
+
+          {/* Public content pages. Open to everyone signed in or out, same as
+              the landing page — AuthGuard only redirects unauthenticated users
+              away from routes that are neither the landing nor auth-only. */}
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/faq" element={<FaqPage />} />
 
           {/* Public Routes (Login/Signup) */}
           <Route element={<AuthGuard />}>

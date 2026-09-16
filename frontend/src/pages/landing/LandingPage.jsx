@@ -11,6 +11,62 @@ import Trust from './sections/Trust';
 import Footer from './sections/Footer';
 import StickyCta from './sections/StickyCta';
 
+const SITE = 'https://collzap.com';
+
+/**
+ * A linked entity graph, not a pile of loose nodes: the @id references are what
+ * let Google resolve "CollZap the organisation", "collzap.com the site" and
+ * "CollZap the application" as one entity rather than three coincidences.
+ *
+ * `sameAs` is the load-bearing field for the brand query. An unrelated
+ * @collzap Instagram account and a similarly-named product (Collabzap) already
+ * rank for the name; sameAs is how you tell Google which profiles are actually
+ * yours. THESE URLS MUST BE REAL AND MUST LINK BACK to collzap.com — a sameAs
+ * pointing at a profile that doesn't exist, or that never links here, does
+ * nothing. Remove any entry you haven't actually created yet.
+ */
+const SITE_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${SITE}/#organization`,
+      name: 'CollZap',
+      url: `${SITE}/`,
+      logo: `${SITE}/logo-512.png`,
+      description:
+        'Campus peer-matching platform connecting verified college students in India with project teammates, startup co-founders and serious study partners inside their own college.',
+      foundingDate: '2026',
+      areaServed: 'IN',
+      sameAs: [
+        'https://www.instagram.com/collzap.app/',
+        'https://x.com/collzapapp',
+        'https://www.linkedin.com/company/collzap/',
+      ],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE}/#website`,
+      name: 'CollZap',
+      url: `${SITE}/`,
+      publisher: { '@id': `${SITE}/#organization` },
+      inLanguage: 'en-IN',
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${SITE}/#app`,
+      name: 'CollZap',
+      url: `${SITE}/`,
+      applicationCategory: 'SocialNetworkingApplication',
+      operatingSystem: 'Web',
+      publisher: { '@id': `${SITE}/#organization` },
+      description:
+        'Find verified students at your own college who share your interests and are serious about the same things — for projects, startups, study groups and societies.',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+    },
+  ],
+};
+
 /**
  * The public marketing landing at `/`. Reachable signed in or out —
  * `AuthGuard` exempts this route deliberately — so every call to action runs
@@ -47,30 +103,13 @@ export default function LandingPage() {
         />
         {/* robots meta is owned solely by App.jsx — see its comment for why */}
         <link rel="canonical" href="https://collzap.com/" />
-        <script type="application/ld+json">
-          {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@graph': [
-              {
-                '@type': 'Organization',
-                name: 'CollZap',
-                url: 'https://collzap.com/',
-                logo: 'https://collzap.com/favicon.svg',
-              },
-              {
-                '@type': 'WebSite',
-                name: 'CollZap',
-                url: 'https://collzap.com/',
-              },
-            ],
-          })}
-        </script>
+        <script type="application/ld+json">{JSON.stringify(SITE_SCHEMA)}</script>
       </Helmet>
 
       <Nav />
       <main>
         <Hero />
-        {/* <Problem /> */}
+        <Problem />
         <WhoItsFor />
         <WhyCollZap />
         <HowItWorks />

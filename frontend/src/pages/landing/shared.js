@@ -21,13 +21,23 @@ export function usePrimaryCta() {
 }
 
 /**
- * In-page destinations, shared by the header and the footer so the two can
- * never drift apart. Each `href` must match an `id` on a section element.
+ * Shared by the header and the footer so the two can never drift apart. Each
+ * hash must match an `id` on a landing section element.
+ *
+ * Rooted at "/" rather than bare "#who" because the header and footer also
+ * render on /about and /faq, where a bare hash would resolve against the
+ * current page and go nowhere.
  */
 export const NAV_LINKS = [
-  { href: '#who', label: "Who it's for" },
-  { href: '#why', label: 'Why CollZap' },
-  { href: '#how', label: 'How it works' },
+  { href: '/#who', label: "Who it's for" },
+  { href: '/#why', label: 'Why CollZap' },
+  { href: '/#how', label: 'How it works' },
+];
+
+/** Content pages, linked from the footer — the site's only non-anchor internal links. */
+export const FOOTER_LINKS = [
+  { to: '/about', label: 'About' },
+  { to: '/faq', label: 'FAQ' },
 ];
 
 /**

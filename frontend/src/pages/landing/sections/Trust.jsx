@@ -19,6 +19,13 @@ export default function Trust() {
       <div className="mx-auto max-w-6xl px-6 sm:px-8">
         <motion.div {...reveal(reduced)} className="max-w-2xl">
           <SectionLabel>Built on trust</SectionLabel>
+          <h2 className="mt-5 font-display text-3xl font-extrabold leading-tight tracking-tightest text-ink sm:text-4xl">
+            A Private, Verified Campus Network.
+          </h2>
+          <p className="mt-5 text-base leading-relaxed text-mute">
+            Every account belongs to a verified student, every match stays inside your own college,
+            and every conversation stays between the people in it.
+          </p>
         </motion.div>
 
         <motion.ul

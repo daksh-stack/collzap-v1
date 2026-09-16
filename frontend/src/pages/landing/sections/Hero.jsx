@@ -47,7 +47,7 @@ export default function Hero() {
               {...reveal(reduced, 0.08)}
               className="mt-7 font-display text-4xl font-extrabold leading-[1.05] tracking-tightest text-[#E8F0FE] sm:text-5xl xl:text-6xl"
             >
-              Find <span className="text-grad">Your Circle</span> Before College Passes You By.
+              Find <span className="text-grad">Your Circle</span> On Campus Before College Passes You By.
             </motion.h1>
 
             <motion.p

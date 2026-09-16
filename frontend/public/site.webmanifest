@@ -1,0 +1,22 @@
+{
+  "name": "CollZap",
+  "short_name": "CollZap",
+  "description": "Find verified students at your college who share your interests and goals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A1428",
+  "theme_color": "#0A1428",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { api } from '../api/api';
 import { useAuthStore } from './useAuthStore';
 
-export const useChatStore = create((set, get) => ({
+export const useChatStore = create((set) => ({
   chatList: [],
   currentRoom: null,
   rooms: {}, // Map of roomId -> ChatRoomDetailResponse

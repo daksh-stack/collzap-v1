@@ -219,7 +219,30 @@ export default function ConnectionField({ className, intensity = 1, ...props }) 
       frame = null;
     };
 
-    const onVisibility = () => (document.hidden ? stop() : start());
+    // Two independent reasons to pause, and both must agree before we resume —
+    // otherwise returning to a backgrounded tab restarts a canvas that is
+    // scrolled far out of view, or scrolling back into view restarts one in a
+    // hidden tab.
+    let onScreen = true;
+    const resume = () => {
+      if (!document.hidden && onScreen) start();
+    };
+
+    const onVisibility = () => (document.hidden ? stop() : resume());
+
+    // This canvas repaints the full viewport every frame directly behind the
+    // hero — rebuilding a gradient, three sine ribbons and 16 two-arc nodes.
+    // Without this it keeps doing that for the entire session, long after the
+    // hero has scrolled away, competing with scrolling for the main thread on
+    // exactly the mid-range phones most visitors are using.
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        onScreen = entry.isIntersecting;
+        if (onScreen) resume();
+        else stop();
+      },
+      { rootMargin: '100px' }
+    );
 
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
@@ -237,12 +260,14 @@ export default function ConnectionField({ className, intensity = 1, ...props }) 
       }
     } else {
       start();
+      io.observe(canvas);
       document.addEventListener('visibilitychange', onVisibility);
     }
 
     return () => {
       stop();
       ro.disconnect();
+      io.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [intensity]);
