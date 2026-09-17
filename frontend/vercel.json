@@ -46,6 +46,10 @@
       "destination": "/blog/build-a-study-group-that-actually-works/index.html"
     },
     {
+      "source": "/blog/why-i-built-collzap",
+      "destination": "/blog/why-i-built-collzap/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/app.html"
     }

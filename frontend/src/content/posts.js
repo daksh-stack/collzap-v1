@@ -607,6 +607,210 @@ export const POSTS = [
       },
     ],
   },
+
+  {
+    slug: 'why-i-built-collzap',
+    title: "Why I Built CollZap — The Story Behind India's First Campus Peer Matching Platform",
+    description:
+      "Nitish Kumar, founder of CollZap, shares the real story behind building India's first campus peer matching platform — why he built it, what problem it solves, and how it works for college students.",
+    date: '2026-09-17',
+    readingMinutes: 10,
+    tags: ['Founder Story', 'CollZap', 'EdTech India'],
+    blocks: [
+      { t: 'p', x: 'By Nitish Kumar, Founder & CEO, CollZap' },
+
+      { t: 'h2', x: 'The Day I Realized I Had the Wrong Circle' },
+      { t: 'p', x: 'It was my first week of college.' },
+      {
+        t: 'p',
+        x: 'I walked into a classroom full of strangers, sat next to whoever was available, and within days — almost without thinking — those people became my friend group. Not because we had the same goals. Not because we were serious about the same things. Simply because we were in the same place at the same time.',
+      },
+      { t: 'p', x: 'I did not choose my circle. My circle chose me — by accident.' },
+      {
+        t: 'p',
+        x: 'For months, I kept that to myself. I assumed it was just me — that everyone else had figured it out. But the more I spoke to students across different colleges, the more I realized this was not a personal problem. It was a shared, silent epidemic that nobody was talking about.',
+      },
+      { t: 'p', x: 'That realization became the foundation of CollZap.' },
+
+      { t: 'h2', x: 'The Problem Nobody Was Solving' },
+      { t: 'p', x: 'I started asking questions.' },
+      {
+        t: 'p',
+        x: 'I talked to students from engineering colleges, management institutes, arts colleges. I conducted over 120 face-to-face conversations with college students. I asked them one simple question:',
+      },
+      {
+        t: 'quote',
+        x: 'Do you have at least one peer in your college who is as serious about your interest as you are?',
+      },
+      { t: 'p', x: 'The answers broke my heart.' },
+      {
+        t: 'p',
+        x: 'Most students said no. Not because serious peers did not exist on their campus — but because they had no way to find them. They ended up in circles built by chance — hostel floors, classroom seats, canteen tables. Random proximity, not shared purpose.',
+      },
+      { t: 'p', x: 'The numbers backed up what I was hearing:' },
+      {
+        t: 'ul',
+        items: [
+          'More than 50% of college students globally report feeling lonely on campus',
+          '69.9% of Indian college students experience moderate to high anxiety',
+          'Students today spend 70% less time with peers in person than two decades ago',
+          '82% of Indian youth say the wrong peer circle slowed down their personal growth',
+        ],
+      },
+      {
+        t: 'p',
+        x: 'These were not small numbers. This was a generation of ambitious students growing alone — surrounded by people, but genuinely disconnected from anyone who matched their drive.',
+      },
+
+      { t: 'h2', x: 'What I Tried Before Building CollZap' },
+      { t: 'p', x: 'Like every student, I tried the obvious solutions.' },
+      {
+        t: 'p',
+        x: 'WhatsApp groups — good for staying connected with people I already knew. Useless for discovering someone new who shared my serious interests.',
+      },
+      {
+        t: 'p',
+        x: 'LinkedIn — too formal, too transactional. Nobody connects on LinkedIn to find a study partner or a startup co-founder from their own college.',
+      },
+      {
+        t: 'p',
+        x: 'Instagram DMs — I once sent a message to someone whose posts I admired. It felt weird. It was weird. No structure, no context, no safety.',
+      },
+      {
+        t: 'p',
+        x: 'Asking around — I literally asked friends "do you know anyone serious about startups on campus?" The answer was always vague. Someone knew someone who knew someone.',
+      },
+      {
+        t: 'p',
+        x: 'None of these worked because they were all designed for a different purpose. There was no platform built specifically for one thing — helping a college student find a serious, verified peer within their own campus.',
+      },
+      { t: 'p', x: 'That gap was so obvious I could not believe nobody had filled it.' },
+
+      { t: 'h2', x: 'The Moment CollZap Was Born' },
+      {
+        t: 'p',
+        x: 'I was sitting alone in my room one evening — frustrated after another unproductive attempt at finding someone serious to work with on an idea I had.',
+      },
+      { t: 'p', x: 'I thought — what if there was a platform where:' },
+      {
+        t: 'ul',
+        items: [
+          'You could verify that the other person actually goes to your college',
+          'You could filter by interest — not just "tech" but specifically coding, or AI, or startups',
+          'You could assess seriousness — not just what someone claims to be interested in, but how deeply they are actually committed',
+          'And then match you automatically with the right person at the right level',
+        ],
+      },
+      {
+        t: 'p',
+        x: 'Not a social media app. Not a dating app with a study partner twist. Something entirely new — a campus-based peer matching platform built specifically for ambitious students who want to grow.',
+      },
+      { t: 'p', x: 'I opened my notebook and wrote three words at the top of the page.' },
+      { t: 'quote', x: 'Find Your People.' },
+      { t: 'p', x: 'CollZap was born that night.' },
+
+      { t: 'h2', x: 'What CollZap Actually Does' },
+      { t: 'p', x: "CollZap is India's first campus-based peer matching platform. Here is how it works:" },
+
+      { t: 'h3', x: 'Step 1 — Verify' },
+      {
+        t: 'p',
+        x: 'Students sign up with their college email or upload their college ID. Only real, verified students from your campus get access.',
+      },
+
+      { t: 'h3', x: 'Step 2 — Select interest' },
+      {
+        t: 'p',
+        x: 'Choose from 17 long-term interests — Coding, AI and Data Science, Startups, Finance, Design, Music, Writing, Fitness, Sports, Gaming, and more. Or pick from 7 short-term activities for specific goal-based collaboration.',
+      },
+
+      { t: 'h3', x: 'Step 3 — Take the seriousness assessment' },
+      {
+        t: 'p',
+        x: 'Answer 20 behavioural and commitment-based questions. CollZap places you at one of four levels — Explorer, Learner, Practitioner, or Builder. This is not a test you can fake — it measures what you actually do, not what you claim.',
+      },
+
+      { t: 'h3', x: 'Step 4 — Get matched' },
+      {
+        t: 'p',
+        x: 'CollZap automatically matches you with a peer from your own campus who shares your interest and is at the same level. You connect as a 1-on-1 pair, a Short Group of up to 4, or join a campus-wide Society.',
+      },
+
+      { t: 'h3', x: 'Step 5 — Grow together' },
+      {
+        t: 'p',
+        x: 'The match opens a chat. Built-in conversation suggestions help you go from first message to fixing a real campus meeting fast.',
+      },
+      { t: 'p', x: 'No random connections. No noise. Just the right person, at the right level, from your own campus.' },
+
+      { t: 'h2', x: 'Why "Campus-Based" Matters So Much' },
+      { t: 'p', x: 'This is the part most people underestimate.' },
+      {
+        t: 'p',
+        x: 'When I first described CollZap to people, they would ask — why limit it to one campus? Why not match students from across India?',
+      },
+      { t: 'p', x: 'The answer is simple.' },
+      { t: 'p', x: 'The peer relationship only works when it is physically possible.' },
+      {
+        t: 'p',
+        x: 'If your accountability partner is in Mumbai and you are in Jind, Haryana — you can never sit down together, study in the same library, attend the same hackathon, or push each other in person. The match becomes another WhatsApp contact you never really connect with.',
+      },
+      {
+        t: 'p',
+        x: 'Campus proximity is not a limitation — it is the entire point. CollZap is designed to create relationships that spill out of the app and into real life. A coffee in the canteen. A study session in the library. A late-night coding sprint in the hostel room.',
+      },
+      { t: 'p', x: 'That is the kind of peer relationship that actually changes your college years.' },
+
+      { t: 'h2', x: 'The Validation That Convinced Me to Keep Going' },
+      { t: 'p', x: 'Before writing a single line of code, I went to colleges and talked to students.' },
+      {
+        t: 'p',
+        x: 'At Lovely Professional University alone, I surveyed over 120 students. 87% of them said they would use CollZap if it existed on their campus.',
+      },
+      { t: 'p', x: 'More importantly, the conversations I had in those interviews stayed with me.' },
+      {
+        t: 'quote',
+        x: 'I have been looking for someone like this since Day 1 of college. Someone who is actually serious. I just did not know how to find them.',
+      },
+      {
+        t: 'quote',
+        x: 'I do not want people browsing my profile like a shopping app. I just want someone to be automatically matched with me — someone who actually wants to build things.',
+      },
+      { t: 'p', x: 'Those words are why I wake up and work on CollZap every day.' },
+
+      { t: 'h2', x: 'What We Are Building Toward' },
+      {
+        t: 'p',
+        x: 'CollZap launched its beta version at collzap.com and is currently onboarding its first campus cohort.',
+      },
+      { t: 'p', x: 'The vision is bigger than a college app.' },
+      {
+        t: 'p',
+        x: 'We are building the infrastructure for intentional peer relationships at every stage of student life. Today it is campus matching. Tomorrow it is mentorship, collaborative learning, and eventually — a verified network of serious people who found each other at the right time.',
+      },
+      {
+        t: 'p',
+        x: 'India has 45 million college students. Most of them are growing alone — not because serious peers do not exist, but because there has never been a platform to bring them together deliberately.',
+      },
+      { t: 'p', x: 'CollZap is that platform.' },
+
+      { t: 'h2', x: 'A Note to Every Ambitious Student Reading This' },
+      {
+        t: 'p',
+        x: 'If you have ever felt like the smartest, most driven person in your friend group — and hated that feeling — this is for you.',
+      },
+      {
+        t: 'p',
+        x: 'If you have ever wished you had just one person who was as serious as you, who pushed you, who held you accountable, who understood the obsession — this is for you.',
+      },
+      { t: 'p', x: 'You are not alone. The peer you are looking for is on your campus right now — waiting to be found.' },
+      { t: 'quote', x: 'Go to collzap.com and find them.' },
+      {
+        t: 'p',
+        x: 'Nitish Kumar is the Founder and CEO of CollZap — India’s first campus-based peer matching platform. He is a BBA student at Chaudhary Ranbir Singh University, Jind, Haryana, and has been building CollZap while completing his degree. You can reach him at nitishkumar@collzap.com.',
+      },
+    ],
+  },
 ];
 
 /** Newest first, which is the order the index page and sitemap both want. */

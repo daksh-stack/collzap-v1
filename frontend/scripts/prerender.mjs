@@ -9,6 +9,18 @@ const ROOT = resolve(import.meta.dirname, '..');
 const DIST = resolve(ROOT, 'dist');
 const SITE = 'https://collzap.com';
 
+// React HTML-escapes text children when it renders them (& -> &amp; etc), so a
+// `must` string taken verbatim from source content silently fails to match the
+// very content it was pulled from whenever that content contains one of these
+// characters — as happened with "Founder & CEO". Escape the needle the same
+// way rather than requiring every post's assertion text to avoid them.
+function htmlEscape(s) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 /**
  * The public routes. Each needs a matching entry in App.jsx's INDEXABLE_PATHS
  * (or NOINDEX_FOLLOW_PATHS) and, if indexable, in the sitemap below.
@@ -150,7 +162,7 @@ for (const { path, must } of ROUTES) {
         'boundary on this route could not resolve at build time.'
     );
   }
-  if (must && !html.includes(must)) {
+  if (must && !html.includes(htmlEscape(must))) {
     throw new Error(
       `${path} prerendered without its expected content (looked for ${JSON.stringify(must)}). ` +
         'Either the copy changed — update ROUTES in this script — or the render is broken.'
