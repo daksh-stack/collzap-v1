@@ -1,13 +1,3 @@
-#!/usr/bin/env bash
-# Run this once on the server, after DNS for $API_DOMAIN already points at it,
-# to obtain the first Let's Encrypt certificate. nginx can't start with the
-# real config until a cert exists at the expected path, and certbot can't get
-# a cert until nginx is running to answer the HTTP-01 challenge — this script
-# breaks that cycle with a throwaway self-signed cert just long enough to boot
-# nginx, then swaps in the real one. Renewal afterwards is automatic via the
-# certbot service's loop in docker-compose.yml.
-set -e
-
 if [ ! -f .env ]; then
   echo ".env not found — copy .env.example to .env and fill it in first." >&2
   exit 1
