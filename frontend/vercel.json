@@ -1,25 +1,80 @@
 {
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/about", "destination": "/about/index.html" },
-    { "source": "/faq", "destination": "/faq/index.html" },
-    { "source": "/login", "destination": "/login/index.html" },
-    { "source": "/signup", "destination": "/signup/index.html" },
-    { "source": "/forgot-password", "destination": "/forgot-password/index.html" },
-    { "source": "/(.*)", "destination": "/app.html" }
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/about/index.html"
+    },
+    {
+      "source": "/faq",
+      "destination": "/faq/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login/index.html"
+    },
+    {
+      "source": "/signup",
+      "destination": "/signup/index.html"
+    },
+    {
+      "source": "/forgot-password",
+      "destination": "/forgot-password/index.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog/index.html"
+    },
+    {
+      "source": "/blog/find-your-circle-in-college",
+      "destination": "/blog/find-your-circle-in-college/index.html"
+    },
+    {
+      "source": "/blog/how-to-find-project-teammates-in-college",
+      "destination": "/blog/how-to-find-project-teammates-in-college/index.html"
+    },
+    {
+      "source": "/blog/how-to-find-a-co-founder-in-college",
+      "destination": "/blog/how-to-find-a-co-founder-in-college/index.html"
+    },
+    {
+      "source": "/blog/build-a-study-group-that-actually-works",
+      "destination": "/blog/build-a-study-group-that-actually-works/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/app.html"
+    }
   ],
   "headers": [
     {
       "source": "/assets/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        }
       ]
     }
   ]

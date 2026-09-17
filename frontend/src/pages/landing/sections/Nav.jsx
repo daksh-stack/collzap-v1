@@ -56,20 +56,25 @@ export default function Nav() {
         <Logo className={cn('h-7 transition-colors duration-300 sm:h-8', !solid && 'text-[#E8F0FE]')} animated />
 
         <nav className="flex items-center gap-1 sm:gap-2">
-          {/* Four anchors plus two auth actions needs real width, so the links
-              hand over to the sheet below lg rather than below md. */}
-          {NAV_LINKS.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'hidden rounded px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 lg:block',
-                link
-              )}
-            >
-              {item.label}
-            </a>
-          ))}
+          {/* Five links plus two auth actions needs real width, so they hand
+              over to the sheet below lg rather than below md. Anchors stay
+              plain <a> so the browser handles the fragment scroll; routes go
+              through <Link> so they don't reload the app. */}
+          {NAV_LINKS.map((item) => {
+            const className = cn(
+              'hidden rounded px-2.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 lg:block',
+              link
+            );
+            return item.to ? (
+              <Link key={item.to} to={item.to} className={className}>
+                {item.label}
+              </Link>
+            ) : (
+              <a key={item.href} href={item.href} className={className}>
+                {item.label}
+              </a>
+            );
+          })}
 
           <ThemeToggle
             className={cn(
@@ -121,18 +126,29 @@ export default function Nav() {
             className="overflow-hidden border-t border-line bg-paper lg:hidden"
           >
             <ul className="mx-auto max-w-6xl divide-y divide-line px-6 pb-4 sm:px-8">
-              {NAV_LINKS.map((item) => (
-                <li key={item.href}>
-                  <a
-                    href={item.href}
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center justify-between rounded py-4 text-base font-medium text-ink transition-colors hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
-                  >
+              {NAV_LINKS.map((item) => {
+                const className =
+                  'flex items-center justify-between rounded py-4 text-base font-medium text-ink transition-colors hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500';
+                const inner = (
+                  <>
                     {item.label}
                     <ChevronRight className="h-4 w-4 shrink-0 text-mute" aria-hidden="true" />
-                  </a>
-                </li>
-              ))}
+                  </>
+                );
+                return (
+                  <li key={item.to || item.href}>
+                    {item.to ? (
+                      <Link to={item.to} onClick={() => setMenuOpen(false)} className={className}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <a href={item.href} onClick={() => setMenuOpen(false)} className={className}>
+                        {inner}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
               <li className="flex items-center gap-3 pt-4 sm:hidden">
                 <Link
                   to="/login"

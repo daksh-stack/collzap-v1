@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import Logo from '../../../components/brand/Logo';
 import Button from '../../../components/ui/Button';
 import { useAuthStore } from '../../../store/useAuthStore';
-import { FOOTER_LINKS, NAV_LINKS, usePrimaryCta } from '../shared';
+import { NAV_LINKS, usePrimaryCta } from '../shared';
 
 export default function Footer() {
   const { isAuthenticated } = useAuthStore();
@@ -38,16 +38,17 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-mute sm:justify-end">
-            {NAV_LINKS.map((item) => (
-              <a key={item.href} href={item.href} className="rounded transition-colors hover:text-ink">
-                {item.label}
-              </a>
-            ))}
-            {FOOTER_LINKS.map((item) => (
-              <Link key={item.to} to={item.to} className="rounded transition-colors hover:text-ink">
-                {item.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((item) =>
+              item.to ? (
+                <Link key={item.to} to={item.to} className="rounded transition-colors hover:text-ink">
+                  {item.label}
+                </Link>
+              ) : (
+                <a key={item.href} href={item.href} className="rounded transition-colors hover:text-ink">
+                  {item.label}
+                </a>
+              )
+            )}
             <span className="tnum">© {new Date().getFullYear()} CollZap</span>
           </div>
         </div>

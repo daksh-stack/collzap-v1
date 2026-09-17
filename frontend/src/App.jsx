@@ -26,6 +26,8 @@ import Spinner from './components/ui/Spinner';
 // between the prerendered paint and React taking over on the busiest public
 // route.
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const BlogIndexPage = lazy(() => import('./pages/BlogIndexPage'));
+const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
 const FaqPage = lazy(() => import('./pages/FaqPage'));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const SignupPage = lazy(() => import('./pages/auth/SignupPage'));
@@ -75,11 +77,13 @@ const PageLoader = () => (
 // conflicting robots directives is to apply the most restrictive one — so
 // the noindex always won, and the homepage silently failed indexing.
 // Computing it once, here, from the path guarantees exactly one tag exists.
-const INDEXABLE_PATHS = new Set(['/', '/about', '/faq', '/login', '/signup']);
+const INDEXABLE_PATHS = new Set(['/', '/about', '/faq', '/blog', '/login', '/signup']);
 const NOINDEX_FOLLOW_PATHS = new Set(['/forgot-password']);
 
 function robotsFor(pathname) {
   if (INDEXABLE_PATHS.has(pathname)) return 'index, follow';
+  // Blog posts are the one indexable route family with dynamic paths.
+  if (pathname.startsWith('/blog/')) return 'index, follow';
   if (NOINDEX_FOLLOW_PATHS.has(pathname)) return 'noindex, follow';
   return 'noindex, nofollow';
 }
@@ -117,6 +121,8 @@ function App() {
               away from routes that are neither the landing nor auth-only. */}
           <Route path="/about" element={<AboutPage />} />
           <Route path="/faq" element={<FaqPage />} />
+          <Route path="/blog" element={<BlogIndexPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
 
           {/* Public Routes (Login/Signup) */}
           <Route element={<AuthGuard />}>

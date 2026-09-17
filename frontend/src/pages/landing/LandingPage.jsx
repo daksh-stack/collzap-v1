@@ -39,7 +39,7 @@ const SITE_SCHEMA = {
       foundingDate: '2026',
       areaServed: 'IN',
       sameAs: [
-        'https://www.instagram.com/collzap.app/',
+        'https://www.instagram.com/collzap_india/',
         'https://x.com/collzapapp',
         'https://www.linkedin.com/company/collzap/',
       ],

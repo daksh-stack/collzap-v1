@@ -1,6 +1,9 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
+// Plain ESM with no JSX or Vite-isms, so plain Node can read it — the app and
+// the build share one source of truth for which posts exist.
+import { POSTS_BY_DATE, BLOG_BASE } from '../src/content/posts.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const DIST = resolve(ROOT, 'dist');
@@ -23,6 +26,14 @@ const ROUTES = [
   { path: '/login', must: 'Back again.', sitemap: true },
   { path: '/signup', must: 'Get on the list.', sitemap: true },
   { path: '/forgot-password', must: 'Forgot your password?', sitemap: false },
+  { path: BLOG_BASE, must: 'Finding your people in college.', sitemap: true },
+  // One entry per post, asserted against its own title so a broken render is
+  // caught per-post rather than by a single blanket check.
+  ...POSTS_BY_DATE.map((post) => ({
+    path: `${BLOG_BASE}/${post.slug}`,
+    must: post.blocks.find((b) => b.t === 'p').x.slice(0, 40),
+    sitemap: true,
+  })),
 ];
 
 // Windows: import() of a bare drive path throws ERR_UNSUPPORTED_ESM_URL_SCHEME.
