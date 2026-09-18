@@ -29,6 +29,8 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const BlogIndexPage = lazy(() => import('./pages/BlogIndexPage'));
 const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
 const FaqPage = lazy(() => import('./pages/FaqPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const SignupPage = lazy(() => import('./pages/auth/SignupPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
@@ -77,7 +79,7 @@ const PageLoader = () => (
 // conflicting robots directives is to apply the most restrictive one — so
 // the noindex always won, and the homepage silently failed indexing.
 // Computing it once, here, from the path guarantees exactly one tag exists.
-const INDEXABLE_PATHS = new Set(['/', '/about', '/faq', '/blog', '/login', '/signup']);
+const INDEXABLE_PATHS = new Set(['/', '/about', '/faq', '/blog', '/privacy', '/terms', '/login', '/signup']);
 const NOINDEX_FOLLOW_PATHS = new Set(['/forgot-password']);
 
 function robotsFor(pathname) {
@@ -123,6 +125,8 @@ function App() {
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/blog" element={<BlogIndexPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
 
           {/* Public Routes (Login/Signup) */}
           <Route element={<AuthGuard />}>

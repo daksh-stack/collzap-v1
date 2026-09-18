@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { AlertTriangle, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -58,13 +58,26 @@ export default function AdminVerificationsPage() {
           {rows.map((doc) => (
             <li key={doc.documentId} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <p className="truncate text-sm font-medium text-ink">{doc.userName}</p>
                   <Badge variant="secondary">{doc.documentType}</Badge>
                 </div>
-                <p className="mt-1 truncate text-xs text-mute">
-                  {doc.email}{doc.collegeName ? ` · ${doc.collegeName}` : ''}
-                </p>
+                <p className="mt-1 truncate text-xs text-mute">{doc.email}</p>
+                {/* This is the whole point of the review: the college the user
+                    typed into their own profile, shown as its own line so it
+                    can't be missed while checking it against the document —
+                    not folded into the email line as a footnote. No college
+                    selected is itself worth flagging, not hiding. */}
+                {doc.collegeName ? (
+                  <p className="mt-1.5 text-sm font-medium text-ink">
+                    Claims: <span className="text-accent-700">{doc.collegeName}</span>
+                  </p>
+                ) : (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-bad">
+                    <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+                    No college selected on profile
+                  </p>
+                )}
                 <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-mute tnum">
                   {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString() : '—'}
                 </p>
@@ -112,6 +125,34 @@ export default function AdminVerificationsPage() {
             ? `${reviewModal.doc?.userName} gets full access, matching included.`
             : `${reviewModal.doc?.userName} is asked to send another one. They see this note.`}
         </p>
+
+        {/* The decision happens here, not on the list row behind this modal —
+            so the claimed college and a link back to the document need to be
+            visible right where Approve actually gets clicked, not just
+            upstream of it. */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface-2 px-4 py-3">
+          {reviewModal.doc?.collegeName ? (
+            <p className="text-sm font-medium text-ink">
+              Claims: <span className="text-accent-700">{reviewModal.doc.collegeName}</span>
+            </p>
+          ) : (
+            <p className="flex items-center gap-1.5 text-sm font-medium text-bad">
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+              No college selected on profile
+            </p>
+          )}
+          {reviewModal.doc?.documentUrl && (
+            <a
+              href={reviewModal.doc.documentUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded text-xs text-accent-700 underline decoration-accent-300 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+            >
+              Open document
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
+          )}
+        </div>
 
         <div className="mt-5">
           <TextArea

@@ -88,24 +88,29 @@ public class AuthService {
         String email = OtpService.normalize(request.email());
         User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
 
-        // SECURITY-CRITICAL: key this off emailVerified, not hasPassword(). Every
-        // pre-existing (legacy) account has hasPassword()==false too — checking
-        // password presence here would let anyone "sign up" with an existing user's
-        // email, silently set a brand-new password on THEIR account, and get logged
-        // straight into it with no OTP check at all. emailVerified correctly tells
-        // apart a real account (legacy, always true; or modern-and-completed, true)
-        // from an abandoned first-time signup nobody ever proved ownership of
-        // (false) — only the latter is safe to let a retry reclaim.
-        if (user != null && user.isEmailVerified()) {
+        // SECURITY-CRITICAL: reject signup outright whenever a row already exists
+        // for this email — verified or not. A previous version of this method let
+        // a *second* signup call "reclaim" an unverified row: it overwrote that
+        // row's name and password hash and handed back live access + refresh
+        // tokens, unconditionally, before anyone had proven they owned the inbox.
+        // Knowing someone's email — not owning it — was enough to take over
+        // whatever that address had signed up for and hold a valid session on it.
+        //
+        // There is no such thing as a safe "unverified, so it's probably an
+        // abandoned retry by the same person" inference from the server's side:
+        // the request carries no proof of who is asking. The only proof this app
+        // ever accepts is an OTP delivered to the inbox itself, and resetPassword()
+        // below already does exactly that — it works on ANY existing row
+        // regardless of current verification/password state, proves ownership via
+        // OTP, and only then sets a password, flips emailVerified, and issues
+        // tokens. So an abandoned signup is not a gap to patch here; it's already
+        // fully and safely recoverable through Forgot Password.
+        if (user != null) {
             throw new BadRequestException(
-                "An account with this email already exists. Log in, or use Forgot Password if you don't have a password set.");
+                "An account with this email already exists. Log in, or use Forgot Password to regain access.");
         }
-        if (user == null) {
-            user = new User(null, email, request.name().trim());
-            user.setEmailVerified(false);
-        } else {
-            user.setName(request.name().trim());
-        }
+        user = new User(null, email, request.name().trim());
+        user.setEmailVerified(false);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user = userRepository.save(user);
 

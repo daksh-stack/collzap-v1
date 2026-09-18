@@ -200,6 +200,43 @@
     @apply bg-surface border border-line rounded-lg;
   }
 
+  /*
+   * Long-form legal copy (Privacy/Terms). No @tailwindcss/typography in this
+   * project — adding it for two pages isn't worth a new dependency, so this
+   * hand-styles the handful of elements those pages actually use, matching
+   * the heading/body tokens already established on About/FAQ rather than
+   * inventing a second visual language.
+   */
+  .prose-legal section + section {
+    @apply border-t border-line pt-10;
+  }
+  .prose-legal h2 {
+    @apply font-display text-2xl font-bold tracking-tight text-ink;
+  }
+  .prose-legal h3 {
+    @apply mt-6 font-display text-lg font-bold tracking-tight text-ink;
+  }
+  .prose-legal p {
+    @apply mt-4 text-base leading-relaxed text-mute;
+  }
+  .prose-legal ul {
+    @apply mt-4 space-y-2 pl-5 text-base leading-relaxed text-mute;
+    list-style: disc;
+  }
+  .prose-legal ul li::marker {
+    color: rgb(var(--c-line));
+  }
+  .prose-legal strong {
+    @apply font-semibold text-ink;
+  }
+  .prose-legal a {
+    @apply text-accent-700 underline decoration-accent-300 underline-offset-4 hover:text-accent-800;
+  }
+  /* Escape hatch for hand-styled blocks (the contact card) inside .prose-legal. */
+  .prose-legal .not-prose p {
+    @apply mt-0 text-inherit;
+  }
+
   /* Opt-in inner rim light for hero/elevated cards. */
   .rim {
     box-shadow: var(--sh-rim);
