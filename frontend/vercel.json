@@ -50,6 +50,10 @@
       "destination": "/blog/why-i-built-collzap/index.html"
     },
     {
+      "source": "/blog/wrong-peer-circle-in-college",
+      "destination": "/blog/wrong-peer-circle-in-college/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/app.html"
     }
