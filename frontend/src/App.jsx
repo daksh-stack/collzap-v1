@@ -99,6 +99,19 @@ function App() {
     useThemeStore.getState().syncTheme();
   }, []);
 
+  // React Router doesn't reset scroll position on navigation — a <Link> to a
+  // new route keeps whatever scrollY the previous page was at, which is why
+  // clicking a footer link (already scrolled to the bottom of a long page)
+  // landed on the new page still scrolled to the bottom. Keyed on pathname
+  // alone, not the full location, so an in-page hash target (HOME_SECTIONS in
+  // ./landing/shared.js) is never fought over: those are plain <a> tags that
+  // cause a full browser navigation whenever the pathname actually changes,
+  // which the browser's own hash-scroll handles outside of React entirely,
+  // and cause no pathname change at all when already on "/".
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <ErrorBoundary>
       {/* No <title> here on purpose. React 19 hoists every <title> in the tree

@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronRight, Menu, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Menu, X } from 'lucide-react';
 import Logo from '../../../components/brand/Logo';
 import Button from '../../../components/ui/Button';
 import ThemeToggle from '../../../components/ui/ThemeToggle';
 import { cn } from '../../../lib/utils';
 import { snappy, transition, useReducedMotion } from '../../../lib/motion';
-import { NAV_LINKS, usePrimaryCta } from '../shared';
+import { HOME_SECTIONS, NAV_PAGES, usePrimaryCta } from '../shared';
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [homeOpen, setHomeOpen] = useState(false);
+  const homeRef = useRef(null);
   const reduced = useReducedMotion();
   const cta = usePrimaryCta();
 
@@ -28,6 +30,23 @@ export default function Nav() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [menuOpen]);
+
+  // Closes on Escape and on a click anywhere outside the trigger + panel —
+  // the two things a dropdown is expected to do that a plain toggle button
+  // doesn't get for free.
+  useEffect(() => {
+    if (!homeOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') setHomeOpen(false); };
+    const onClick = (e) => {
+      if (homeRef.current && !homeRef.current.contains(e.target)) setHomeOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClick);
+    };
+  }, [homeOpen]);
 
   // At the top the bar floats over the always-dark hero, so it has to carry
   // light colours regardless of theme; once scrolled it rejoins the tokens.
@@ -56,25 +75,71 @@ export default function Nav() {
         <Logo className={cn('h-7 transition-colors duration-300 sm:h-8', !solid && 'text-[#E8F0FE]')} animated />
 
         <nav className="flex items-center gap-1 sm:gap-2">
-          {/* Five links plus two auth actions needs real width, so they hand
-              over to the sheet below lg rather than below md. Anchors stay
-              plain <a> so the browser handles the fragment scroll; routes go
-              through <Link> so they don't reload the app. */}
-          {NAV_LINKS.map((item) => {
-            const className = cn(
-              'hidden rounded px-2.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 lg:block',
-              link
-            );
-            return item.to ? (
-              <Link key={item.to} to={item.to} className={className}>
-                {item.label}
+          {/* Home: a direct link back to "/" from anywhere on the site, plus a
+              dropdown for the landing page's own sections — those are anchors
+              on one page, not destinations of their own, so grouping them
+              under Home keeps the bar from reading as five equal-weight
+              top-level items. Click-toggled rather than hover-opened: hover
+              menus don't have an equivalent on touch, and this way desktop
+              and mobile share one interaction model. */}
+          <div ref={homeRef} className="relative hidden lg:block">
+            <div className={cn('flex items-center rounded', link)}>
+              <Link
+                to="/"
+                className="rounded-l px-2.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+              >
+                Home
               </Link>
-            ) : (
-              <a key={item.href} href={item.href} className={className}>
-                {item.label}
-              </a>
-            );
-          })}
+              <button
+                type="button"
+                aria-label="Homepage sections"
+                aria-expanded={homeOpen}
+                onClick={() => setHomeOpen((o) => !o)}
+                className="rounded-r py-2 pl-0.5 pr-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+              >
+                <ChevronDown
+                  className={cn('h-3.5 w-3.5 transition-transform', homeOpen && 'rotate-180')}
+                  aria-hidden="true"
+                />
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {homeOpen && (
+                <motion.div
+                  initial={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                  transition={transition(snappy, reduced)}
+                  className="absolute left-0 top-full mt-2 w-56 overflow-hidden rounded-lg border border-line bg-surface py-1.5 shadow-lg"
+                >
+                  {HOME_SECTIONS.map((item) => (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setHomeOpen(false)}
+                      className="block px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-accent-50 hover:text-accent-700 focus-visible:outline-none focus-visible:bg-accent-50"
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {NAV_PAGES.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={cn(
+                'hidden rounded px-2.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 lg:block',
+                link
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
 
           <ThemeToggle
             className={cn(
@@ -126,29 +191,46 @@ export default function Nav() {
             className="overflow-hidden border-t border-line bg-paper lg:hidden"
           >
             <ul className="mx-auto max-w-6xl divide-y divide-line px-6 pb-4 sm:px-8">
-              {NAV_LINKS.map((item) => {
-                const className =
-                  'flex items-center justify-between rounded py-4 text-base font-medium text-ink transition-colors hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500';
-                const inner = (
-                  <>
+              {/* Mobile has room to just show everything at once rather than
+                  nesting a second toggle inside the sheet — Home as its own
+                  row, its sections indented underneath. */}
+              <li>
+                <Link
+                  to="/"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-between rounded py-4 text-base font-medium text-ink transition-colors hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                >
+                  Home
+                  <ChevronRight className="h-4 w-4 shrink-0 text-mute" aria-hidden="true" />
+                </Link>
+                <ul className="ml-3 border-l border-line pb-3 pl-4">
+                  {HOME_SECTIONS.map((item) => (
+                    <li key={item.href}>
+                      <a
+                        href={item.href}
+                        onClick={() => setMenuOpen(false)}
+                        className="block rounded py-2.5 text-sm font-medium text-mute transition-colors hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                      >
+                        {item.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+
+              {NAV_PAGES.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-between rounded py-4 text-base font-medium text-ink transition-colors hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                  >
                     {item.label}
                     <ChevronRight className="h-4 w-4 shrink-0 text-mute" aria-hidden="true" />
-                  </>
-                );
-                return (
-                  <li key={item.to || item.href}>
-                    {item.to ? (
-                      <Link to={item.to} onClick={() => setMenuOpen(false)} className={className}>
-                        {inner}
-                      </Link>
-                    ) : (
-                      <a href={item.href} onClick={() => setMenuOpen(false)} className={className}>
-                        {inner}
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
+                  </Link>
+                </li>
+              ))}
+
               <li className="flex items-center gap-3 pt-4 sm:hidden">
                 <Link
                   to="/login"

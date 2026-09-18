@@ -21,16 +21,23 @@ export function usePrimaryCta() {
 }
 
 /**
- * Header and footer navigation, shared so the two can never drift apart.
+ * The landing page's own sections, grouped under the header's "Home" dropdown
+ * rather than sitting as flat top-level items — they're anchors on ONE page,
+ * not destinations of their own, so they read better as "things on the
+ * homepage" than as peers of Blog/About/FAQ.
  *
- * Two kinds of entry. `href` is an in-page anchor on the landing page; `to` is
- * a real route. The anchors are rooted at "/" rather than a bare "#who"
- * because this nav also renders on /about, /faq and /blog, where a bare hash
- * would resolve against the current page and go nowhere.
+ * Rooted at "/" rather than bare "#who" because the header renders on /about,
+ * /faq, /blog etc too, where a bare hash would resolve against the current
+ * page and go nowhere. Each hash must match an `id` on a landing section.
  */
-export const NAV_LINKS = [
+export const HOME_SECTIONS = [
   { href: '/#who', label: "Who it's for" },
+  { href: '/#why', label: 'Why CollZap' },
   { href: '/#how', label: 'How it works' },
+];
+
+/** Standalone pages, shown as their own top-level header items. */
+export const NAV_PAGES = [
   { to: '/blog', label: 'Blog' },
   { to: '/about', label: 'About' },
   { to: '/faq', label: 'FAQ' },

@@ -73,8 +73,8 @@ const SITE_SCHEMA = {
  * through `usePrimaryCta()` in ./shared rather than hardcoding `/signup`.
  *
  * Each section owns its own file and its own content array. Adding a section
- * means adding a file here and an anchor to `NAV_LINKS` in ./shared, nothing
- * else.
+ * means adding a file here and an anchor to `HOME_SECTIONS` in ./shared,
+ * nothing else.
  */
 export default function LandingPage() {
   useLenis(true);
