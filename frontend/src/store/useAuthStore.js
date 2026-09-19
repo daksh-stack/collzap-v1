@@ -4,6 +4,10 @@ import { api, API_BASE } from '../api/api';
 import axios from 'axios';
 import { webSocketService } from '../services/websocket';
 
+// Refresh tokens rotate, so several 401s landing at once must share ONE refresh
+// request rather than each spending (and replacing) the token on their own.
+let refreshInFlight = null;
+
 export const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -100,7 +104,14 @@ export const useAuthStore = create(
         }
       },
 
-      refresh: async () => {
+      refresh: () => {
+        if (!refreshInFlight) {
+          refreshInFlight = get().doRefresh().finally(() => { refreshInFlight = null; });
+        }
+        return refreshInFlight;
+      },
+
+      doRefresh: async () => {
         const { refreshToken } = get();
         if (!refreshToken) throw new Error("No refresh token available");
 
@@ -110,11 +121,13 @@ export const useAuthStore = create(
             refreshToken
           });
 
-          // AccessTokenResponse: { accessToken, tokenType, expiresInSeconds }.
-          // The backend does not rotate refresh tokens, so we keep the existing one.
+          // AccessTokenResponse: { accessToken, refreshToken, tokenType, expiresInSeconds }.
+          // The backend rotates refresh tokens: the one we just sent is now
+          // revoked, so the new one must replace it or the next refresh fails.
           const data = response.data;
           set({
             accessToken: data.accessToken,
+            refreshToken: data.refreshToken ?? refreshToken,
             isAuthenticated: true,
           });
           return data;

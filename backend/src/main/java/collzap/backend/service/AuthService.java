@@ -49,6 +49,7 @@ public class AuthService {
 
     private static final String TOKEN_BYTES_ALGORITHM = "SHA-256";
     private static final int REFRESH_TOKEN_BYTES = 32;
+    private static final java.time.Duration REFRESH_REUSE_GRACE = java.time.Duration.ofSeconds(30);
 
     private final UserRepository userRepository;
     private final AdminUserRepository adminUserRepository;
@@ -185,19 +186,41 @@ public class AuthService {
         return new OtpIssuedResponse(user.getEmail(), expiresIn, "New code sent.");
     }
 
-    @Transactional
+    /**
+     * Rotates on every use: the presented token is revoked and a fresh one is
+     * returned alongside the new access token.
+     *
+     * A token that is already revoked is either a thief or a stale copy being
+     * replayed. Within REFRESH_REUSE_GRACE it is treated as a benign race (two
+     * tabs refreshing at once, or a response lost in transit) and simply rotated
+     * again. Beyond that it is treated as theft and every session for the user is
+     * revoked. noRollbackFor keeps that revocation from being undone by the
+     * exception that reports it.
+     */
+    @Transactional(noRollbackFor = UnauthorizedException.class)
     public AccessTokenResponse refresh(String rawRefreshToken) {
         RefreshToken stored = refreshTokenRepository.findByTokenHash(sha256(rawRefreshToken))
             .orElseThrow(() -> new UnauthorizedException("Refresh token is not valid"));
-        if (!stored.isActive(Instant.now())) {
+        Instant now = Instant.now();
+        if (now.isAfter(stored.getExpiresAt())) {
             throw new UnauthorizedException("Refresh token has expired. Sign in again.");
         }
         User user = stored.getUser();
+        if (stored.getRevokedAt() != null) {
+            if (stored.getRevokedAt().plus(REFRESH_REUSE_GRACE).isBefore(now)) {
+                refreshTokenRepository.revokeAllForUser(user.getId(), now);
+                throw new UnauthorizedException("Refresh token is not valid. Sign in again.");
+            }
+        } else {
+            stored.setRevokedAt(now);
+            refreshTokenRepository.save(stored);
+        }
         if (user.getAccountStatus() == Status.DELETED) {
             throw new ForbiddenException("This account has been deleted");
         }
         return new AccessTokenResponse(
             jwtService.issueUserToken(user),
+            issueRefreshToken(user),
             "Bearer",
             jwtService.accessTokenTtlSeconds()
         );

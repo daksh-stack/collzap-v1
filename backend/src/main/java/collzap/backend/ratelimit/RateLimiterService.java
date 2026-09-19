@@ -40,6 +40,16 @@ public class RateLimiterService {
         this.redisTemplate = redisTemplate;
     }
 
+    /** Seconds until the key's window resets; 0 if unknown (no key, no expiry, or Redis unreachable). */
+    public long secondsUntilReset(String key) {
+        try {
+            Long ttl = redisTemplate.getExpire(key, java.util.concurrent.TimeUnit.SECONDS);
+            return ttl == null || ttl < 0 ? 0 : ttl;
+        } catch (DataAccessException ex) {
+            return 0;
+        }
+    }
+
     /** True if this call is within the limit (and has been counted); false once the limit is exceeded. */
     public boolean tryConsume(String key, int limit, Duration window) {
         try {

@@ -5,7 +5,7 @@ import SectionLabel from '../SectionLabel';
 
 const GUARANTEES = [
   { icon: Building2, t: 'Only your college', d: 'Connections stay within your campus.' },
-  { icon: Lock, t: '100% Confidential', d: 'Your data, interests and conversations are always private.' },
+  { icon: Lock, t: 'Private by design', d: 'Your profile and chats stay between you and your matches. We only look at a chat if it is reported.' },
   { icon: Target, t: 'Intent-Based Matching', d: 'Matched on interests, seriousness and goals not just randomly.' },
   { icon: Heart, t: 'Meaningful Connections', d: 'Build friendships, projects, startups and grow together.' },
   { icon: ShieldCheck, t: 'Safe & Secure Environment', d: 'Verified students only. No spam. No noise. Just real people.' },

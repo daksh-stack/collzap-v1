@@ -96,7 +96,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-paper">
       <Helmet>
-        <title>CollZap – Campus Peer Matching Platform for Indian College Students</title>
+        <title>Collzap - Where ambition meets action to reach potential</title>
         <meta
           name="description"
           content="CollZap helps students discover like-minded peers for friendships, projects, startups, learning, and growth inside their campus. Verified students only."

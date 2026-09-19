@@ -18,6 +18,8 @@ import collzap.backend.dto.UserDtos.UpdateSettingsRequest;
 import collzap.backend.dto.UserDtos.UserResponse;
 import collzap.backend.enums.SeriousnessLevel;
 import collzap.backend.enums.Status;
+import collzap.backend.enums.VerificationStatus;
+import collzap.backend.exception.ConflictException;
 import collzap.backend.exception.ForbiddenException;
 import collzap.backend.exception.NotFoundException;
 import collzap.backend.exception.UnauthorizedException;
@@ -157,6 +159,15 @@ public class UserService {
     public UserResponse updateProfile(UUID userId, UpdateProfileRequest request) {
         User user = requireSelf(userId);
         College college = collegeService.getById(request.collegeId());
+
+        // Once approved, the college is what was verified (by email domain or by
+        // an admin checking a document against it). Letting it change afterwards
+        // would let a user move into any other college's matching pool.
+        if (user.getVerificationStatus() == VerificationStatus.APPROVED
+            && user.getCollege() != null
+            && !user.getCollege().getId().equals(college.getId())) {
+            throw new ConflictException("Your college is verified and can't be changed. Contact support if it's wrong.");
+        }
 
         user.setCollege(college);
         user.setName(request.name().trim());

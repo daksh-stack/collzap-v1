@@ -152,14 +152,14 @@ export default function Nav() {
           <Link
             to="/login"
             className={cn(
-              'hidden rounded px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 sm:block',
+              'hidden rounded px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 md:block',
               link
             )}
           >
             Log in
           </Link>
 
-          <Link to={cta.to} className="hidden sm:block">
+          <Link to={cta.to} className="hidden md:block">
             <Button size="sm" variant="gradient">{cta.label}</Button>
           </Link>
 
@@ -231,7 +231,7 @@ export default function Nav() {
                 </li>
               ))}
 
-              <li className="flex items-center gap-3 pt-4 sm:hidden">
+              <li className="flex items-center gap-3 pt-4 md:hidden">
                 <Link
                   to="/login"
                   onClick={() => setMenuOpen(false)}

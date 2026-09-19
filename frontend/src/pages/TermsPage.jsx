@@ -260,7 +260,6 @@ export default function TermsPage() {
                   nitishkumar@collzap.com
                 </a>
               </p>
-              <p className="text-mute">+91 7056749613</p>
               <p className="text-mute">collzap.com</p>
             </div>
           </section>

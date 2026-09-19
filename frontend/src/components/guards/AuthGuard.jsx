@@ -32,7 +32,8 @@ export default function AuthGuard() {
 
   if (!isAuthenticated && !isLanding && !isAuthOnlyRoute) {
     // Redirect to login but save the attempted url
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const loginPath = location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+    return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
 
   if (isAuthenticated && isAuthOnlyRoute) {

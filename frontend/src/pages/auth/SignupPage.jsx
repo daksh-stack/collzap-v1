@@ -14,6 +14,8 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const clear = (field) => setErrors((p) => ({ ...p, [field]: undefined }));
 
   const { signup, loading } = useAuthStore();
   const navigate = useNavigate();
@@ -21,24 +23,27 @@ export default function SignupPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !email || !password) {
-      toast.error('Fill in every field');
-      return;
-    }
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
+    const next = {};
+    if (!name.trim()) next.name = 'Enter your name';
+    if (!email.trim()) next.email = 'Enter your email';
+    if (!password) next.password = 'Choose a password';
+    else if (password.length < 8) next.password = 'Password must be at least 8 characters';
+    if (!confirmPassword) next.confirmPassword = 'Confirm your password';
+    else if (password && password !== confirmPassword) next.confirmPassword = 'Passwords do not match';
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
     try {
       await signup(email, password, name);
       // Every fresh signup lands on VERIFY_EMAIL first.
       navigate('/onboarding', { replace: true });
     } catch (error) {
+      // A 400 validation failure names the offending field (e.g. a too-common
+      // password) — show it under that field instead of a generic toast.
+      if (error.fieldErrors) {
+        setErrors(error.fieldErrors);
+        return;
+      }
       toast.error(error.message || 'Could not create your account');
     }
   };
@@ -60,14 +65,15 @@ export default function SignupPage() {
         Get on the list.
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-mute">
-        Any email works. We'll confirm it's real, then it's yours.
+        Use any email to create your account. You'll verify your college next.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-9 space-y-3">
         <Input
           label="Your name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setName(e.target.value); clear('name'); }}
+          error={errors.name}
           autoComplete="name"
           disabled={loading}
         />
@@ -76,7 +82,8 @@ export default function SignupPage() {
           label="Email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => { setEmail(e.target.value); clear('email'); }}
+          error={errors.email}
           autoComplete="email"
           disabled={loading}
         />
@@ -84,7 +91,8 @@ export default function SignupPage() {
         <PasswordInput
           label="Password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => { setPassword(e.target.value); clear('password'); }}
+          error={errors.password}
           autoComplete="new-password"
           hint="At least 8 characters"
           disabled={loading}
@@ -93,7 +101,8 @@ export default function SignupPage() {
         <PasswordInput
           label="Confirm password"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => { setConfirmPassword(e.target.value); clear('confirmPassword'); }}
+          error={errors.confirmPassword}
           autoComplete="new-password"
           disabled={loading}
         />

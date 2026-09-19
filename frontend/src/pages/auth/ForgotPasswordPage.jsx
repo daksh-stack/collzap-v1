@@ -22,20 +22,27 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetSignal, setResetSignal] = useState(0);
+  const [errors, setErrors] = useState({});
+  const clear = (field) => setErrors((p) => ({ ...p, [field]: undefined }));
 
   const { forgotPassword, resetPassword, loading } = useAuthStore();
 
   const handleRequestCode = async (e) => {
     e.preventDefault();
-    if (!email) {
-      toast.error('Enter your email');
+    if (!email.trim()) {
+      setErrors({ email: 'Enter your email' });
       return;
     }
+    setErrors({});
     try {
       await forgotPassword(email);
       toast.success('Code sent — check your inbox');
       setStage('reset');
     } catch (error) {
+      if (error.fieldErrors?.email) {
+        setErrors({ email: error.fieldErrors.email });
+        return;
+      }
       toast.error(error.message || 'Could not send the code');
     }
   };
@@ -46,19 +53,22 @@ export default function ForgotPasswordPage() {
       toast.error('Enter all six digits');
       return;
     }
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
+    const next = {};
+    if (!newPassword) next.newPassword = 'Choose a new password';
+    else if (newPassword.length < 8) next.newPassword = 'Password must be at least 8 characters';
+    if (!confirmPassword) next.confirmPassword = 'Confirm your new password';
+    else if (newPassword && newPassword !== confirmPassword) next.confirmPassword = 'Passwords do not match';
+    setErrors(next);
+    if (Object.keys(next).length) return;
     try {
       const response = await resetPassword(email, code, newPassword);
       toast.success('Password set');
       navigate(response.nextStep === 'READY' ? '/home' : '/onboarding', { replace: true });
     } catch (error) {
+      if (error.fieldErrors?.newPassword) {
+        setErrors({ newPassword: error.fieldErrors.newPassword });
+        return;
+      }
       toast.error(error.message || 'That code did not work');
       setCode('');
       setResetSignal((n) => n + 1);
@@ -99,7 +109,8 @@ export default function ForgotPasswordPage() {
               label="Email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); clear('email'); }}
+              error={errors.email}
               autoComplete="email"
               disabled={loading}
             />
@@ -124,7 +135,8 @@ export default function ForgotPasswordPage() {
               <PasswordInput
                 label="New password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e) => { setNewPassword(e.target.value); clear('newPassword'); }}
+                error={errors.newPassword}
                 autoComplete="new-password"
                 hint="At least 8 characters"
                 disabled={loading}
@@ -132,7 +144,8 @@ export default function ForgotPasswordPage() {
               <PasswordInput
                 label="Confirm new password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => { setConfirmPassword(e.target.value); clear('confirmPassword'); }}
+                error={errors.confirmPassword}
                 autoComplete="new-password"
                 disabled={loading}
               />

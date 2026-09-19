@@ -12,6 +12,7 @@ import { page, useReducedMotion, transition } from '../../lib/motion';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
 
   const { login, loading } = useAuthStore();
   const navigate = useNavigate();
@@ -19,10 +20,11 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error('Enter your email and password');
-      return;
-    }
+    const next = {};
+    if (!email.trim()) next.email = 'Enter your email';
+    if (!password) next.password = 'Enter your password';
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
     try {
       const response = await login(email, password);
@@ -62,7 +64,8 @@ export default function LoginPage() {
           label="Email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
+          error={errors.email}
           autoComplete="email"
           disabled={loading}
         />
@@ -70,7 +73,8 @@ export default function LoginPage() {
         <PasswordInput
           label="Password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
+          error={errors.password}
           autoComplete="current-password"
           disabled={loading}
         />

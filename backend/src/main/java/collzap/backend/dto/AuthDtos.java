@@ -2,6 +2,7 @@ package collzap.backend.dto;
 
 import collzap.backend.enums.AdminRole;
 import collzap.backend.enums.OnboardingStep;
+import collzap.backend.validation.StrongPassword;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -20,6 +21,7 @@ public final class AuthDtos {
 
         @NotBlank(message = "Password is required")
         @Size(min = 8, max = 72, message = "Password must be 8 to 72 characters")
+        @StrongPassword
         String password,
 
         @NotBlank(message = "Name is required")
@@ -56,6 +58,7 @@ public final class AuthDtos {
 
         @NotBlank(message = "Password is required")
         @Size(min = 8, max = 72, message = "Password must be 8 to 72 characters")
+        @StrongPassword
         String newPassword
     ) {
     }
@@ -105,6 +108,7 @@ public final class AuthDtos {
 
     public record AccessTokenResponse(
         String accessToken,
+        String refreshToken,
         String tokenType,
         long expiresInSeconds
     ) {

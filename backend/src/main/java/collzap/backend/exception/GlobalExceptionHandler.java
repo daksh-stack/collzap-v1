@@ -18,7 +18,13 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -31,8 +37,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiError> handleApiException(ApiException ex, HttpServletRequest request) {
-        return ResponseEntity
-            .status(ex.getStatus())
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(ex.getStatus());
+        if (ex instanceof TooManyRequestsException limited && limited.getRetryAfterSeconds() > 0) {
+            response.header("Retry-After", String.valueOf(limited.getRetryAfterSeconds()));
+        }
+        return response
             .body(ApiError.of(ex.getStatus().value(), ex.getCode(), ex.getMessage(), request.getRequestURI()));
     }
 
@@ -120,6 +129,71 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body(ApiError.of(404, "not_found", "No endpoint at " + request.getRequestURI(),
+                request.getRequestURI()));
+    }
+
+    // Spring's own request-mapping failures. Without these, the catch-all below
+    // swallows them and a wrong verb / content type / path reports as a 500.
+    @ExceptionHandler({ NoResourceFoundException.class })
+    public ResponseEntity<ApiError> handleNoResource(Exception ex, HttpServletRequest request) {
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(ApiError.of(404, "not_found", "No endpoint at " + request.getRequestURI(),
+                request.getRequestURI()));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiError> handleMethodNotSupported(
+        HttpRequestMethodNotSupportedException ex,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.METHOD_NOT_ALLOWED)
+            .body(ApiError.of(405, "method_not_allowed", "That method is not allowed on this endpoint",
+                request.getRequestURI()));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiError> handleMediaTypeNotSupported(
+        HttpMediaTypeNotSupportedException ex,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+            .body(ApiError.of(415, "unsupported_media_type", "That content type is not supported here",
+                request.getRequestURI()));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ApiError> handleMediaTypeNotAcceptable(
+        HttpMediaTypeNotAcceptableException ex,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.NOT_ACCEPTABLE)
+            .body(ApiError.of(406, "not_acceptable", "Cannot produce a response in the requested format",
+                request.getRequestURI()));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiError> handleMissingPart(
+        MissingServletRequestPartException ex,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .badRequest()
+            .body(ApiError.of(400, "bad_request", "Missing required part: " + ex.getRequestPartName(),
+                request.getRequestURI()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleUploadTooLarge(
+        MaxUploadSizeExceededException ex,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.CONTENT_TOO_LARGE)
+            .body(ApiError.of(413, "payload_too_large", "File must be smaller than 5 MB",
                 request.getRequestURI()));
     }
 

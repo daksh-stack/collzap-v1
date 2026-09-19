@@ -78,7 +78,30 @@ public class UploadController {
             ));
         }
 
+        // The Content-Type header is client-supplied, so also check the bytes.
+        if (!hasImageSignature(file)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "message", "That file is not a valid JPEG, PNG or WebP image"
+            ));
+        }
+
         String url = cloudinaryService.upload(file, folder);
         return ResponseEntity.ok(Map.of("url", url));
+    }
+
+    private static boolean hasImageSignature(MultipartFile file) {
+        byte[] b = new byte[12];
+        int n;
+        try (java.io.InputStream in = file.getInputStream()) {
+            n = in.readNBytes(b, 0, b.length);
+        } catch (java.io.IOException e) {
+            return false;
+        }
+        if (n < 12) return false;
+        boolean jpeg = (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8 && (b[2] & 0xFF) == 0xFF;
+        boolean png = (b[0] & 0xFF) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G';
+        boolean webp = b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F'
+            && b[8] == 'W' && b[9] == 'E' && b[10] == 'B' && b[11] == 'P';
+        return jpeg || png || webp;
     }
 }

@@ -15,7 +15,7 @@ const LINES = [
 
 // Verbatim from the landing's trust strip — the same three promises, so the
 // marketing page and the sign-in screen do not make different claims.
-const PROMISES = ['Only your college', 'Intent-Based Matching', '100% Confidential'];
+const PROMISES = ['Only your college', 'Intent-Based Matching', 'Private by design'];
 
 /*
  * The campus photo. Swapping in a photo of a launch campus means replacing

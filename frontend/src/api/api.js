@@ -66,6 +66,9 @@ api.interceptors.response.use(
     const rejectWithCode = (message) => {
       const err = new Error(message);
       if (code) err.code = code;
+      // Per-field messages from a 400 validation failure, so forms can show them inline.
+      const fieldErrors = error.response?.data?.fieldErrors;
+      if (fieldErrors) err.fieldErrors = fieldErrors;
       return Promise.reject(err);
     };
 

@@ -43,9 +43,25 @@ public class RateLimitAspect {
         );
 
         if (!allowed) {
-            throw new TooManyRequestsException("Too many requests. Try again in a moment.");
+            long wait = rateLimiterService.secondsUntilReset(key);
+            throw new TooManyRequestsException(waitMessage(wait), wait);
         }
         return joinPoint.proceed();
+    }
+
+    private static String waitMessage(long seconds) {
+        if (seconds <= 0) {
+            return "Too many requests. Try again in a moment.";
+        }
+        if (seconds < 90) {
+            return "Too many requests. Try again in " + seconds + " seconds.";
+        }
+        long minutes = (seconds + 59) / 60;
+        if (minutes < 90) {
+            return "Too many requests. Try again in " + minutes + " minutes.";
+        }
+        long hours = (minutes + 59) / 60;
+        return "Too many requests. Try again in about " + hours + " hours.";
     }
 
     private String resolveIdentity(RateLimited.KeyType keyType) {

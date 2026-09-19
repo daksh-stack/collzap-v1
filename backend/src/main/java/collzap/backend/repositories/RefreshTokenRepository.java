@@ -13,7 +13,7 @@ import collzap.backend.models.RefreshToken;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
 
-    @Query("select t from RefreshToken t join fetch t.user u join fetch u.college where t.tokenHash = :tokenHash")
+    @Query("select t from RefreshToken t join fetch t.user u left join fetch u.college where t.tokenHash = :tokenHash")
     Optional<RefreshToken> findByTokenHash(@Param("tokenHash") String tokenHash);
 
     @Modifying
