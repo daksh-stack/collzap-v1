@@ -1077,6 +1077,124 @@ export const POSTS = [
       },
     ],
   },
+  {
+    slug: 'how-to-pick-hackathon-teammates-in-college',
+    title: 'How to Pick Hackathon Teammates in College (Without Ruining the Weekend)',
+    description:
+      'Most hackathon teams fall apart because of mismatched effort, not skill. The roles you need, a 10-minute compatibility test, red flags to watch for, and where to find teammates beyond your friend group.',
+    date: '2026-09-20',
+    readingMinutes: 7,
+    tags: ['Hackathons', 'Project teams'],
+    blocks: [
+      {
+        t: 'p',
+        x: 'You have the idea, the registration is done and the hackathon starts on Friday. Then you realise you have no team. So you ask your roommate, two friends from your hostel and someone from class who "knows a bit of coding". By Saturday afternoon one person has gone quiet, another is building something completely different, and you are alone at 3 AM fixing a bug you do not understand.',
+      },
+      {
+        t: 'p',
+        x: 'This happens to a lot of teams, and it is rarely about talent. Choosing hackathon teammates is a decision that shapes the next 24 to 48 hours, yet most students make it in five minutes on a WhatsApp group. Here is a better way to do it.',
+      },
+      { t: 'h2', x: 'Why hackathon teams actually fall apart' },
+      {
+        t: 'p',
+        x: 'When a team fails, people usually say "we did not have enough skills". Look closer and the cause is more often one of these:',
+      },
+      {
+        t: 'ul',
+        items: [
+          'Mismatched effort. One person is treating it as a serious build, another as a fun weekend, and neither has said so out loud.',
+          'Mismatched availability. Someone has a lab test on Saturday and never mentioned it.',
+          'No decision maker. Four people, four ideas, and two hours lost arguing about the tech stack.',
+          'Everyone can do the same thing. Four backend developers and nobody to design the screen, write the pitch or test the demo.',
+          'Team chosen for friendship, not fit. Friends are great, but being friends does not mean you work well under pressure.',
+        ],
+      },
+      { t: 'h2', x: 'The roles a team of three or four really needs' },
+      {
+        t: 'p',
+        x: 'You do not need a big team. Three or four people covering different jobs beats six people doing the same one. Think in roles, not in job titles:',
+      },
+      {
+        t: 'ul',
+        items: [
+          'The builder: turns the idea into something that runs. Usually one strong developer, ideally two who can split frontend and backend.',
+          'The designer or UX thinker: makes it usable and good to look at. Judges see the demo first, not your code.',
+          'The idea owner: understands the problem and the user, and keeps the team from building features nobody asked for.',
+          'The presenter: writes the pitch, tells the story and handles questions. A working product with a confusing pitch loses to a simpler one that is explained well.',
+        ],
+      },
+      {
+        t: 'p',
+        x: 'One person can cover two roles, and in a team of three they will have to. What matters is that every role has a name next to it before the clock starts.',
+      },
+      { t: 'h2', x: 'A 10-minute compatibility test before you commit' },
+      {
+        t: 'p',
+        x: 'Before you say yes to a team, spend ten minutes on a call and ask a few direct questions. It feels awkward the first time, and it saves you a bad weekend.',
+      },
+      {
+        t: 'ol',
+        items: [
+          'How much time can you really give? Ask for actual hours, not "I will try".',
+          'What is your goal: win, learn something, or build for your portfolio? Neither answer is wrong, but a mismatch is.',
+          'What tools and languages are you comfortable with? Agree on the stack now, not at midnight.',
+          'Tell me about a team project that went badly. What happened and what would you change? How people answer this tells you more than any skill list.',
+          'When two of us disagree, how should we decide? Agree on a tiebreaker or a decision maker in advance.',
+        ],
+      },
+      { t: 'h2', x: 'Red flags worth taking seriously' },
+      {
+        t: 'ul',
+        items: [
+          'They join the group but never reply to the planning messages.',
+          '"I will join properly at the last hour." Hackathons do not have a last hour to spare.',
+          'They will not commit to a time slot or a role.',
+          'They want to change the whole idea the moment the team forms, without listening to the rest.',
+          'Nobody in the team has shipped anything before, and nobody is willing to say so.',
+        ],
+      },
+      {
+        t: 'quote',
+        x: 'A slightly less skilled teammate who shows up, communicates and finishes their part is worth more than a brilliant one who disappears.',
+      },
+      { t: 'h2', x: 'Where to find teammates beyond your own friend group' },
+      {
+        t: 'p',
+        x: 'If everyone you know has the same skills as you, the team will have the same gaps as you. Widen the search:',
+      },
+      {
+        t: 'ul',
+        items: [
+          'Club and department channels. Coding clubs, design societies and E-Cells often have members looking for a team.',
+          'Your own classes. Look for the person who asks good questions or quietly ships side projects.',
+          'Project fairs, workshops and previous hackathon teams in your college. People who have already done one know what it takes.',
+          'Seniors and juniors. A different batch brings different skills and fewer friendship-group politics.',
+          'Matching platforms built for this. CollZap, for example, matches verified students inside the same college by interest and by how seriously they approach it, so you meet people with the same level of effort rather than whoever happens to be in the group chat.',
+        ],
+      },
+      { t: 'h2', x: 'A pre-hackathon checklist' },
+      {
+        t: 'ol',
+        items: [
+          'Confirm team size and the exact roles before registration closes.',
+          'Write down each person’s availability for the whole event.',
+          'Agree on the goal, the stack and one person who makes the final call.',
+          'Set up a shared repository and a group chat the day before, not during.',
+          'Decide what "done" means for the demo, and cut everything else.',
+          'Plan sleep. A team that rests in shifts ships better than one that is awake for 30 hours.',
+        ],
+      },
+      { t: 'h2', x: 'Pick people, not just skills' },
+      {
+        t: 'p',
+        x: 'A hackathon compresses months of teamwork into a weekend, so the strengths and weaknesses of your team show up fast. Choose teammates for effort, honesty and reliability first and skill second, cover the four roles, and have the difficult conversations at the start rather than at 3 AM.',
+      },
+      {
+        t: 'p',
+        x: 'And if you cannot find the right people around you, look wider inside your own college. The right teammate is often a few classrooms away, just not in the group you already know.',
+      },
+    ],
+  },
 ];
 
 /** Newest first, which is the order the index page and sitemap both want. */
