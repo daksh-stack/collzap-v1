@@ -2,9 +2,13 @@
 // Finds the max simultaneous sockets before nginx (worker_connections default 1024,
 // two per proxied socket), the JVM or the in-memory broker gives out. There is NO
 // server-side rate limit on WebSocket sends, so this is also the abuse ceiling.
-// Needs rooms from scenario 06. Many sockets share a user; that is fine for load.
+// Needs rooms from scenario 06. Many sockets share a user; that is fine for load —
+// this test cares about total open connections, not distinct identities, so setup()
+// only logs in a couple hundred of the pool instead of all 500 (which was the real
+// cause of "VUs stay at 0 for a long time": that login step runs once, up front,
+// before the VU ramp starts, so the dashboard shows nothing while it works).
 import { sleep } from 'k6';
-import { USER_COUNT, LONG_TERM_COUNT } from '../lib/config.js';
+import { LONG_TERM_COUNT } from '../lib/config.js';
 import { loginRange } from '../lib/auth.js';
 import { collectRooms } from '../lib/rooms.js';
 import { stompSession } from '../lib/stomp.js';
@@ -32,8 +36,10 @@ export const options = {
   },
 };
 
+const SETUP_POOL = LONG_TERM_COUNT + 200; // 200 distinct users is plenty to cycle through
+
 export function setup() {
-  return { rooms: collectRooms(loginRange(LONG_TERM_COUNT + 1, USER_COUNT)) };
+  return { rooms: collectRooms(loginRange(LONG_TERM_COUNT + 1, SETUP_POOL)) };
 }
 
 export default function ({ rooms }) {

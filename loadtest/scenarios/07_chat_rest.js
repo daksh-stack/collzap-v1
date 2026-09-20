@@ -1,7 +1,11 @@
 // Chat over REST: open a room, page through history, send a message, mark read.
 // Each send is a DB write plus one receipt and one notification per recipient.
-// Needs rooms from scenario 06.
-import { USER_COUNT, LONG_TERM_COUNT, SAFE } from '../lib/config.js';
+// Needs rooms from scenario 06. Only a couple hundred distinct users are logged in
+// during setup() (not the full 500-user pool) — the max VU count here is 600, so
+// that's still plenty of variety, and it keeps setup() from being the slowest part
+// of the run (setup happens before the VU ramp starts, so the dashboard shows 0
+// VUs the whole time it's logging people in).
+import { LONG_TERM_COUNT, SAFE } from '../lib/config.js';
 import { loginRange } from '../lib/auth.js';
 import { collectRooms } from '../lib/rooms.js';
 import { chatSession } from '../lib/flows.js';
@@ -24,8 +28,10 @@ export const options = {
   thresholds: SAFE,
 };
 
+const SETUP_POOL = LONG_TERM_COUNT + 200;
+
 export function setup() {
-  return { rooms: collectRooms(loginRange(LONG_TERM_COUNT + 1, USER_COUNT)) };
+  return { rooms: collectRooms(loginRange(LONG_TERM_COUNT + 1, SETUP_POOL)) };
 }
 
 export default function ({ rooms }) {
