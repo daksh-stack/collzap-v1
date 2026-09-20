@@ -70,7 +70,7 @@ export default function LandingPage() {
       <Nav />
       <main>
         <Hero />
-        {/* <Problem /> */}
+        <Problem />
         <WhoItsFor />
         <WhyCollZap />
         <HowItWorks />
