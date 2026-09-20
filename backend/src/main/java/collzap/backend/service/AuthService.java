@@ -26,6 +26,7 @@ import collzap.backend.dto.AuthDtos.SignupRequest;
 import collzap.backend.dto.AuthDtos.SignupResponse;
 import collzap.backend.dto.UserDtos.OnboardingStateResponse;
 import collzap.backend.enums.OtpPurpose;
+import collzap.backend.enums.RefreshTokenRevocation;
 import collzap.backend.enums.Status;
 import collzap.backend.exception.BadRequestException;
 import collzap.backend.exception.ForbiddenException;
@@ -54,6 +55,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final AdminUserRepository adminUserRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenSecurityService refreshTokenSecurity;
     private final OtpService otpService;
     private final JwtService jwtService;
     private final OnboardingService onboardingService;
@@ -66,6 +68,7 @@ public class AuthService {
         UserRepository userRepository,
         AdminUserRepository adminUserRepository,
         RefreshTokenRepository refreshTokenRepository,
+        RefreshTokenSecurityService refreshTokenSecurity,
         OtpService otpService,
         JwtService jwtService,
         OnboardingService onboardingService,
@@ -76,6 +79,7 @@ public class AuthService {
         this.userRepository = userRepository;
         this.adminUserRepository = adminUserRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.refreshTokenSecurity = refreshTokenSecurity;
         this.otpService = otpService;
         this.jwtService = jwtService;
         this.onboardingService = onboardingService;
@@ -190,14 +194,20 @@ public class AuthService {
      * Rotates on every use: the presented token is revoked and a fresh one is
      * returned alongside the new access token.
      *
-     * A token that is already revoked is either a thief or a stale copy being
-     * replayed. Within REFRESH_REUSE_GRACE it is treated as a benign race (two
-     * tabs refreshing at once, or a response lost in transit) and simply rotated
-     * again. Beyond that it is treated as theft and every session for the user is
-     * revoked. noRollbackFor keeps that revocation from being undone by the
-     * exception that reports it.
+     * <p>An already-revoked token is only forgiven when BOTH conditions hold: it was
+     * revoked by a routine rotation, and that happened within REFRESH_REUSE_GRACE.
+     * That pair is what makes a replay plausibly innocent — two tabs refreshing at
+     * once, or a response lost on the way back.
+     *
+     * <p>Checking the clock alone was a real defect, caught by scenario 09 of the load
+     * test failing 10 times out of 10. Detecting theft revokes every token the user
+     * has, stamping each with revokedAt = now; the legitimate token the victim was
+     * holding therefore looked, one millisecond later, exactly like a token that had
+     * just been rotated — comfortably inside the grace window — so the very next
+     * request resurrected the session the revocation had just ended. The reason is
+     * now recorded alongside the timestamp, and only ROTATED is ever forgiven.
      */
-    @Transactional(noRollbackFor = UnauthorizedException.class)
+    @Transactional
     public AccessTokenResponse refresh(String rawRefreshToken) {
         RefreshToken stored = refreshTokenRepository.findByTokenHash(sha256(rawRefreshToken))
             .orElseThrow(() -> new UnauthorizedException("Refresh token is not valid"));
@@ -207,12 +217,24 @@ public class AuthService {
         }
         User user = stored.getUser();
         if (stored.getRevokedAt() != null) {
-            if (stored.getRevokedAt().plus(REFRESH_REUSE_GRACE).isBefore(now)) {
-                refreshTokenRepository.revokeAllForUser(user.getId(), now);
-                throw new UnauthorizedException("Refresh token is not valid. Sign in again.");
+            // Anything other than a rotation is final: a logout must not be undone by a
+            // late retry, and a token already burned for reuse must never work again.
+            // Rows predating revokedReason read as null and land here too, which is the
+            // safe way round.
+            if (!stored.wasRotated()) {
+                throw new UnauthorizedException("This session has ended. Sign in again.");
             }
+            if (stored.getRevokedAt().plus(REFRESH_REUSE_GRACE).isBefore(now)) {
+                // Too old to be a race, so someone is replaying a token that was already
+                // spent. Burn the whole chain in its own transaction so the revocation
+                // stands regardless of what the exception below does to this one.
+                refreshTokenSecurity.compromiseAllForUser(user.getId());
+                throw new UnauthorizedException("This session has ended. Sign in again.");
+            }
+            // Inside the grace window: treat it as the race it probably is and rotate again.
         } else {
             stored.setRevokedAt(now);
+            stored.setRevokedReason(RefreshTokenRevocation.ROTATED);
             refreshTokenRepository.save(stored);
         }
         if (user.getAccountStatus() == Status.DELETED) {
@@ -233,13 +255,14 @@ public class AuthService {
         }
         refreshTokenRepository.findByTokenHash(sha256(rawRefreshToken)).ifPresent(token -> {
             token.setRevokedAt(Instant.now());
+            token.setRevokedReason(RefreshTokenRevocation.LOGOUT);
             refreshTokenRepository.save(token);
         });
     }
 
     @Transactional
     public void logoutEverywhere(UUID userId) {
-        refreshTokenRepository.revokeAllForUser(userId, Instant.now());
+        refreshTokenRepository.revokeAllForUser(userId, Instant.now(), RefreshTokenRevocation.LOGOUT);
     }
 
     @Transactional(readOnly = true)

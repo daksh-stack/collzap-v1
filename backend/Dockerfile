@@ -20,8 +20,10 @@ USER collzap
 
 EXPOSE 8081
 
+# Liveness only: it answers without a database round trip, so a saturated connection
+# pool or a Supabase blip can no longer make docker declare a working backend dead.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD wget -q --spider http://localhost:8081/actuator/health || exit 1
+  CMD wget -q --spider http://localhost:8081/actuator/health/liveness || exit 1
 
 # MaxRAMPercentage lets the heap scale with whatever memory limit docker-compose sets on this
 # container, instead of a fixed -Xmx that either wastes a small instance or gets OOM-killed on it.

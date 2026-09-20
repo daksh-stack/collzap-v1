@@ -2,8 +2,11 @@ package collzap.backend.models;
 
 import java.time.Instant;
 
+import collzap.backend.enums.RefreshTokenRevocation;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
@@ -40,6 +43,16 @@ public class RefreshToken extends BaseEntity {
     @Column(name = "revoked_at")
     private Instant revokedAt;
 
+    /**
+     * Null while the token is live. Once set, {@code revokedAt} alone cannot say
+     * whether a replay is innocent, so the reason is what the refresh path reads
+     * before deciding to forgive it. Rows revoked before this column existed read
+     * as null, which is treated as "not a rotation" — the safe default.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "revoked_reason", length = 16)
+    private RefreshTokenRevocation revokedReason;
+
     public RefreshToken(User user, String tokenHash, Instant expiresAt) {
         this.user = user;
         this.tokenHash = tokenHash;
@@ -48,5 +61,10 @@ public class RefreshToken extends BaseEntity {
 
     public boolean isActive(Instant now) {
         return revokedAt == null && now.isBefore(expiresAt);
+    }
+
+    /** True only for a token replaced by a routine rotation, which may be forgiven inside the grace window. */
+    public boolean wasRotated() {
+        return revokedReason == RefreshTokenRevocation.ROTATED;
     }
 }

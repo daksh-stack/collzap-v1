@@ -200,7 +200,18 @@ Scenario 09 recorded `refresh_replay_not_revoked = 10` — **10 out of 10 trials
 - Rejection works: a replayed old token is correctly refused with 401. ✅
 - **Revocation does not work:** replaying a stolen token should revoke every session for that user. It does not — the newest token still worked afterward. ❌
 
-So a stolen refresh token is detected but the thief is not kicked out. Likely cause is transaction/rollback behaviour around the bulk `revokeAllForUser` update in `AuthService.refresh` — **not yet verified, needs investigation.**
+So a stolen refresh token was detected but the thief was not kicked out.
+
+**Root cause (since confirmed, and fixed).** The report originally guessed at transaction rollback behaviour. That was wrong. The real fault was a logic error in the grace window:
+
+1. Reuse detection revoked every token for the user by stamping `revokedAt = now` on each.
+2. The victim's legitimate token was therefore revoked *at that instant*.
+3. On the very next request, that token looked exactly like one that had just been rotated — comfortably inside the 30-second grace window.
+4. The grace branch treated it as a harmless two-tabs race and issued a fresh pair of tokens, **resurrecting the session the revocation had just ended.**
+
+A timestamp alone cannot distinguish "revoked a moment ago by routine rotation" from "revoked a moment ago because we caught a thief". The fix records *why* a token was revoked (`ROTATED`, `LOGOUT`, `COMPROMISED`) and forgives only `ROTATED`.
+
+The same flaw silently affected logout: signing out set `revokedAt`, so a retry arriving within 30 seconds would have been forgiven and the session restored. That is fixed by the same change.
 
 ### B. Health endpoint is database-gated
 
