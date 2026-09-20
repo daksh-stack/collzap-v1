@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { Code2, Palette, Rocket, Users } from 'lucide-react';
-import { reveal, revealGroup, revealVariants, useReducedMotion } from '../../../lib/motion';
+import { lift, reveal, revealGroup, revealVariants, useReducedMotion } from '../../../lib/motion';
 import SectionLabel from '../SectionLabel';
 
 // The things students are actually looking for, in their own words.
@@ -14,6 +14,13 @@ const NEEDS = [
   'Looking for creators & designers',
   'Want meaningful friendships',
 ];
+
+// Fixed tilts rather than random ones: the board must look identical on every
+// render, and hand-pinned paper is never more than a couple of degrees off.
+const TILT = [-2.4, 1.6, -1.1, 2.1, -1.8, 1.2, -2.2, 1.5];
+
+const TABS_PER_NOTE = 6;
+const SCREWS = ['left-3 top-3', 'right-3 top-3', 'left-3 bottom-3', 'right-3 bottom-3'];
 
 const CARDS = [
   {
@@ -41,93 +48,81 @@ const CARDS = [
   },
 ];
 
-/* ---------------- the corridor ---------------- */
-
-const VP = { x: 400, y: 155 };          // vanishing point
-const MOUTH = { l: 20, r: 780, t: 10, b: 300 };
-const DEPTHS = [0, 0.2, 0.37, 0.51, 0.62, 0.71];
-
-// Project a point on the corridor mouth back to `t` depth.
-const px = (x, t) => VP.x + (1 - t) * (x - VP.x);
-const py = (y, t) => VP.y + (1 - t) * (y - VP.y);
-
-/** One door on a side wall, spanning depths t1 → t2. */
-function doorPath(wallX, t1, t2) {
-  const top = 70;
-  const bottom = 272;
-  return [
-    `M${px(wallX, t1)} ${py(top, t1)}`,
-    `L${px(wallX, t2)} ${py(top, t2)}`,
-    `L${px(wallX, t2)} ${py(bottom, t2)}`,
-    `L${px(wallX, t1)} ${py(bottom, t1)}`,
-    'Z',
-  ].join(' ');
-}
-
 /**
- * A hostel corridor, drawn rather than sourced: receding hairline door frames,
- * every one shut but a single lit one, and one figure standing in front of it.
- * The lit door is the only colour in this whole section.
+ * A hostel notice board where nobody has torn off a single tab.
+ *
+ * Every note carries the fringe of pull-tabs you see on a real campus board,
+ * and every fringe is intact — which is the section's argument in one image:
+ * plenty of people asking, none of them reached. That is why the tabs are
+ * drawn as perforations rather than decoration; the point is that they are
+ * uncut.
+ *
+ * It replaces a hand-drawn SVG "corridor" that did not survive contact with a
+ * real screen: the perspective lines met mid-frame and read as a bowtie, the
+ * doors floated free of any wall, and the lone student was a circle on a dome.
+ *
+ * The paper stays colour-literal in both themes — paper does not change colour
+ * when the lights go off — and carries no brand accent. The gradient is saved
+ * for the sections that answer this one.
  */
-function Corridor() {
-  const doors = [];
-  for (let i = 0; i < DEPTHS.length - 1; i++) {
-    doors.push({ t1: DEPTHS[i], t2: DEPTHS[i + 1], i });
-  }
-
+function NoticeBoard({ reduced }) {
   return (
-    <svg
-      viewBox="0 0 800 310"
-      className="h-full w-full"
-      role="img"
-      aria-label="A long hostel corridor of closed doors with a single lit doorway"
+    <div
+      className="relative overflow-hidden rounded-xl border border-line bg-surface px-5 py-8 shadow-sm sm:px-10 sm:py-12"
+      style={{
+        backgroundImage: 'radial-gradient(rgba(125,145,175,0.16) 1px, transparent 1px)',
+        backgroundSize: '22px 22px',
+      }}
     >
-      {/* Ceiling, floor and wall creases converging on the vanishing point. */}
-      {[
-        [MOUTH.l, MOUTH.t], [MOUTH.r, MOUTH.t],
-        [MOUTH.l, MOUTH.b], [MOUTH.r, MOUTH.b],
-      ].map(([x, y], i) => (
-        <line
-          key={i}
-          x1={x} y1={y} x2={VP.x} y2={VP.y}
-          className="stroke-ink/15"
-          strokeWidth="1"
+      {/* Board screws. */}
+      {SCREWS.map((pos) => (
+        <span
+          key={pos}
+          aria-hidden="true"
+          className={`absolute ${pos} h-1.5 w-1.5 rounded-full bg-ink/15 ring-1 ring-ink/10`}
         />
       ))}
 
-      {doors.map(({ t1, t2, i }) => {
-        // One door, third on the left, is open and lit.
-        const lit = i === 2;
-        return (
-          <g key={`l${i}`}>
-            <path
-              d={doorPath(MOUTH.l + 90, t1, t2)}
-              className={lit ? 'fill-accent-500/20 stroke-accent-500/70' : 'fill-ink/[0.03] stroke-ink/15'}
-              strokeWidth="1"
+      <motion.ul
+        {...revealGroup(reduced)}
+        className="flex flex-wrap justify-center gap-5 sm:gap-6"
+        aria-label="Notes students pin up looking for people, none of them answered"
+      >
+        {NEEDS.map((need, i) => (
+          <motion.li
+            key={need}
+            variants={reduced ? undefined : revealVariants}
+            whileHover={lift(reduced, -4)}
+            style={{ rotate: `${TILT[i % TILT.length]}deg` }}
+            className="relative flex h-[8.75rem] w-[10.5rem] items-center justify-center rounded-[3px] border border-black/10 bg-[#F4E2A6] px-4 pb-9 pt-7 text-center text-[13px] font-medium leading-snug text-[#3A2F12] shadow-md sm:w-[11rem]"
+          >
+            {/* Pushpin. */}
+            <span
+              aria-hidden="true"
+              className="absolute left-1/2 top-2.5 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-[#B8503A] shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
             />
-            <path
-              d={doorPath(MOUTH.r - 90, t1, t2)}
-              className="fill-ink/[0.03] stroke-ink/15"
-              strokeWidth="1"
-            />
-          </g>
-        );
-      })}
 
-      {/* The one student, front and centre, facing the long way down. */}
-      <g className="fill-ink/70">
-        <circle cx="392" cy="214" r="13" />
-        <path d="M368 282c0-16 11-28 24-28s24 12 24 28z" />
-      </g>
-    </svg>
+            {need}
+
+            {/* The fringe of pull-tabs — perforated, and not one taken. */}
+            <span
+              aria-hidden="true"
+              className="absolute inset-x-0 bottom-0 flex h-7 border-t border-dashed border-black/25"
+            >
+              {Array.from({ length: TABS_PER_NOTE }).map((_, k) => (
+                <span key={k} className="h-full flex-1 border-l border-black/15 first:border-l-0" />
+              ))}
+            </span>
+          </motion.li>
+        ))}
+      </motion.ul>
+    </div>
   );
 }
 
-/* ---------------- section ---------------- */
-
 /**
- * Deliberately colourless apart from the lit doorway: no accent on the notes
- * or the cards. The first time the brand gradient really appears should be the
+ * Deliberately colourless apart from the paper: no brand accent on the notes
+ * or the cards. The first time the gradient really appears should be the
  * answer, not the problem.
  */
 export default function Problem() {
@@ -150,35 +145,9 @@ export default function Problem() {
           </p>
         </motion.div>
 
-        <motion.div
-          {...reveal(reduced, 0.08)}
-          className="mt-12 h-52 overflow-hidden rounded-lg border border-line bg-surface sm:h-72"
-        >
-          <Corridor />
+        <motion.div {...reveal(reduced, 0.08)} className="mt-12">
+          <NoticeBoard reduced={reduced} />
         </motion.div>
-
-        {/* The same thoughts, pinned up the way they actually get pinned up. */}
-        <motion.ul
-          {...revealGroup(reduced)}
-          className="mt-12 flex flex-wrap justify-center gap-4 sm:gap-5"
-          aria-label="What students are looking for"
-        >
-          {NEEDS.map((need, i) => (
-            <motion.li
-              key={need}
-              variants={reduced ? undefined : revealVariants}
-              style={{ rotate: `${(i % 2 === 0 ? -1 : 1) * (1 + (i % 3) * 0.6)}deg` }}
-              className="relative w-[10.5rem] rounded-sm border border-wait/25 bg-wait/[0.09] px-3 pb-3 pt-5 text-xs leading-snug text-ink shadow-sm"
-            >
-              {/* Tape. */}
-              <span
-                aria-hidden="true"
-                className="absolute -top-1.5 left-1/2 h-3 w-10 -translate-x-1/2 rounded-[1px] bg-ink/[0.07]"
-              />
-              {need}
-            </motion.li>
-          ))}
-        </motion.ul>
 
         <motion.div {...revealGroup(reduced)} className="mt-14 grid gap-5 sm:grid-cols-2">
           {CARDS.map((card) => (
