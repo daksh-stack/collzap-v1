@@ -83,6 +83,7 @@ public class AdminService {
     private final collzap.backend.repositories.SeriousnessTestAnswerRepository answerRepository;
     private final SeriousnessTestAttemptRepository attemptRepository;
     private final UserInterestSelectionRepository userInterestSelectionRepository;
+    private final CollegeApplicationService collegeApplicationService;
 
     public AdminService(
         UserRepository userRepository,
@@ -101,7 +102,8 @@ public class AdminService {
         collzap.backend.repositories.SeriousnessTestAttemptQuestionRepository attemptQuestionRepository,
         collzap.backend.repositories.SeriousnessTestAnswerRepository answerRepository,
         SeriousnessTestAttemptRepository attemptRepository,
-        UserInterestSelectionRepository userInterestSelectionRepository
+        UserInterestSelectionRepository userInterestSelectionRepository,
+        CollegeApplicationService collegeApplicationService
     ) {
         this.userRepository = userRepository;
         this.userService = userService;
@@ -120,6 +122,7 @@ public class AdminService {
         this.answerRepository = answerRepository;
         this.attemptRepository = attemptRepository;
         this.userInterestSelectionRepository = userInterestSelectionRepository;
+        this.collegeApplicationService = collegeApplicationService;
     }
 
     @Transactional(readOnly = true)
@@ -219,6 +222,26 @@ public class AdminService {
         AdminUser reviewer = adminUserRepository.findById(adminId)
             .orElseThrow(() -> new NotFoundException("Operator account not found"));
         return verificationService.review(documentId, request, reviewer);
+    }
+
+    /** "Bring CollZap to my college" applications. status=null returns every one. */
+    @Transactional(readOnly = true)
+    public PageResponse<collzap.backend.dto.CollegeApplicationDtos.AdminCollegeApplicationRow> collegeApplications(
+        DocumentStatus status,
+        Pageable pageable
+    ) {
+        return collegeApplicationService.list(status, pageable);
+    }
+
+    @Transactional
+    public collzap.backend.dto.CollegeApplicationDtos.AdminCollegeApplicationRow reviewCollegeApplication(
+        UUID applicationId,
+        ReviewDocumentRequest request,
+        UUID adminId
+    ) {
+        AdminUser reviewer = adminUserRepository.findById(adminId)
+            .orElseThrow(() -> new NotFoundException("Operator account not found"));
+        return collegeApplicationService.review(applicationId, request, reviewer);
     }
 
     /** The matches table, with member names resolved in one extra query. */

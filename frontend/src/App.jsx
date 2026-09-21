@@ -28,6 +28,7 @@ import Spinner from './components/ui/Spinner';
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const BlogIndexPage = lazy(() => import('./pages/BlogIndexPage'));
 const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
+const BringCollZapPage = lazy(() => import('./pages/BringCollZapPage'));
 const FaqPage = lazy(() => import('./pages/FaqPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
@@ -55,6 +56,7 @@ const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
 const AdminVerificationsPage = lazy(() => import('./pages/admin/AdminVerificationsPage'));
 const AdminMatchesPage = lazy(() => import('./pages/admin/AdminMatchesPage'));
 const AdminQueuePage = lazy(() => import('./pages/admin/AdminQueuePage'));
+const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'));
 const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
 const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage'));
 const AdminCollegesPage = lazy(() => import('./pages/admin/AdminCollegesPage'));
@@ -79,7 +81,7 @@ const PageLoader = () => (
 // conflicting robots directives is to apply the most restrictive one — so
 // the noindex always won, and the homepage silently failed indexing.
 // Computing it once, here, from the path guarantees exactly one tag exists.
-const INDEXABLE_PATHS = new Set(['/', '/about', '/faq', '/blog', '/privacy', '/terms', '/login', '/signup']);
+const INDEXABLE_PATHS = new Set(['/', '/about', '/faq', '/blog', '/privacy', '/terms', '/login', '/signup', '/bring-collzap']);
 const NOINDEX_FOLLOW_PATHS = new Set(['/forgot-password']);
 
 function robotsFor(pathname) {
@@ -140,6 +142,7 @@ function App() {
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/bring-collzap" element={<BringCollZapPage />} />
 
           {/* Public Routes (Login/Signup) */}
           <Route element={<AuthGuard />}>
@@ -192,6 +195,7 @@ function App() {
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/users" element={<AdminUsersPage />} />
                 <Route path="/admin/verifications" element={<AdminVerificationsPage />} />
+                <Route path="/admin/applications" element={<AdminApplicationsPage />} />
                 <Route path="/admin/matches" element={<AdminMatchesPage />} />
                 <Route path="/admin/queue" element={<AdminQueuePage />} />
                 <Route path="/admin/reports" element={<AdminReportsPage />} />

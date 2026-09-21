@@ -10,6 +10,7 @@ export const useAdminStore = create((set) => ({
   matches: defaultPage,
   queue: [],
   reports: defaultPage,
+  collegeApplications: defaultPage,
   interestFeedback: defaultPage,
   questions: defaultPage,
   interests: [],
@@ -86,6 +87,34 @@ export const useAdminStore = create((set) => ({
     try {
       const payload = note ? { approve, note } : { approve };
       const response = await api.post(`/admin/verifications/${documentId}/review`, payload);
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  fetchCollegeApplications: async (status = null, page = 0) => {
+    set({ loading: true, error: null });
+    try {
+      const params = new URLSearchParams({ page });
+      if (status) params.append('status', status);
+
+      const collegeApplications = await api.get(`/admin/college-applications?${params.toString()}`);
+      set({ collegeApplications, loading: false });
+      return collegeApplications;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  reviewCollegeApplication: async (applicationId, approve, note = null) => {
+    set({ loading: true, error: null });
+    try {
+      const payload = note ? { approve, note } : { approve };
+      const response = await api.post(`/admin/college-applications/${applicationId}/review`, payload);
       set({ loading: false });
       return response;
     } catch (error) {

@@ -121,6 +121,23 @@ public class AdminController {
         return adminService.review(documentId, request, operator.userId());
     }
 
+    /** "Bring CollZap to my college" applications, optionally narrowed to one status. */
+    @GetMapping("/college-applications")
+    public PageResponse<collzap.backend.dto.CollegeApplicationDtos.AdminCollegeApplicationRow> collegeApplications(
+            @RequestParam(required = false) collzap.backend.enums.DocumentStatus status,
+            @PageableDefault(size = 25) Pageable pageable) {
+        return adminService.collegeApplications(status, pageable);
+    }
+
+    /** Approve or reject one college application. Does not create a User or a College row. */
+    @PostMapping("/college-applications/{applicationId}/review")
+    public collzap.backend.dto.CollegeApplicationDtos.AdminCollegeApplicationRow reviewCollegeApplication(
+            @AuthenticationPrincipal AuthPrincipal operator,
+            @PathVariable UUID applicationId,
+            @Valid @RequestBody ReviewDocumentRequest request) {
+        return adminService.reviewCollegeApplication(applicationId, request, operator.userId());
+    }
+
     /** The matches table, optionally narrowed to one status. */
     @GetMapping("/matches")
     public PageResponse<AdminMatchRow> matches(

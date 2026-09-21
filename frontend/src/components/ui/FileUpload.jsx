@@ -15,6 +15,9 @@ import { api } from '../../api/api';
  *  - className:         optional extra container classes
  *  - compact:           boolean — use a smaller layout (for profile photo inside a grid)
  *  - existingUrl:       optional — show existing image as the initial preview
+ *  - endpoint:          optional — override the upload URL (default '/upload').
+ *                       Used by the public college-application form, which cannot
+ *                       call the authenticated /upload route.
  */
 export default function FileUpload({
   category,
@@ -24,6 +27,7 @@ export default function FileUpload({
   className,
   compact = false,
   existingUrl = '',
+  endpoint = '/upload',
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [preview, setPreview] = useState(existingUrl || '');
@@ -59,7 +63,7 @@ export default function FileUpload({
       formData.append('category', category);
 
       try {
-        const response = await api.post('/upload', formData, {
+        const response = await api.post(endpoint, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (e) => {
             if (e.total) {
@@ -77,7 +81,7 @@ export default function FileUpload({
         setProgress(0);
       }
     },
-    [category, onUploadComplete]
+    [category, onUploadComplete, endpoint]
   );
 
   const onDrop = useCallback(

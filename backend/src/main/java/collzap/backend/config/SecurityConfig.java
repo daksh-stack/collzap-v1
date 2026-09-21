@@ -61,6 +61,7 @@ public class SecurityConfig {
                 // STOMP handshake authenticates on CONNECT, not on the HTTP upgrade.
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/college-applications", "/api/college-applications/document").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/**").hasRole("USER")
                 .anyRequest().denyAll())

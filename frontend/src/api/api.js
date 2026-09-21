@@ -13,6 +13,9 @@ const NO_REFRESH_PATHS = [
   '/admin/auth/login',
   '/auth/logout',
   '/auth/refresh',
+  // Public, unauthenticated — a 401 here would be a misconfigured
+  // SecurityConfig matcher, not an expired session; never bounce to /login.
+  '/college-applications',
 ];
 
 const isNoRefreshPath = (url = '') => NO_REFRESH_PATHS.some((path) => url.includes(path));

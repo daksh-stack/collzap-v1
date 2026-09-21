@@ -12,6 +12,7 @@ const navigation = [
   { name: 'Overview', href: '/admin' },
   { name: 'Users', href: '/admin/users' },
   { name: 'Verifications', href: '/admin/verifications' },
+  { name: 'Applications', href: '/admin/applications' },
   { name: 'Matches', href: '/admin/matches' },
   { name: 'Queue', href: '/admin/queue' },
   { name: 'Reports', href: '/admin/reports' },
