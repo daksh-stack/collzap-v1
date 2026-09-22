@@ -74,10 +74,10 @@ export default function Footer() {
           </div>
 
           {COLUMNS.map((col) => (
-            <div key={col.heading}>
-              <h2 className="font-mono text-[10px] uppercase tracking-widest text-mute/80">
+            <nav key={col.heading} aria-label={col.heading}>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-mute/80">
                 {col.heading}
-              </h2>
+              </p>
               <ul className="mt-4 space-y-3">
                 {col.links.map((item) => (
                   <li key={item.to || item.href}>
@@ -85,7 +85,7 @@ export default function Footer() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </nav>
           ))}
         </div>
 
