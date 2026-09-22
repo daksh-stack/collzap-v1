@@ -22,8 +22,8 @@ import Stamp from '../ui/Stamp';
  * a blank card.
  */
 
-const SWING_MAX = 7;   // deg — a sway, never a spin
-const TILT_MAX = 10;   // deg of rotateY
+const SWING_MAX = 2.5; // deg — a settle, not a wobble
+const TILT_MAX = 4;    // deg of rotateY
 
 // What the card entitles you to. A product promise, not a fake identity —
 // which is why there is no name, no photo and no ID number on it.
@@ -68,7 +68,7 @@ export default function IdBadge({ className }) {
   return (
     // The card is 1.5x as tall as it is wide, so its width sets how much of a
     // phone screen the whole assembly eats. Smaller on mobile for that reason.
-    <div className={cn('relative mx-auto w-[13.5rem] sm:w-[15rem] lg:w-[17rem]', className)}>
+    <div className={cn('relative mx-auto w-[13.5rem] sm:w-[15rem] lg:w-[18.5rem]', className)}>
       <motion.div style={motionStyle} className="flex flex-col items-center">
         {/* Lanyard cord. Pivots with the assembly, so it never detaches. */}
         <svg

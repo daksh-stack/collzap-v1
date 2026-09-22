@@ -59,6 +59,10 @@ export default {
         display: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        // The notice-board notes only — a pinned scrap of paper reads as
+        // written, not typeset. Never used for anything the visitor must
+        // read carefully; those stay in the system's real faces.
+        hand: ['"Caveat"', 'cursive'],
       },
 
       borderRadius: {

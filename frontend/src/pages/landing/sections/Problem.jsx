@@ -94,7 +94,7 @@ function NoticeBoard({ reduced }) {
             variants={reduced ? undefined : revealVariants}
             whileHover={lift(reduced, -4)}
             style={{ rotate: `${TILT[i % TILT.length]}deg` }}
-            className="relative flex h-[8.75rem] w-[10.5rem] items-center justify-center rounded-[3px] border border-black/10 bg-[#F4E2A6] px-4 pb-9 pt-7 text-center text-[13px] font-medium leading-snug text-[#3A2F12] shadow-md sm:w-[11rem]"
+            className="relative flex h-[8.75rem] w-[10.5rem] items-center justify-center rounded-[3px] border border-black/10 bg-[#F4E2A6] px-4 pb-9 pt-7 text-center font-hand text-xl font-semibold leading-tight text-[#3A2F12] shadow-md sm:w-[11rem]"
           >
             {/* Pushpin. */}
             <span

@@ -41,7 +41,7 @@ export const NAV_PAGES = [
   { to: '/blog', label: 'Blog' },
   { to: '/about', label: 'About' },
   { to: '/faq', label: 'FAQ' },
-  { to: '/bring-collzap', label: 'Bring CollZap' },
+  { to: '/bring-collzap', label: 'Add Your College' },
 ];
 
 /**
