@@ -62,6 +62,7 @@ const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage'));
 const AdminCollegesPage = lazy(() => import('./pages/admin/AdminCollegesPage'));
 const AdminInterestsPage = lazy(() => import('./pages/admin/AdminInterestsPage'));
 const AdminQuestionsPage = lazy(() => import('./pages/admin/AdminQuestionsPage'));
+const AdminTaskBanksPage = lazy(() => import('./pages/admin/AdminTaskBanksPage'));
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
@@ -203,6 +204,7 @@ function App() {
                 <Route path="/admin/colleges" element={<AdminCollegesPage />} />
                 <Route path="/admin/interests" element={<AdminInterestsPage />} />
                 <Route path="/admin/questions" element={<AdminQuestionsPage />} />
+                <Route path="/admin/task-banks" element={<AdminTaskBanksPage />} />
               </Route>
             </Route>
           </Route>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Camera } from 'lucide-react';
+import { ShieldCheck, Camera, Flame, Trophy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -11,6 +11,7 @@ import Spinner from '../../components/ui/Spinner';
 import FileUpload from '../../components/ui/FileUpload';
 import { useUserStore } from '../../store/useUserStore';
 import { useInterestStore } from '../../store/useInterestStore';
+import { useTaskStore } from '../../store/useTaskStore';
 
 const PROMPTS = [
   { key: 'storyPrompt1', q: 'What are you actually into?' },
@@ -21,6 +22,7 @@ const PROMPTS = [
 export default function ProfilePage() {
   const { profile, fetchMe, updateProfile, updatePhoto, loading } = useUserStore();
   const { myInterests, fetchMyInterests } = useInterestStore();
+  const { myStats, fetchMyStats } = useTaskStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [showPhotoUpload, setShowPhotoUpload] = useState(false);
@@ -28,6 +30,7 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchMe().catch(console.error);
     fetchMyInterests().catch(console.error);
+    fetchMyStats().catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -111,6 +114,20 @@ export default function ProfilePage() {
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                 Verified student
               </span>
+            )}
+            {myStats && myStats.totalPoints > 0 && (
+              <div className="mt-4 flex items-center gap-4">
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink">
+                  <Trophy className="h-4 w-4 text-accent-600" aria-hidden="true" />
+                  {myStats.totalPoints} <span className="font-normal text-mute">pts</span>
+                </span>
+                {myStats.currentStreakDays > 0 && (
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink">
+                    <Flame className="h-4 w-4 text-bad" aria-hidden="true" />
+                    {myStats.currentStreakDays}-day <span className="font-normal text-mute">streak</span>
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>

@@ -32,20 +32,31 @@ public class CloudinaryService {
     }
 
     /**
-     * Uploads the given file to the specified Cloudinary folder.
+     * Uploads the given file to the specified Cloudinary folder as an image.
      *
      * @param file   the multipart file to upload
      * @param folder the Cloudinary folder path (e.g. "collzap/documents")
      * @return the secure URL of the uploaded asset
      */
-    @SuppressWarnings("unchecked")
     public String upload(MultipartFile file, String folder) {
+        return upload(file, folder, "image");
+    }
+
+    /**
+     * @param resourceType Cloudinary's own classification — "image" for the
+     *                      photo/document paths (unchanged behaviour), "auto"
+     *                      for task submissions, since those may legitimately
+     *                      be a PDF and "image" resource type rejects those on
+     *                      some Cloudinary plans.
+     */
+    @SuppressWarnings("unchecked")
+    public String upload(MultipartFile file, String folder, String resourceType) {
         try {
             Map<String, Object> result = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap(
                     "folder", folder,
-                    "resource_type", "image"
+                    "resource_type", resourceType
                 )
             );
             return (String) result.get("secure_url");

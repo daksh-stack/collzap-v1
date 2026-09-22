@@ -20,6 +20,7 @@ const navigation = [
   { name: 'Colleges', href: '/admin/colleges' },
   { name: 'Interests', href: '/admin/interests' },
   { name: 'Questions', href: '/admin/questions' },
+  { name: 'Task Banks', href: '/admin/task-banks' },
 ];
 
 export default function AdminLayout() {

@@ -9,6 +9,7 @@ import Modal from '../../components/ui/Modal';
 import Spinner from '../../components/ui/Spinner';
 import { useMatchStore } from '../../store/useMatchStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import TodaysTaskCard from './TodaysTaskCard';
 
 export default function GroupDetailPage() {
   const { groupId } = useParams();
@@ -96,6 +97,8 @@ export default function GroupDetailPage() {
           </Button>
         </div>
       </header>
+
+      {group.status === 'ACTIVE' && <TodaysTaskCard groupId={groupId} />}
 
       <section>
         <h2 className="mb-4 flex items-baseline justify-between font-mono text-[10px] uppercase tracking-widest text-mute">

@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { ArrowLeft } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 import StepHeader from './StepHeader';
 import OtpDigitGrid from '../../../components/auth/OtpDigitGrid';
@@ -9,10 +11,20 @@ import { useUserStore } from '../../../store/useUserStore';
 const LENGTH = 6;
 
 export default function VerifyEmailStep() {
-  const { verifyEmail, resendVerifyEmail, user, loading } = useAuthStore();
+  const { verifyEmail, resendVerifyEmail, logout, user, loading } = useAuthStore();
+  const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [resetSignal, setResetSignal] = useState(0);
   const [resending, setResending] = useState(false);
+
+  // There's no "edit email" for an account already created — the correct fix for
+  // a typo is a fresh account under the right address. This one stays around
+  // unverified and unused, same as any abandoned signup (see resetPassword's own
+  // recovery path for that case, if the address was actually valid).
+  const handleWrongEmail = async () => {
+    await logout();
+    navigate('/signup');
+  };
 
   const submit = async (value) => {
     try {
@@ -49,6 +61,15 @@ export default function VerifyEmailStep() {
 
   return (
     <div>
+      <button
+        type="button"
+        onClick={handleWrongEmail}
+        className="mb-8 inline-flex items-center text-sm text-mute transition-colors hover:text-ink rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+      >
+        <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden="true" />
+        Wrong email? Go back
+      </button>
+
       <StepHeader eyebrow="Step one" title="Confirm it's you.">
         We sent a 6-digit code to <span className="text-ink">{user?.email}</span>. Enter it below.
       </StepHeader>

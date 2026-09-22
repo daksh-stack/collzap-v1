@@ -32,7 +32,8 @@ public class UploadController {
 
     private static final Map<String, String> CATEGORY_FOLDERS = Map.of(
         "DOCUMENT", "collzap/documents",
-        "PROFILE_PHOTO", "collzap/profile-photos"
+        "PROFILE_PHOTO", "collzap/profile-photos",
+        "TASK_SUBMISSION", "collzap/task-submissions"
     );
 
     private final DocumentUploadService documentUploadService;
@@ -48,11 +49,15 @@ public class UploadController {
         @RequestParam("file") MultipartFile file,
         @RequestParam("category") String category
     ) {
-        String folder = CATEGORY_FOLDERS.get(category.toUpperCase());
+        String upperCategory = category.toUpperCase();
+        String folder = CATEGORY_FOLDERS.get(upperCategory);
         if (folder == null) {
-            throw new BadRequestException("Invalid category. Must be DOCUMENT or PROFILE_PHOTO");
+            throw new BadRequestException("Invalid category. Must be DOCUMENT, PROFILE_PHOTO or TASK_SUBMISSION");
         }
-        String url = documentUploadService.validateAndUpload(file, folder);
+        var policy = upperCategory.equals("TASK_SUBMISSION")
+            ? DocumentUploadService.TASK_SUBMISSION_10MB
+            : DocumentUploadService.IMAGE_5MB;
+        String url = documentUploadService.validateAndUpload(file, folder, policy);
         return ResponseEntity.ok(Map.of("url", url));
     }
 }

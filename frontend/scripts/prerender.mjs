@@ -35,6 +35,7 @@ const ROUTES = [
   { path: '/', must: 'CollZap helps students discover like-minded peers', sitemap: true },
   { path: '/about', must: 'What CollZap is', sitemap: true },
   { path: '/faq', must: 'Frequently asked questions', sitemap: true },
+  { path: '/bring-collzap', must: 'Bring CollZap to your college', sitemap: true },
   { path: '/privacy', must: 'Privacy Policy', sitemap: true },
   { path: '/terms', must: 'Terms and Conditions', sitemap: true },
   { path: '/login', must: 'Back again.', sitemap: true },

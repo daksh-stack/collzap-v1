@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
 import Button from '../../../components/ui/Button';
@@ -107,6 +108,12 @@ function DocumentPath() {
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </Select>
+        <Link
+          to="/bring-collzap"
+          className="mt-1.5 inline-block text-xs text-mute underline decoration-line underline-offset-4 hover:text-accent-700"
+        >
+          Can't find your college?
+        </Link>
       </div>
 
       <fieldset>
@@ -218,6 +225,12 @@ function CollegeEmailPath() {
         <Button type="submit" size="lg" loading={loading}>
           Send code
         </Button>
+        <p className="text-xs text-mute">
+          Domain not recognised?{' '}
+          <Link to="/bring-collzap" className="text-accent-700 underline decoration-accent-300 underline-offset-4">
+            Bring CollZap to your college
+          </Link>
+        </p>
       </form>
     );
   }

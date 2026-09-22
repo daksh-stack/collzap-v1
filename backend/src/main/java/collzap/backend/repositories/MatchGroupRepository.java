@@ -68,6 +68,19 @@ public interface MatchGroupRepository extends JpaRepository<MatchGroup, UUID> {
         """)
     List<MatchGroup> findByStatusOldestFirst(@Param("status") MatchGroupStatus status);
 
+    /** ACTIVE groups for one interest — the daily task scheduler's per-interest sweep. */
+    @Query("""
+        select g from MatchGroup g
+        join fetch g.interest
+        join fetch g.college
+        where g.status = :status and g.interest.id = :interestId
+        order by g.createdAt asc
+        """)
+    List<MatchGroup> findByStatusAndInterestId(
+        @Param("status") MatchGroupStatus status,
+        @Param("interestId") UUID interestId
+    );
+
     long countByStatus(MatchGroupStatus status);
 
     long countByInterestId(UUID interestId);

@@ -57,6 +57,13 @@ public class EmailService {
               </p>
             </div>
             """.formatted(minutes, code);
+        // Independent of whether Resend is actually configured — logCodes exists
+        // specifically so a local developer sees the code in the terminal even
+        // when a real Resend key is also present (application-secrets.properties
+        // commonly has one, since it's needed to test the real email path too).
+        if (properties.getMail().isLogCodes()) {
+            log.info("OTP for {} is {}", to, code);
+        }
         send(to, subject, html);
     }
 

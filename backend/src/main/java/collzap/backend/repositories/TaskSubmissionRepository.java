@@ -1,0 +1,27 @@
+package collzap.backend.repositories;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import collzap.backend.models.TaskSubmission;
+
+public interface TaskSubmissionRepository extends JpaRepository<TaskSubmission, UUID> {
+
+    @Query("""
+        select s from TaskSubmission s
+        join fetch s.user
+        where s.taskAssignment.id = :assignmentId
+        order by s.submittedAt asc
+        """)
+    List<TaskSubmission> findByAssignmentId(@Param("assignmentId") UUID assignmentId);
+
+    Optional<TaskSubmission> findByTaskAssignmentIdAndUserId(UUID assignmentId, UUID userId);
+
+    @Query("select s from TaskSubmission s join fetch s.user join fetch s.taskAssignment where s.id = :id")
+    Optional<TaskSubmission> findWithUserAndAssignmentById(@Param("id") UUID id);
+}

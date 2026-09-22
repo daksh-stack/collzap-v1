@@ -14,6 +14,7 @@ export const useAdminStore = create((set) => ({
   interestFeedback: defaultPage,
   questions: defaultPage,
   interests: [],
+  taskBanks: [],
   loading: false,
   error: null,
 
@@ -342,6 +343,67 @@ export const useAdminStore = create((set) => ({
     set({ loading: true, error: null });
     try {
       const response = await api.post(`/admin/interests/${id}/delete`);
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  fetchTaskBanks: async (interestId = null) => {
+    set({ loading: true, error: null });
+    try {
+      const params = interestId ? `?interestId=${interestId}` : '';
+      const taskBanks = await api.get(`/admin/task-banks${params}`);
+      set({ taskBanks, loading: false });
+      return taskBanks;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  fetchTaskBankItems: async (taskBankId) => {
+    set({ loading: true, error: null });
+    try {
+      const items = await api.get(`/admin/task-banks/${taskBankId}/items`);
+      set({ loading: false });
+      return items;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  uploadTaskBank: async (interestId, title, tasks) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post('/admin/task-banks', { interestId, title, tasks });
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  deactivateTaskBank: async (taskBankId) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/admin/task-banks/${taskBankId}/deactivate`);
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  runTaskRolloverNow: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post('/admin/task-banks/run-now');
       set({ loading: false });
       return response;
     } catch (error) {
