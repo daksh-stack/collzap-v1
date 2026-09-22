@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowRight, Clock3, MessageSquare, Users } from 'lucide-react';
+import { ArrowRight, Clock3, Flame, MessageSquare, Trophy, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import ShortTermInterestModal from './ShortTermInterestModal';
@@ -9,6 +9,7 @@ import { useMatchStore } from '../../store/useMatchStore';
 import { useChatStore } from '../../store/useChatStore';
 import { useUserStore } from '../../store/useUserStore';
 import { useInterestStore } from '../../store/useInterestStore';
+import { useTaskStore } from '../../store/useTaskStore';
 import { listItemVariants, listVariants, reduceVariants, useReducedMotion } from '../../lib/motion';
 
 function relativeTime(timestamp) {
@@ -29,6 +30,7 @@ export default function HomePage() {
   const { chatList, fetchChatList } = useChatStore();
   const { profile } = useUserStore();
   const { projectTypes, myInterests, fetchProjectTypes, fetchMyInterests, selectProjectTypes } = useInterestStore();
+  const { myStats, fetchMyStats } = useTaskStore();
   const reduced = useReducedMotion();
   const [shortTermModalOpen, setShortTermModalOpen] = useState(false);
   const [addingLongTerm, setAddingLongTerm] = useState(false);
@@ -38,6 +40,7 @@ export default function HomePage() {
     fetchChatList().catch(console.error);
     fetchProjectTypes().catch(console.error);
     fetchMyInterests().catch(console.error);
+    fetchMyStats().catch(console.error);
   }, []);
 
   const hasLongTerm = projectTypes.has('LONG_TERM');
@@ -87,6 +90,20 @@ export default function HomePage() {
             ? 'Pick up where you stopped, or go looking for one more.'
             : 'Run the matcher once and see who else is up at this hour.'}
         </p>
+        {myStats && myStats.totalPoints > 0 && (
+          <div className="mt-4 flex items-center gap-4">
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink">
+              <Trophy className="h-4 w-4 text-accent-600" aria-hidden="true" />
+              {myStats.totalPoints} <span className="font-normal text-mute">pts</span>
+            </span>
+            {myStats.currentStreakDays > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink">
+                <Flame className="h-4 w-4 text-bad" aria-hidden="true" />
+                {myStats.currentStreakDays}-day <span className="font-normal text-mute">streak</span>
+              </span>
+            )}
+          </div>
+        )}
       </header>
 
       {/* Three counts, straight off state the page already holds. */}

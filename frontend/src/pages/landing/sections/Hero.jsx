@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import ConnectionField from '../../../components/brand/ConnectionField';
 import Button from '../../../components/ui/Button';
 import { reveal, useReducedMotion } from '../../../lib/motion';
-import IdBadge from '../../../components/brand/IdBadge';
+import LiveMatchCard from '../../../components/brand/LiveMatchCard';
 import { usePrimaryCta } from '../shared';
 
 // The four promises, verbatim.
@@ -38,9 +38,10 @@ export default function Hero() {
           <div className="text-center lg:text-left">
             <motion.p
               {...reveal(reduced)}
-              className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#8FC2F5]"
+              className="flex items-center justify-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.22em] text-[#8FC2F5] lg:justify-start"
             >
-              Same campus | Different dreams | One platform
+              <span className="h-1 w-1 rounded-full bg-[#3DD9C0]" aria-hidden="true" />
+              Verified · Same Campus · Serious Peers
             </motion.p>
 
             <motion.h1
@@ -54,8 +55,9 @@ export default function Hero() {
               {...reveal(reduced, 0.16)}
               className="mx-auto mt-7 max-w-xl text-base leading-relaxed text-[#A8BDD8] sm:text-lg lg:mx-0"
             >
-              CollZap helps students discover like-minded peers for friendships, projects,
-              startups, learning, and growth inside their campus.
+              The people worth knowing are already on your campus — you just haven't been
+              introduced. CollZap verifies who you actually go to college with, matches you
+              by interest and how seriously you're taking it, and skips straight to them.
             </motion.p>
 
             <motion.p
@@ -93,7 +95,7 @@ export default function Hero() {
           {/* The brand object. Below lg it follows the CTAs rather than pushing
               them under the fold. */}
           <motion.div {...reveal(reduced, 0.34)} className="lg:pt-4">
-            <IdBadge />
+            <LiveMatchCard />
           </motion.div>
         </div>
 

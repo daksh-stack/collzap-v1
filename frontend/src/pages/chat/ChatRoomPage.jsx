@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowLeft, Send, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ClipboardList, Send, Check, CheckCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
@@ -10,6 +10,7 @@ import { webSocketService } from '../../services/websocket';
 import { getSmartReplies } from '../../lib/smartReplies';
 import { snappy, useReducedMotion, transition } from '../../lib/motion';
 import { cn } from '../../lib/utils';
+import TodaysTaskCard from './TodaysTaskCard';
 
 export default function ChatRoomPage() {
   const { roomId } = useParams();
@@ -23,6 +24,10 @@ export default function ChatRoomPage() {
 
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
+  // Collapsed by default on a phone — chat is the primary content there, and
+  // the task panel would otherwise eat the vertical space the thread needs.
+  // From lg up there's room for both side by side, always open, no toggle.
+  const [taskPanelOpen, setTaskPanelOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const initialRenderRef = useRef(true);
 
@@ -142,7 +147,36 @@ export default function ChatRoomPage() {
   const showSuggestions = suggestions.length > 0 && !content.trim() && !sending;
 
   return (
-    <div className="flex h-[calc(100dvh-var(--app-chrome,9rem))] flex-col overflow-hidden rounded-lg border border-line bg-surface">
+    <div className="flex h-[calc(100dvh-var(--app-chrome,9rem))] flex-col gap-3 lg:flex-row lg:gap-4">
+      {/* Today's Task — collapsed by default on a phone, sitting above the
+          thread; from lg up it's an always-open side panel instead (below,
+          after the chat box), so this block renders nothing there. */}
+      {room.matchGroupId && (
+        <div className="shrink-0 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setTaskPanelOpen((o) => !o)}
+            aria-expanded={taskPanelOpen}
+            className="flex w-full items-center justify-between rounded-lg border border-line bg-surface px-4 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-ink">
+              <ClipboardList className="h-4 w-4 text-accent-600" aria-hidden="true" />
+              Today's Task
+            </span>
+            <ChevronDown
+              className={cn('h-4 w-4 text-mute transition-transform', taskPanelOpen && 'rotate-180')}
+              aria-hidden="true"
+            />
+          </button>
+          {taskPanelOpen && (
+            <div className="mt-3">
+              <TodaysTaskCard groupId={room.matchGroupId} />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-3">
         <button
@@ -293,6 +327,14 @@ export default function ChatRoomPage() {
         </div>
         <p className="mt-1.5 text-[10px] text-mute/70">Enter sends · Shift+Enter for a new line</p>
       </div>
+      </div>
+
+      {/* Desktop: always-open side panel, same content as the mobile toggle above. */}
+      {room.matchGroupId && (
+        <div className="hidden w-[360px] shrink-0 overflow-y-auto lg:block">
+          <TodaysTaskCard groupId={room.matchGroupId} />
+        </div>
+      )}
     </div>
   );
 }

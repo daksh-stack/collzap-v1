@@ -11,5 +11,8 @@
       "Bash(sed -i 's|if \\(u.includes\\('\\\\''/notifications/unread-count'\\\\''\\)\\) return j\\({unreadCount:0}\\);|if \\(u.includes\\('\\\\''/notifications/unread-count'\\\\''\\)\\) return j\\({unreadCount:0}\\);\\\\n  if \\(u.includes\\('\\\\''/me/onboarding'\\\\''\\)\\) return j\\({ step:'\\\\''READY'\\\\'', verificationStatus:'\\\\''APPROVED'\\\\'' }\\);|' /tmp/claude-1000/-home-pc-7-Desktop-daksh-ik-collzap-v1-main/7fa36dfa-2e36-4a89-90d0-6c0ba9bdffeb/scratchpad/empty.mjs)",
       "Bash(node empty.mjs)"
     ]
+  },
+  "enabledPlugins": {
+    "impeccable@impeccable": true
   }
 }
