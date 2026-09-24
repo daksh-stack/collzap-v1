@@ -40,7 +40,8 @@ const AdminLoginPage = lazy(() => import('./pages/auth/AdminLoginPage'));
 const OnboardingPage = lazy(() => import('./pages/onboarding/OnboardingPage'));
 
 const HomePage = lazy(() => import('./pages/home/HomePage'));
-const ChatListPage = lazy(() => import('./pages/chat/ChatListPage'));
+const ChatShell = lazy(() => import('./pages/chat/ChatShell'));
+const ChatEmptySelection = lazy(() => import('./pages/chat/ChatEmptySelection'));
 const ChatRoomPage = lazy(() => import('./pages/chat/ChatRoomPage'));
 const MatchesPage = lazy(() => import('./pages/matches/MatchesPage'));
 const GroupDetailPage = lazy(() => import('./pages/matches/GroupDetailPage'));
@@ -176,8 +177,10 @@ function App() {
             <Route element={<OnboardingGuard />}>
               <Route element={<AppShell />}>
                 <Route path="/home" element={<HomePage />} />
-                <Route path="/chat" element={<ChatListPage />} />
-                <Route path="/chat/:roomId" element={<ChatRoomPage />} />
+                <Route path="/chat" element={<ChatShell />}>
+                  <Route index element={<ChatEmptySelection />} />
+                  <Route path=":roomId" element={<ChatRoomPage />} />
+                </Route>
                 <Route path="/matches" element={<MatchesPage />} />
                 <Route path="/matches/:groupId" element={<GroupDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />

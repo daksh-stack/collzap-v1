@@ -82,8 +82,10 @@ export default function AppShell() {
     return () => ro.disconnect();
   }, [isPendingVerification]);
 
-  // Chat room owns its own scroll and should not fade on every message route.
-  const isChatRoom = /^\/chat\/[^/]+$/.test(location.pathname);
+  // The whole /chat split view (rail + room) owns its own scroll and should
+  // not fade on every navigation between threads — including the bare
+  // /chat index, which is the same shell with nothing open yet.
+  const isChatRoom = /^\/chat(\/[^/]+)?$/.test(location.pathname);
 
   const chromeVar = isPendingVerification ? CHROME_VAR_BANNER : CHROME_VAR;
   const pad = isPendingVerification ? PAD_UNDER_BANNER : PAD;
@@ -143,8 +145,13 @@ export default function AppShell() {
         )}
 
         {isChatRoom ? (
-          // No page fade: the message list is already scrolling.
-          <div className={`mx-auto max-w-5xl px-5 sm:px-8 ${pad}`}>
+          // No page fade: the message list is already scrolling. No width
+          // cap at all, unlike every other route — the rail + thread + task
+          // layout is meant to use the full window the way a real chat
+          // client's does; a capped width here is just more dead margin on
+          // a laptop screen, where every other (single-column, prose-width)
+          // route still wants the cap.
+          <div className={`px-5 sm:px-8 ${pad}`}>
             <Outlet />
           </div>
         ) : (

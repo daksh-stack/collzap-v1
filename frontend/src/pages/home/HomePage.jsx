@@ -24,6 +24,21 @@ function relativeTime(timestamp) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+/** A quiet placeholder row for an empty list — a hairline dashed panel, not a bare sentence. */
+function EmptyRow(props) {
+  // `{ icon: Icon }` destructured straight into an unconditional `<Icon/>`
+  // return false-positives this project's no-unused-vars (confirmed in
+  // isolation; EmptyState.jsx's `{Icon && <Icon/>}` doesn't trip it). A
+  // local `const Icon` sidesteps it and matches the ignore pattern either way.
+  const Icon = props.icon;
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-dashed border-line px-4 py-5">
+      <Icon className="h-4 w-4 shrink-0 text-mute" strokeWidth={1.8} aria-hidden="true" />
+      <p className="text-sm text-mute">{props.children}</p>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
   const { circle, fetchCircle } = useMatchStore();
@@ -91,49 +106,57 @@ export default function HomePage() {
             : 'Run the matcher once and see who else is up at this hour.'}
         </p>
         {myStats && myStats.totalPoints > 0 && (
-          <div className="mt-4 flex items-center gap-4">
-            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink">
-              <Trophy className="h-4 w-4 text-accent-600" aria-hidden="true" />
-              {myStats.totalPoints} <span className="font-normal text-mute">pts</span>
+          <div className="mt-4 flex items-center gap-4 text-mute">
+            <span className="inline-flex items-center gap-1.5 text-sm">
+              <Trophy className="h-3.5 w-3.5 text-accent-600" aria-hidden="true" />
+              <span className="font-medium text-ink tnum">{myStats.totalPoints}</span> pts
             </span>
             {myStats.currentStreakDays > 0 && (
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink">
-                <Flame className="h-4 w-4 text-bad" aria-hidden="true" />
-                {myStats.currentStreakDays}-day <span className="font-normal text-mute">streak</span>
+              <span className="inline-flex items-center gap-1.5 text-sm">
+                <Flame className="h-3.5 w-3.5 text-bad" aria-hidden="true" />
+                <span className="font-medium text-ink tnum">{myStats.currentStreakDays}</span>
+                -day streak
               </span>
             )}
           </div>
         )}
       </header>
 
-      {/* Three counts, straight off state the page already holds. */}
-      <motion.ul
+      {/* One instrument, not three cards: a single hairline-bordered strip,
+          divided rather than repeated, reading as one connected readout. */}
+      <motion.div
         variants={reduceVariants(listVariants, reduced)}
         initial="initial"
         animate="animate"
-        className="grid grid-cols-3 gap-3 sm:gap-4"
+        className="grid grid-cols-3 divide-x divide-line overflow-hidden rounded-lg border border-line bg-surface shadow-sm"
       >
         {stats.map((s) => (
-          <motion.li key={s.label} variants={reduceVariants(listItemVariants, reduced)}>
-            <button
-              onClick={() => navigate(s.to)}
-              className="group w-full rounded-lg border border-line bg-surface p-4 text-left shadow-sm transition-[box-shadow,border-color] duration-200 hover:border-accent-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper sm:p-5"
-            >
-              <s.icon
-                className="h-4 w-4 text-mute transition-colors group-hover:text-accent-600"
-                strokeWidth={1.8}
+          <motion.button
+            key={s.label}
+            variants={reduceVariants(listItemVariants, reduced)}
+            onClick={() => navigate(s.to)}
+            className="group relative p-4 text-left transition-colors duration-200 hover:bg-accent-50 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-inset sm:p-5"
+          >
+            {s.label === 'Unread' && s.value > 0 && (
+              <span
                 aria-hidden="true"
+                className="absolute right-4 top-4 h-1.5 w-1.5 rounded-full bg-accent-500 sm:right-5 sm:top-5"
               />
-              <p className="mt-3 font-display text-2xl font-extrabold tracking-tightest text-ink tnum sm:text-3xl">
-                {s.value}
-              </p>
-              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-mute">
-                {s.label}
-              </p>
-            </button>
-          </motion.li>
+            )}
+            <s.icon
+              className="h-4 w-4 text-mute transition-colors group-hover:text-accent-600"
+              strokeWidth={1.8}
+              aria-hidden="true"
+            />
+            <p className="mt-3 font-display text-2xl font-extrabold tracking-tightest text-ink tnum sm:text-3xl">
+              {s.value}
+            </p>
+            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-mute">
+              {s.label}
+            </p>
+          </motion.button>
         ))}
-      </motion.ul>
+      </motion.div>
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
         {/* The one act */}
@@ -141,7 +164,10 @@ export default function HomePage() {
           <h2 className="mb-4 font-mono text-[10px] uppercase tracking-widest text-mute">
             Start here
           </h2>
-          <div className="relative overflow-hidden rounded-lg border border-line bg-surface p-6 shadow-sm">
+
+          {/* The single elevated moment on the page — everything else here is
+              a plain row, so this is the one thing that reads as "the act." */}
+          <div className="relative overflow-hidden rounded-lg border border-line bg-gradient-to-br from-surface to-accent-50 p-6 shadow-sm">
             <span className="grad-brand absolute inset-x-0 top-0 h-0.5" />
             <p className="font-display text-2xl font-bold leading-snug tracking-tight text-ink">
               Find peers
@@ -166,42 +192,49 @@ export default function HomePage() {
             </p>
           )}
 
-          <div className="mt-4 space-y-3">
+          {/* Secondary setup, as rows — the same pattern "Your people" and
+              "Last said" use, so the page reads as one list language plus
+              one card, not a stack of look-alike boxes. */}
+          <ul className="mt-4 divide-y divide-line border-y border-line">
             {!hasLongTerm && (
-              <div className="rounded-lg border border-line bg-surface p-4 shadow-sm">
-                <p className="text-sm font-medium text-ink">Long-term matching</p>
-                <p className="mt-1 text-xs leading-relaxed text-mute">
-                  Slower, deeper, with a seriousness test. Set once — can't be changed later.
-                </p>
+              <li className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 py-3.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">Long-term matching</p>
+                  <p className="mt-0.5 max-w-xs text-xs leading-relaxed text-mute">
+                    Slower, deeper, with a seriousness test. Set once — can&rsquo;t be changed later.
+                  </p>
+                </div>
                 <Button
                   onClick={handleAddLongTerm}
                   variant="secondary"
                   size="sm"
                   loading={addingLongTerm}
-                  className="mt-3 w-full"
+                  className="shrink-0"
                 >
-                  Set up long-term
+                  Set up
                 </Button>
-              </div>
+              </li>
             )}
 
-            <div className="rounded-lg border border-line bg-surface p-4 shadow-sm">
-              <p className="text-sm font-medium text-ink">Short-term interest</p>
-              <p className="mt-1 text-xs leading-relaxed text-mute">
-                {currentShortTerm
-                  ? `Currently: ${currentShortTerm.interestName}. Pick a new one any time — your current chat stays put.`
-                  : 'A quick, short-burst interest. Change it whenever you want.'}
-              </p>
+            <li className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 py-3.5">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-ink">Short-term interest</p>
+                <p className="mt-0.5 max-w-xs text-xs leading-relaxed text-mute">
+                  {currentShortTerm
+                    ? `Currently: ${currentShortTerm.interestName}. Your current chat stays put.`
+                    : 'A quick, short-burst interest. Change it whenever you want.'}
+                </p>
+              </div>
               <Button
                 onClick={() => setShortTermModalOpen(true)}
                 variant="secondary"
                 size="sm"
-                className="mt-3 w-full"
+                className="shrink-0"
               >
-                {currentShortTerm ? 'Choose a different one' : 'Choose a short-term interest'}
+                {currentShortTerm ? 'Change' : 'Choose'}
               </Button>
-            </div>
-          </div>
+            </li>
+          </ul>
         </section>
 
         {/* Live connections */}
@@ -211,9 +244,7 @@ export default function HomePage() {
           </h2>
 
           {connections.length === 0 ? (
-            <p className="border-t border-line pt-4 text-sm text-mute">
-              Nobody yet. That is normal on day one.
-            </p>
+            <EmptyRow icon={Users}>Nobody yet. That is normal on day one.</EmptyRow>
           ) : (
             <ul className="divide-y divide-line border-y border-line">
               {connections.slice(0, 5).map((group) => (
@@ -256,9 +287,7 @@ export default function HomePage() {
           </h2>
 
           {recentChats.length === 0 ? (
-            <p className="border-t border-line pt-4 text-sm text-mute">
-              No threads open.
-            </p>
+            <EmptyRow icon={MessageSquare}>No threads open.</EmptyRow>
           ) : (
             <ul className="divide-y divide-line border-y border-line">
               {recentChats.map((chat) => (

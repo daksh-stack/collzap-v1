@@ -57,7 +57,7 @@ export default function SelectInterestsStep() {
 
   const tabs = Array.from(projectTypes).map((pt) => ({
     key: pt,
-    label: pt === 'LONG_TERM' ? 'Long haul' : 'Short burst',
+    label: pt === 'LONG_TERM' ? 'Long term peer' : 'Short term buddy',
   }));
 
   const handleToggleInterest = (interest) => {

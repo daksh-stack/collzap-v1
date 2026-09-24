@@ -5,12 +5,14 @@ import { ArrowLeft, ChevronDown, ClipboardList, Send, Check, CheckCheck } from '
 import toast from 'react-hot-toast';
 import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
+import Avatar from '../../components/ui/Avatar';
 import { useChatStore } from '../../store/useChatStore';
 import { webSocketService } from '../../services/websocket';
 import { getSmartReplies } from '../../lib/smartReplies';
 import { snappy, useReducedMotion, transition } from '../../lib/motion';
 import { cn } from '../../lib/utils';
 import TodaysTaskCard from './TodaysTaskCard';
+import ThreadAvatar from './ThreadAvatar';
 
 export default function ChatRoomPage() {
   const { roomId } = useParams();
@@ -147,7 +149,7 @@ export default function ChatRoomPage() {
   const showSuggestions = suggestions.length > 0 && !content.trim() && !sending;
 
   return (
-    <div className="flex h-[calc(100dvh-var(--app-chrome,9rem))] flex-col gap-3 lg:flex-row lg:gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row lg:gap-4">
       {/* Today's Task — collapsed by default on a phone, sitting above the
           thread; from lg up it's an always-open side panel instead (below,
           after the chat box), so this block renders nothing there. */}
@@ -179,13 +181,16 @@ export default function ChatRoomPage() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-3">
+        {/* Desktop always shows the thread rail beside this room, so the way
+            back is already on screen — this is a mobile-only affordance. */}
         <button
           onClick={() => navigate('/chat')}
           aria-label="Back to threads"
-          className="-ml-1 rounded p-1.5 text-mute transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+          className="-ml-1 rounded p-1.5 text-mute transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 lg:hidden"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </button>
+        <ThreadAvatar type={room.type} members={room.members} size="sm" />
         <div className="min-w-0">
           <h1 className="truncate font-display text-base font-semibold leading-tight tracking-tight text-ink">
             {roomTitle}
@@ -202,10 +207,11 @@ export default function ChatRoomPage() {
         role="log"
         aria-label="Messages"
         aria-live="polite"
-        className="flex-1 space-y-3 overflow-y-auto px-4 py-5"
+        className="flex-1 overflow-y-auto px-4 py-5"
       >
         {roomMessages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center px-8 text-center">
+            <ThreadAvatar type={room.type} members={room.members} size="lg" className="mb-4" />
             <p className="font-display text-lg font-semibold tracking-tight text-ink">
               {room.emptyStateMessage || 'Nobody has said anything yet.'}
             </p>
@@ -214,10 +220,19 @@ export default function ChatRoomPage() {
             </p>
           </div>
         ) : (
-          roomMessages.map((message, index) => {
+          // A reading-width column, not the full (now much wider) panel — a
+          // message bubble stretched to a 1000px+ pane looks like a bug, not
+          // spaciousness.
+          <div className="mx-auto w-full max-w-4xl space-y-3">
+          {roomMessages.map((message, index) => {
             const isMine = message.mine;
             const prev = roomMessages[index - 1];
-            const showName = isGroup && !isMine && prev?.senderId !== message.senderId;
+            const startsRun = prev?.senderId !== message.senderId;
+            const showName = isGroup && !isMine && startsRun;
+            // Only the first bubble in a run of consecutive messages from the
+            // same sender carries their face; a reserved same-size spacer
+            // keeps every bubble in the run left-aligned either way.
+            const showAvatar = !isMine && startsRun;
             const key = message.id || message.clientMessageId || `${message.sentAt}-${index}`;
 
             return (
@@ -227,8 +242,13 @@ export default function ChatRoomPage() {
                 initial={reduced ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={transition(snappy, reduced)}
-                className={cn('flex', isMine ? 'justify-end' : 'justify-start')}
+                className={cn('flex items-start gap-2', isMine ? 'justify-end' : 'justify-start')}
               >
+                {!isMine && (
+                  showAvatar
+                    ? <Avatar src={message.senderPhotoUrl} name={message.senderName} size="sm" />
+                    : <div className="w-8 shrink-0" aria-hidden="true" />
+                )}
                 <div className={cn('max-w-[78%]', isMine ? 'items-end' : 'items-start')}>
                   {showName && (
                     <p className="mb-1 ml-0.5 font-mono text-[10px] uppercase tracking-widest text-mute">
@@ -258,21 +278,23 @@ export default function ChatRoomPage() {
                 </div>
               </motion.div>
             );
-          })
-        )}
+          })}
 
-        {/* MEMBER_JOINED, as a quiet system line — never a bubble. */}
-        {joins.map((join) => (
-          <p key={join.id} className="py-1 text-center font-mono text-[10px] uppercase tracking-widest text-mute">
-            {join.name} joined
-          </p>
-        ))}
+          {/* MEMBER_JOINED, as a quiet system line — never a bubble. */}
+          {joins.map((join) => (
+            <p key={join.id} className="py-1 text-center font-mono text-[10px] uppercase tracking-widest text-mute">
+              {join.name} joined
+            </p>
+          ))}
+          </div>
+        )}
 
         <div ref={messagesEndRef} />
       </div>
 
       {/* Composer */}
       <div className="shrink-0 border-t border-line px-4 py-3">
+        <div className="mx-auto w-full max-w-4xl">
         {/* Smart replies. One tap sends, as on LinkedIn. On a phone the row
             scrolls sideways rather than wrapping, so it never pushes the
             composer up; from `sm` there is room to wrap and centre. */}
@@ -326,6 +348,7 @@ export default function ChatRoomPage() {
           </Button>
         </div>
         <p className="mt-1.5 text-[10px] text-mute/70">Enter sends · Shift+Enter for a new line</p>
+        </div>
       </div>
       </div>
 
