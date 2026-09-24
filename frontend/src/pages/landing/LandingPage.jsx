@@ -7,6 +7,7 @@ import WhoItsFor from './sections/WhoItsFor';
 import WhyCollZap from './sections/WhyCollZap';
 import HowItWorks from './sections/HowItWorks';
 import Circles from './sections/Circles';
+import DailyMomentum from './sections/DailyMomentum';
 import Trust from './sections/Trust';
 import Footer from './sections/Footer';
 import StickyCta from './sections/StickyCta';
@@ -114,6 +115,7 @@ export default function LandingPage() {
         <WhyCollZap />
         <HowItWorks />
         <Circles />
+        <DailyMomentum />
         <Trust />
       </main>
       <Footer />

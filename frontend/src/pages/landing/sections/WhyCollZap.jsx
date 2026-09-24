@@ -10,7 +10,7 @@ const PAIRS = [
   {
     platform: 'WhatsApp',
     from: 'Random Groups',
-    to: 'Intentional Circles',
+    to: 'Circles That Stay Active',
     limits: ['Random groups', 'No matching', 'No seriousness filtering', 'Groups become inactive'],
   },
   {
@@ -31,7 +31,7 @@ const DIFFERENTIATORS = [
   'College-Specific Matching',
   'Interest-Based Circles',
   'Seriousness Assessment',
-  'Private & Trusted Campus Network',
+  'Daily Tasks & Streaks',
   '1-on-1, Groups, Societies & Communities',
   'Designed Exclusively for Students',
 ];

@@ -34,6 +34,7 @@ export const HOME_SECTIONS = [
   { href: '/#who', label: "Who it's for" },
   { href: '/#why', label: 'Why CollZap' },
   { href: '/#how', label: 'How it works' },
+  { href: '/#momentum', label: 'After the match' },
 ];
 
 /** Standalone pages, shown as their own top-level header items. */

@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { BadgeCheck, Layers, Sparkles, Target, Users } from 'lucide-react';
+import { BadgeCheck, Flame, Layers, Sparkles, Target, Users } from 'lucide-react';
 import {
   drawVariants,
   reduceVariants,
@@ -53,6 +53,13 @@ const STEPS = [
     lead: 'Meet students who share your interests and goals.',
     detail: 'Our matching system connects you with students who share similar interests, goals, and seriousness levels. All conversations and matches remain private and secure.',
     extra: 'caption',
+  },
+  {
+    icon: Flame,
+    title: 'Stay Active, Every Day',
+    lead: 'A new task lands in your chat each day — submit it, earn points, build a streak.',
+    detail: 'Your circle reviews each other’s work on completion, quality, learning and effort, so it stays alive well past the first hello.',
+    extra: 'streak',
   },
 ];
 
@@ -109,6 +116,20 @@ function StepExtra({ kind }) {
     );
   }
 
+  if (kind === 'streak') {
+    return (
+      <div className="mt-5 flex items-center gap-4 rounded border border-line bg-surface-2 px-4 py-3">
+        <span className="inline-flex items-center gap-1.5 text-sm text-ink">
+          <Flame className="h-3.5 w-3.5 text-bad" aria-hidden="true" />
+          <span className="font-medium tnum">4</span>-day streak
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-sm text-ink">
+          <span className="font-medium tnum">65</span> pts total
+        </span>
+      </div>
+    );
+  }
+
   return null;
 }
 
@@ -159,7 +180,7 @@ export default function HowItWorks() {
         <motion.div {...reveal(reduced)} className="max-w-2xl">
           <SectionLabel>How it works</SectionLabel>
           <h2 className="mt-5 font-display text-3xl font-extrabold leading-tight tracking-tightest text-ink sm:text-4xl">
-            Find The Right People In 5 Simple Steps.
+            Find The Right People In 6 Simple Steps.
           </h2>
           <p className="mt-5 text-base leading-relaxed text-mute">
             CollZap helps students discover meaningful circles inside their own college.

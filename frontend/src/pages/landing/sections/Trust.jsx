@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Heart, Lock, ShieldCheck, Target, Building2 } from 'lucide-react';
+import { Building2, Flame, Heart, Lock, ShieldCheck, Target } from 'lucide-react';
 import { reveal, revealGroup, revealVariants, useReducedMotion } from '../../../lib/motion';
 import SectionLabel from '../SectionLabel';
 
@@ -9,6 +9,7 @@ const GUARANTEES = [
   { icon: Target, t: 'Intent-Based Matching', d: 'Matched on interests, seriousness and goals not just randomly.' },
   { icon: Heart, t: 'Meaningful Connections', d: 'Build friendships, projects, startups and grow together.' },
   { icon: ShieldCheck, t: 'Safe & Secure Environment', d: 'Verified students only. No spam. No noise. Just real people.' },
+  { icon: Flame, t: 'Built-In Accountability', d: 'Daily tasks and peer reviews keep a circle active, not just matched.' },
 ];
 
 export default function Trust() {

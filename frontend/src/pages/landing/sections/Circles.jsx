@@ -60,6 +60,14 @@ export default function Circles() {
             </motion.article>
           ))}
         </motion.div>
+
+        <motion.p
+          {...reveal(reduced, 0.1)}
+          className="mt-14 max-w-2xl font-display text-xl font-bold leading-snug tracking-tight text-ink sm:text-2xl"
+        >
+          Whichever one you pick, it doesn’t stop at the first hello — every circle gets a daily
+          task to keep it that way.
+        </motion.p>
       </div>
     </section>
   );
