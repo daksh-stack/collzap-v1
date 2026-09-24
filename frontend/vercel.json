@@ -70,6 +70,10 @@
       "destination": "/blog/wrong-peer-circle-in-college/index.html"
     },
     {
+      "source": "/blog/why-campus-societies-fade-after-first-year",
+      "destination": "/blog/why-campus-societies-fade-after-first-year/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/app.html"
     }

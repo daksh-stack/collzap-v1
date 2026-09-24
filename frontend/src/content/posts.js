@@ -1195,6 +1195,128 @@ export const POSTS = [
       },
     ],
   },
+  {
+    slug: 'why-campus-societies-fade-after-first-year',
+    title: 'Why Your College Society Was Buzzing in First Year and Empty by Third',
+    description:
+      'Campus clubs fill up in orientation week and empty out by third year — not because students stop caring, but because of how those groups get built in the first place. Why small, interest-matched circles outlast big batch-based societies, and how CollZap is built around the ones that actually last.',
+    date: '2026-09-24',
+    readingMinutes: 9,
+    tags: ['Clubs & Societies', 'Community Building', 'CollZap'],
+    blocks: [
+      {
+        t: 'p',
+        x: 'Every college has a WhatsApp group like this: two hundred-something members, everyone added during orientation week, the group name still has last year’s fest hashtag in it, and the only messages in the last month are an admin reposting an event flyer nobody replies to.',
+      },
+      {
+        t: 'p',
+        x: 'You joined at least one club or society in your first year. Almost everyone does — it feels like the fastest way to find people who are into the same things you are. And for a few weeks, it actually works. The induction is packed. The first meeting has energy. You exchange numbers with three people you are sure you will stay in touch with.',
+      },
+      {
+        t: 'p',
+        x: 'Then the meetings get smaller. The “core team” quietly becomes the same five people who ran things last year too. By third year, the group chat that once buzzed with induction photos is where event reminders go to be left on read.',
+      },
+      {
+        t: 'p',
+        x: 'This is not because your college runs its societies badly, and it is not because students stopped caring about the thing the society was for. It is because of how societies get built in the first place — and once you see the structure underneath it, the pattern stops feeling like bad luck.',
+      },
+
+      { t: 'h2', x: 'Societies are built to peak once a year, not to last' },
+      {
+        t: 'p',
+        x: 'A campus society’s busiest day is almost always its induction. That is not a coincidence — it is the only day the group has a hard deadline and a room full of people with nowhere else to be yet. Everything after that depends on people choosing, again and again, to show up with no deadline forcing them to.',
+      },
+      {
+        t: 'p',
+        x: 'A few structural things make that hard:',
+      },
+      {
+        t: 'ul',
+        items: [
+          'They run on a fixed academic calendar. A society’s whole reason to gather is usually one fest, one competition or one series of events a semester — once that is over, there is no default reason left to meet.',
+          'Membership means attendance, not commitment. Signing up at a stall during orientation week costs nothing, so societies end up measuring their size in sign-ups, not in people who actually turn up to do anything.',
+          'Leadership resets every single year. The seniors who built the momentum graduate or step back, and the incoming committee inherits a name, a logo and a follower count — not the relationships that actually made it work.',
+          'You were sorted by year and branch, not by what you actually wanted to build. A society’s first filter is usually “which batch are you in,” not “what are you serious about” — so the group ends up wide, but rarely deep.',
+        ],
+      },
+
+      { t: 'h2', x: 'Why the small groups are the ones still standing' },
+      {
+        t: 'p',
+        x: 'Ask any final-year student what is still active from their first year, and it is almost never the forty-person club. It is the four people who kept building side projects together. The coding pair who still ping each other with a bug at midnight. The two people preparing for the same exam who never missed a study session, three years running.',
+      },
+      {
+        t: 'p',
+        x: 'What these have in common is not luck. They were not assigned by a sign-up sheet — they were chosen, around one specific thing both people actually cared about, in a group small enough that skipping a session meant someone would notice and ask where you were.',
+      },
+      {
+        t: 'quote',
+        x: 'A circle survives on accountability, and accountability only works in groups small enough that your absence is actually noticed.',
+      },
+      {
+        t: 'p',
+        x: 'Size and specificity are doing more work here than they get credit for. In a group of forty, responsibility diffuses — everyone assumes someone else will keep it going. In a group of three or four, there is nowhere to hide. And “we are all in the same department” is not a strong enough reason to keep showing up the way “we are both trying to ship this by Friday” is. A vague shared label fades; a specific shared goal does not.',
+      },
+
+      { t: 'h2', x: 'The wanting was never the problem' },
+      {
+        t: 'p',
+        x: 'Nobody signs up for a society in week one hoping it fizzles out by year three. Every fresher standing at that sign-up table genuinely wants a group that lasts. The gap between wanting that and getting it comes down to how people end up in the same room in the first place — sorted by year and branch and who happened to walk past the stall, rather than by shared seriousness about one specific thing.',
+      },
+      {
+        t: 'p',
+        x: 'That is a matching problem, not a motivation problem. And matching problems have matching solutions.',
+      },
+
+      { t: 'h2', x: 'What actually has to be true for a group to last' },
+      {
+        t: 'ol',
+        items: [
+          'It has to be small enough that everyone’s presence — and absence — is actually noticed.',
+          'Everyone in it has to be there for the same specific reason, not a broad umbrella like a department or a year.',
+          'Everyone needs to be operating at roughly the same level of seriousness — someone building a real project and someone who joined for the certificate will not stay in sync for long.',
+          'It needs a reason to reconvene that has nothing to do with the college’s event calendar.',
+        ],
+      },
+
+      { t: 'h2', x: 'This is exactly the gap CollZap is built to close' },
+      {
+        t: 'p',
+        x: `${collzapIntro} Not another college-wide group to join and quietly mute — a way to find the specific people worth building the small, lasting version of a circle with.`,
+      },
+      {
+        t: 'p',
+        x: 'CollZap even has its own version of a society — a shared community room for everyone at your college around one interest. The difference is what sorts you into it in the first place:',
+      },
+      {
+        t: 'ul',
+        items: [
+          'Verified students only — every account is tied to a real college email or ID, so the people in a group actually go to your college, not friends-of-friends who wandered in.',
+          'Matched by specific interest, not by branch or year — you are grouped with people who picked the same specific thing you did, not everyone who happened to share your timetable.',
+          'A short seriousness check places you at a compatible level, so a one-on-one or small-group match is not paired with someone at a completely different stage of commitment.',
+          'No calendar dependency — there is no fest or induction week driving when the group exists. It opens the moment you are matched and stays open for as long as you both keep showing up.',
+        ],
+      },
+      {
+        t: 'p',
+        x: 'None of this makes the forty-person club pointless — it is still a fine way to spend an afternoon at a fest. It just was never built to be the thing that carries you through three more years. That was always going to need something smaller, chosen on purpose.',
+      },
+
+      { t: 'h2', x: 'Your third year does not have to look like your society’s group chat' },
+      {
+        t: 'p',
+        x: 'If the club you joined in week one already looks like a group chat nobody opens, that is not a verdict on you or on the people who ran it. It is just what happens to groups sorted by administrative convenience instead of shared seriousness.',
+      },
+      {
+        t: 'quote',
+        x: 'You do not need another two-hundred-person group. You need the two or three people who were going to notice if you stopped showing up.',
+      },
+      {
+        t: 'p',
+        x: 'Go to collzap.com, pick the one thing on your campus you are actually serious about, and get matched with someone at your own college who is serious about it too — before this year’s induction photos are next year’s group chat nobody opens.',
+      },
+    ],
+  },
 ];
 
 /** Newest first, which is the order the index page and sitemap both want. */
