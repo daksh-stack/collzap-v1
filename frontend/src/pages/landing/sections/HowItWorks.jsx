@@ -58,7 +58,7 @@ const STEPS = [
     icon: Flame,
     title: 'Stay Active, Every Day',
     lead: 'A new task lands in your chat each day — submit it, earn points, build a streak.',
-    detail: 'Your circle reviews each other’s work on completion, quality, learning and effort, so it stays alive well past the first hello.',
+    detail: 'Your circle reviews each other’s work on completion, quality, learning and effort, so it stays alive well past the first hello — and every point becomes part of a track record that tracks your potential and works toward your goals, placements included.',
     extra: 'streak',
   },
 ];
@@ -134,10 +134,22 @@ function StepExtra({ kind }) {
 }
 
 /**
- * The five steps hang off one lanyard cord rather than a ruled line. The cord
- * is a single path scaled to the list's height (`preserveAspectRatio="none"`,
- * with a non-scaling stroke so it does not smear), drawn on scroll by the same
+ * The steps hang off one lanyard cord rather than a ruled line. The cord is a
+ * single path scaled to the list's height (`preserveAspectRatio="none"`, with
+ * a non-scaling stroke so it does not smear), drawn on scroll by the same
  * `pathLength` helper the rest of the app uses.
+ *
+ * Height is `top-8` + an explicit `calc(100% - 4rem)`, not `top-8 bottom-8`.
+ * The two look equivalent but are not: this `<svg>` has a `viewBox`, which
+ * gives it an intrinsic aspect ratio, and for an absolutely positioned
+ * *replaced* element with an intrinsic ratio, CSS computes an auto height
+ * from `width / ratio` rather than stretching between `top` and `bottom` —
+ * `bottom` is silently ignored. That rendered the cord at a fixed 1000px
+ * (the viewBox height) regardless of how many steps were in the list; it
+ * only looked correct while the list's real height happened to be close to
+ * 1000px + 64px, and fell visibly short of the last step the moment it
+ * wasn't. The explicit `calc()` height forces real percentage resolution
+ * against the list's actual height instead.
  */
 function Cord({ reduced }) {
   return (
@@ -145,7 +157,7 @@ function Cord({ reduced }) {
       aria-hidden="true"
       viewBox="0 0 44 1000"
       preserveAspectRatio="none"
-      className="pointer-events-none absolute bottom-8 left-0 top-8 w-11"
+      className="pointer-events-none absolute left-0 top-8 h-[calc(100%-4rem)] w-11"
     >
       <defs>
         <linearGradient id="cz-how-cord" x1="0" y1="0" x2="0" y2="1">

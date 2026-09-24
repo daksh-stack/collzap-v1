@@ -70,35 +70,51 @@ export default function DailyMomentum() {
 
           {/* A grounded, literal preview of the in-chat card, in the same
               register as HowItWorks' "verify" and "levels" previews — this
-              section is describing a real screen, not an abstraction. */}
-          <motion.div
-            {...reveal(reduced, 0.12)}
-            className="rounded-lg border border-line bg-surface-2 p-6 shadow-sm"
-          >
-            <p className="font-mono text-[10px] uppercase tracking-widest text-accent-700">
-              Day 04 · 25 pts · ~20 min
-            </p>
-            <h3 className="mt-2 font-display text-lg font-bold tracking-tight text-ink">
-              Ship one tiny feature, and write down what broke.
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-mute">
-              Submit a link, a file, or just what you did — your groupmates review it on
-              completion, quality, learning and effort.
-            </p>
-            <div className="mt-5 flex items-center gap-4 border-t border-line pt-4">
-              <span className="inline-flex items-center gap-1.5 text-sm text-ink">
-                <Flame className="h-3.5 w-3.5 text-bad" aria-hidden="true" />
-                <span className="font-medium tnum">4</span>-day streak
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-sm text-ink">
-                <span className="font-medium tnum">65</span> pts total
-              </span>
-            </div>
-          </motion.div>
+              section is describing a real screen, not an abstraction. The
+              payoff paragraph sits directly under it, in the same column,
+              so "here is the record it builds" reads as one continuous
+              thought rather than a separate closing statement. */}
+          <div className="flex flex-col gap-6">
+            <motion.div
+              {...reveal(reduced, 0.12)}
+              className="rounded-lg border border-line bg-surface-2 p-6 shadow-sm"
+            >
+              <p className="font-mono text-[10px] uppercase tracking-widest text-accent-700">
+                Day 04 · 25 pts · ~20 min
+              </p>
+              <h3 className="mt-2 font-display text-lg font-bold tracking-tight text-ink">
+                Ship one tiny feature, and write down what broke.
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-mute">
+                Submit a link, a file, or just what you did — your groupmates review it on
+                completion, quality, learning and effort.
+              </p>
+              <div className="mt-5 flex items-center gap-4 border-t border-line pt-4">
+                <span className="inline-flex items-center gap-1.5 text-sm text-ink">
+                  <Flame className="h-3.5 w-3.5 text-bad" aria-hidden="true" />
+                  <span className="font-medium tnum">4</span>-day streak
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-sm text-ink">
+                  <span className="font-medium tnum">65</span> pts total
+                </span>
+              </div>
+            </motion.div>
+
+            <motion.p
+              {...reveal(reduced, 0.16)}
+              className="text-sm leading-relaxed text-mute"
+            >
+              None of it disappears once the streak ends, either. Your points and your
+              submissions stay on your profile — a real, visible record of what you built and
+              how consistently you showed up. That is exactly the kind of proof that tracks
+              your potential and pays off later: for a stronger portfolio, for a startup you
+              can point to, for placement season.
+            </motion.p>
+          </div>
         </div>
 
         <motion.p
-          {...reveal(reduced, 0.1)}
+          {...reveal(reduced, 0.2)}
           className="mt-14 max-w-2xl font-display text-xl font-bold leading-snug tracking-tight text-ink sm:text-2xl"
         >
           Most circles die from having nothing to do together. This one has something to do
